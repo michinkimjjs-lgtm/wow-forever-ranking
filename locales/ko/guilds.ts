@@ -1,0 +1,17 @@
+export const guilds = {
+  listTitle: "길드 목록",
+  listDescription: "추적 중인 길드입니다. 길드명을 누르면 상세 정보를 볼 수 있습니다.",
+  name: "길드명",
+  faction: "진영",
+  memberCount: "캐릭터 수",
+  memberCountValue: "{n}명",
+  representative: "대표 캐릭터",
+  representativeNote: "레벨 랭킹 기준으로 가장 앞선 길드원입니다.",
+  maxLevel: "최고 레벨",
+  maxAverageItemLevel: "최고 장비 레벨",
+  lastUpdated: "마지막 데이터 갱신",
+  members: "길드 캐릭터",
+  empty: "등록된 길드가 없습니다.",
+  noMembers: "확인된 길드원이 없습니다.",
+  notFound: "길드를 찾을 수 없습니다.",
+} as const;

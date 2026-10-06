@@ -2,6 +2,7 @@
 
 > 상세 설계는 `WOW_FOREVER_RANKING_SPEC.md`(v2, 설계 확정본)를 따른다.
 > 이 파일은 개발할 때 반드시 지켜야 할 규칙의 요약이다. 두 문서가 충돌하면 명세서의 상세 규칙을 따르고, 두 문서를 함께 고친다.
+> Phase 1 구현 결과 문서: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA-SPEC.md`, `docs/RANKING-RULES.md`
 
 ## 1. 프로젝트 목적
 
