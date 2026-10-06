@@ -1,4 +1,4 @@
--- ForeverRankProbe 정적 검사 설정 (WoW는 Lua 5.1)
+-- 애드온 정적 검사 설정 (WoW는 Lua 5.1)
 std = "lua51"
 max_line_length = 130
 exclude_files = { "tests/**" }
@@ -6,7 +6,9 @@ exclude_files = { "tests/**" }
 -- 애드온이 정의하는 전역
 globals = {
   "ForeverRankProbeDB",
+  "ForeverRankCollectorDB",
   "SLASH_FOREVERRANKPROBE1",
+  "SLASH_FOREVERRANKCOLLECTOR1",
   "SlashCmdList",
 }
 

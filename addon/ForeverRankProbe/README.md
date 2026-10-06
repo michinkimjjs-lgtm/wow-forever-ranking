@@ -6,6 +6,12 @@ WoW: Forever 클라이언트에서 **우리 랭킹 사이트에 필요한 캐릭
 > 아래에 적힌 모든 동작은 **게임 내 실행 검증 필요** 상태입니다.
 > (게임 밖에서는 Lua 5.1 문법 검사, 정적 분석, 가짜 API로 만든 오프라인 하네스만 통과했습니다.)
 
+> 📌 **Phase 2A-OFFLINE 분석 결과 (2026-10-06)**
+> 공개 API 덤프(`docs/FOREVER-API-CAPABILITY.md`)에 따르면 이 Probe가 검사하는 전역 후보 일부는 Forever 클라이언트에 없습니다.
+> - 없는 함수: `GetItemInfo`, `GetDetailedItemLevelInfo`, `GetItemGem`, `IsEquippedItem`. 실행하면 "사용 불가"로 나올 가능성이 높습니다. 대체 API는 `C_Item.*`입니다.
+> - 실제 데이터 내보내기는 이 Probe 대신 [`ForeverRankCollector`](../ForeverRankCollector/README.md)를 사용합니다.
+> - 이 Probe는 API 존재 여부를 직접 확인하는 진단 도구로 남겨 둡니다.
+
 ## 하는 일 / 하지 않는 일
 
 | 하는 일 | 하지 않는 일 |

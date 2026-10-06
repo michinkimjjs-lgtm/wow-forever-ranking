@@ -2,6 +2,13 @@
 
 > 기준 문서: `WOW_FOREVER_RANKING_SPEC.md` §2, §15, §16, §27, §30 / `CLAUDE.md` §6~8
 > 상태: **Phase 2A (API Capability Probe) — 게임 내 실행 검증 필요**
+>
+> 📌 Phase 2A-OFFLINE(2026-10-06)으로 방향을 바꿨습니다. 공개 자료 분석 결과와 최신 계획은 다음 문서를 우선합니다.
+> - [`FOREVER-API-CAPABILITY.md`](./FOREVER-API-CAPABILITY.md)
+> - [`CHARACTER-EXPORT-V1.md`](./CHARACTER-EXPORT-V1.md)
+> - [`PHASE2-DATA-SOURCE-PLAN.md`](./PHASE2-DATA-SOURCE-PLAN.md)
+>
+> 이 문서의 원칙(개인정보, 검증, Companion, Blizzard API 연결 절차)은 그대로 유효합니다.
 
 ## 1. 현재 확인된 데이터 수집 구조
 
