@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: Forever Rank Probe
+## Notes: 현재 캐릭터에서 사용할 수 있는 게임 API를 검사합니다. 외부로 데이터를 보내지 않습니다.
+## Author: Forever Rank
+## Version: 0.1.0
+## SavedVariables: ForeverRankProbeDB
+
+Core.lua
+SavedVariables.lua
+Probe.lua
