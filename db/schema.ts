@@ -30,6 +30,8 @@ import {
   INGESTION_STATUSES,
   MILESTONE_TIMING_BASES,
   STATIC_DATA_KINDS,
+  SUBMISSION_CHANNELS,
+  SUBMISSION_REVIEW_STATUSES,
   STATIC_DATA_LICENSE_STATUSES,
   VERIFICATION_STATUSES,
 } from "../lib/domain/enums";
@@ -39,6 +41,8 @@ export const dataSourceEnum = pgEnum("data_source", DATA_SOURCES);
 export const verificationStatusEnum = pgEnum("verification_status", VERIFICATION_STATUSES);
 export const milestoneTimingBasisEnum = pgEnum("milestone_timing_basis", MILESTONE_TIMING_BASES);
 export const ingestionStatusEnum = pgEnum("ingestion_status", INGESTION_STATUSES);
+export const submissionReviewStatusEnum = pgEnum("submission_review_status", SUBMISSION_REVIEW_STATUSES);
+export const submissionChannelEnum = pgEnum("submission_channel", SUBMISSION_CHANNELS);
 export const staticDataKindEnum = pgEnum("static_data_kind", STATIC_DATA_KINDS);
 export const staticDataLicenseStatusEnum = pgEnum("static_data_license_status", STATIC_DATA_LICENSE_STATUSES);
 
@@ -472,6 +476,81 @@ export const staticDataRecords = pgTable(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// character_submissions — 캐릭터 제출과 관리자 검토 (Phase 3A, docs/SUBMISSION-SYSTEM.md)
+//
+// - 실제 영역(beta / live)에만 저장한다. mock 배포는 제출을 저장하지 않는다.
+// - 검증 상태는 항상 COMMUNITY_SUBMITTED. 검토 상태(review_status)와 분리한다.
+// - IP 주소, 계정 정보, 파일 경로는 저장하지 않는다.
+// ---------------------------------------------------------------------------
+export const characterSubmissions = pgTable(
+  "character_submissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
+    dataSource: dataSourceEnum("data_source").notNull(),
+    verificationStatus: verificationStatusEnum("verification_status").notNull(),
+    reviewStatus: submissionReviewStatusEnum("review_status").notNull(),
+    channel: submissionChannelEnum("channel").notNull(),
+    /** 검토를 막는 이유 (예: MAPPING_PENDING = 게임 값 매핑이 아직 확인되지 않음) */
+    blockedReason: text("blocked_reason"),
+    /** 검증을 통과한 export (알 수 없는 필드는 제거됨) */
+    payload: jsonb("payload").notNull(),
+    payloadHash: text("payload_hash").notNull(),
+    /** 정규화한 관측 데이터의 해시. 매핑이 없으면 null */
+    contentHash: text("content_hash"),
+    /** 캐릭터 식별 키의 해시 (GUID 등 원문을 따로 두지 않음) */
+    identityKey: text("identity_key"),
+    /** 화면 표시용 요약 (미리보기와 같은 항목) */
+    summary: jsonb("summary").notNull(),
+    characterName: text("character_name").notNull(),
+    level: integer("level"),
+    observedAt: tz("observed_at"),
+    sourceBuild: text("source_build"),
+    gearCoverage: numeric("gear_coverage", { precision: 4, scale: 3, mode: "number" }),
+    averageItemLevel: numeric("average_item_level", { precision: 6, scale: 2, mode: "number" }),
+    highestItemLevel: integer("highest_item_level"),
+    /** 정규화한 관측 데이터 (매핑이 없으면 null) */
+    observation: jsonb("observation"),
+    /** 같은 캐릭터의 이전 제출과 비교 결과 */
+    comparison: jsonb("comparison"),
+    issues: jsonb("issues").$type<unknown[]>().notNull().default(sql`'[]'::jsonb`),
+    duplicateCount: integer("duplicate_count").notNull().default(0),
+    lastDuplicateAt: tz("last_duplicate_at"),
+    characterId: uuid("character_id"),
+    ingestionRecordId: uuid("ingestion_record_id"),
+    consentVersion: text("consent_version"),
+    policyVersion: text("policy_version"),
+    consentedAt: tz("consented_at"),
+    submittedAt: tz("submitted_at").notNull(),
+    reviewedAt: tz("reviewed_at"),
+    reviewNote: text("review_note"),
+  },
+  (t) => [
+    check("character_submissions_real_only", sql`data_environment <> 'mock'`),
+    check("character_submissions_source", sql`data_source = 'addon'`),
+    check("character_submissions_community", sql`verification_status = 'COMMUNITY_SUBMITTED'`),
+    check(
+      "character_submissions_public_consent",
+      sql`channel <> 'public' OR (consent_version IS NOT NULL AND policy_version IS NOT NULL AND consented_at IS NOT NULL)`,
+    ),
+    check("character_submissions_duplicate_count", sql`duplicate_count >= 0`),
+    foreignKey({
+      name: "character_submissions_character_fk",
+      columns: [t.characterId, t.dataEnvironment],
+      foreignColumns: [characters.id, characters.dataEnvironment],
+    }),
+    foreignKey({
+      name: "character_submissions_ingestion_fk",
+      columns: [t.ingestionRecordId, t.dataEnvironment],
+      foreignColumns: [ingestionRecords.id, ingestionRecords.dataEnvironment],
+    }),
+    uniqueIndex("character_submissions_payload_uq").on(t.dataEnvironment, t.payloadHash),
+    index("character_submissions_identity_idx").on(t.dataEnvironment, t.identityKey, t.submittedAt),
+    index("character_submissions_review_idx").on(t.dataEnvironment, t.reviewStatus, t.submittedAt),
+  ],
+);
+
 /** data_environment 쓰기 트리거를 거는 게임 데이터 테이블 목록 (마이그레이션 0002, 0004와 일치해야 한다) */
 export const GUARDED_TABLES = [
   "ingestion_records",
@@ -485,4 +564,5 @@ export const GUARDED_TABLES = [
   "level_milestones",
   "static_datasets",
   "static_data_records",
+  "character_submissions",
 ] as const;

@@ -1453,6 +1453,8 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 20 | 제3자 Forever 서비스(WoWCensus, ForeverDB 등)의 이용 조건 원문 | 사용하지 않음. 확인돼도 핵심 공급원으로 고정하지 않음 (`docs/DATA-SOURCE-POLICY.md`) |
 | 21 | 성(surname) 숨김 캐릭터의 이름 공개 가능 범위 | 캐릭터 이름 표시 |
 | 22 | 커뮤니티 랭킹 2단계·"전체 서버" 표시 기준값, 모집단 수 근거 | `config/community-ranking.ts` (`docs/DATA-COVERAGE-MODEL.md`) |
+| 23 | Collector SavedVariables의 Lua 문자열 이스케이프 형식 (.lua 업로드 추출) | `lib/submissions/preview.ts` |
+| 24 | 제출 데이터 보관 기간, 삭제 요청 창구, 관련 법령 검토 | `docs/PRIVACY-DATA-POLICY.md` |
 
 ---
 

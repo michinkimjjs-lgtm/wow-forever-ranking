@@ -60,6 +60,7 @@ export const common = {
   footer: {
     disclaimer: "Forever Rank는 Blizzard Entertainment와 관련이 없는 독립 서비스입니다.",
     timezone: "모든 시각은 한국 시간(KST) 기준입니다.",
+    submit: "캐릭터 데이터 제출",
   },
   notFound: {
     title: "페이지를 찾을 수 없습니다.",

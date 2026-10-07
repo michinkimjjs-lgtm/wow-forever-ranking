@@ -120,6 +120,7 @@
   - 삭제 방법
 - 제출 데이터는 항상 `COMMUNITY_SUBMITTED`로 저장합니다. 순위·평균 장비 레벨은 서버가 다시 계산합니다.
 - 원본 export는 `ingestion_records`에 보관해 다시 처리할 수 있게 합니다.
+- 웹 제출 화면과 동의·검토 흐름은 Phase 3A에서 구현했습니다([`SUBMISSION-SYSTEM.md`](./SUBMISSION-SYSTEM.md), [`PRIVACY-DATA-POLICY.md`](./PRIVACY-DATA-POLICY.md)).
 - 제출자 식별: 계정을 만들지 않고, Uploader 설치마다 임의로 만든 익명 키를 쓰는 방식을 검토합니다(P1).
   - 같은 제출자가 여러 번 보낸 데이터를 독립 동의로 세지 않기 위해서입니다([`COMMUNITY-RANKING-PLAN.md`](./COMMUNITY-RANKING-PLAN.md) §7).
 

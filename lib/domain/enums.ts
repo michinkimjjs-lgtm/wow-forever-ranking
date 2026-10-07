@@ -83,3 +83,13 @@ export type StaticDataKind = (typeof STATIC_DATA_KINDS)[number];
  */
 export const STATIC_DATA_LICENSE_STATUSES = ["PERMITTED", "MOCK", "UNKNOWN", "PROHIBITED"] as const;
 export type StaticDataLicenseStatus = (typeof STATIC_DATA_LICENSE_STATUSES)[number];
+
+/**
+ * 제출 검토 상태 (docs/ADMIN-REVIEW.md). 검증 상태(verificationStatus)와 별개다.
+ * 검토에서 ACCEPTED가 되어도 검증 상태는 COMMUNITY_SUBMITTED 그대로다.
+ */
+export const SUBMISSION_REVIEW_STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CONFLICT"] as const;
+export type SubmissionReviewStatus = (typeof SUBMISSION_REVIEW_STATUSES)[number];
+
+export const SUBMISSION_CHANNELS = ["public", "admin_api"] as const;
+export type SubmissionChannel = (typeof SUBMISSION_CHANNELS)[number];

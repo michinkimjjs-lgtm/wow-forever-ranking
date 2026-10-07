@@ -1,0 +1,44 @@
+{
+  "schema": "forever-rank/character-export",
+  "schemaVersion": 1,
+  "collector": {
+    "name": "ForeverRankCollector",
+    "version": "0.1.0"
+  },
+  "observedAt": 1791352200,
+  "observedAtSource": "GetServerTime",
+  "trigger": "logout",
+  "client": {
+    "buildVersion": "0.0.0",
+    "buildNumber": "00000",
+    "interfaceVersion": 16001,
+    "regionId": 901,
+    "locale": "koKR"
+  },
+  "gameMode": {
+    "activeGameMode": 902
+  },
+  "character": {
+    "guid": "FIXTURE-GUID-0002",
+    "name": "장비없음",
+    "surname": "캐릭터",
+    "level": 20,
+    "classFile": "TESTCLASS",
+    "className": "테스트직업",
+    "raceFile": "TestRace",
+    "raceName": "테스트종족",
+    "faction": "TestFaction",
+    "factionName": "테스트진영",
+    "isInGuild": true,
+    "guildName": "가상 길드"
+  },
+  "gear": [],
+  "levelEvents": [
+    {
+      "level": 20,
+      "observedAt": 1791349200,
+      "event": "PLAYER_LEVEL_UP"
+    }
+  ],
+  "unavailable": []
+}

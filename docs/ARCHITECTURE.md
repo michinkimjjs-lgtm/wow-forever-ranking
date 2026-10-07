@@ -84,7 +84,8 @@ tests/                  Vitest 테스트
 | 안전장치 | 구현 위치 |
 |---|---|
 | DB 식별 표식 | `database_identity` 테이블(단일 행, 변경·삭제 금지 트리거), `npm run db:init` |
-| 쓰기 트리거 | 마이그레이션 `0002_data_environment_guards.sql`: 9개 게임 데이터 테이블, `0004_static_game_data_guards.sql`: 정적 데이터 2개 테이블 (`GUARDED_TABLES`) |
+| 쓰기 트리거 | 마이그레이션 `0002_data_environment_guards.sql`: 9개 게임 데이터 테이블, `0004_static_game_data_guards.sql`: 정적 데이터 2개 테이블, `0006_character_submissions_guards.sql`: 제출 기록 (`GUARDED_TABLES`) |
+| 제출 기록 | `character_submissions` CHECK: mock 영역 금지, 공급원 addon, 검증 상태 COMMUNITY_SUBMITTED, 공개 제출은 동의 기록 필수 |
 | 정적 데이터 | importer + DB CHECK: mock 영역 ⇔ mock 데이터셋, 실제 영역은 이용 조건 확인(`PERMITTED`)만. 수정 금지 트리거 |
 | CHECK 제약 | mock 영역 ⇔ mock 공급원 ⇔ MOCK 검증 상태 (`db/schema.ts`) |
 | 부모-자식 영역 일치 | `(id, data_environment)` 복합 외래 키 |
@@ -116,6 +117,7 @@ tests/                  Vitest 테스트
 - `FEATURE_CHARACTER_SUBMISSIONS` (`on`일 때만 제출 API 활성, 기본 꺼짐)
 - `SUBMISSIONS_ADMIN_TOKEN` (32자 이상, 제출 API 관리자 토큰)
 - `BLIZZARD_*` (Blizzard Provider, §9. 기본값 없음, 지금은 설정하지 않음)
+- `FEATURE_PUBLIC_SUBMISSIONS`, `SUBMISSION_SECRET` (공개 제출·관리자 화면, Phase 3A)
 
 ## 6. 렌더링과 캐시
 
@@ -144,7 +146,9 @@ npm run test
 npm run build
 ```
 
-## 8. 캐릭터 제출 API (Phase 2B-1, 비공개)
+## 8. 캐릭터 제출 API (Phase 2B-1 관리자 경로 / Phase 3A 공개 제출)
+
+> Phase 3A에서 공개 제출 화면(`/submit`), 검토 대기 저장(`character_submissions`), 관리자 검토(`/admin/submissions`)를 추가했다. 상세: [`SUBMISSION-SYSTEM.md`](./SUBMISSION-SYSTEM.md), [`ADMIN-REVIEW.md`](./ADMIN-REVIEW.md)
 
 `POST /api/v1/submissions/character`
 

@@ -5,6 +5,7 @@
 > Phase 1 구현 결과 문서: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA-SPEC.md`, `docs/RANKING-RULES.md`
 > Phase 2 문서: `docs/FOREVER-API-CAPABILITY.md`, `docs/CHARACTER-EXPORT-V1.md`, `docs/GEAR-PROFILE.md`, `docs/BLIZZARD-API-INTEGRATION-PLAN.md`, `docs/STATIC-GAME-DATA.md`
 > Phase 2D 문서: `docs/DATA-SOURCE-POLICY.md`, `docs/COMMUNITY-RANKING-PLAN.md`, `docs/DATA-COVERAGE-MODEL.md`
+> Phase 3A 문서: `docs/SUBMISSION-SYSTEM.md`, `docs/PRIVACY-DATA-POLICY.md`, `docs/ADMIN-REVIEW.md`
 
 ## 1. 프로젝트 목적
 
@@ -527,6 +528,7 @@ MVP 필수:
 
 - `database_identity`
 - `static_datasets`, `static_data_records` (정적 게임 데이터, Phase 2C)
+- `character_submissions` (캐릭터 제출과 관리자 검토, Phase 3A)
 - `ingestion_records`
 - `characters`
 - `character_external_refs`
@@ -750,6 +752,8 @@ API 경로는 영어로 유지해도 된다.
 
 - 모든 입력값 검증
 - 공개 데이터 제출 API Rate Limit과 payload 크기 제한
+- 공개 제출: Origin + 화면 보안 토큰(CSRF), JSON 깊이·문자열 길이 제한, 개인정보 의심 값 거부, 명시적 동의 기록. IP 주소는 저장하지 않는다(`docs/SUBMISSION-SYSTEM.md`)
+- 제출 데이터는 관리자 검토 후 랭킹에 반영한다. 검토 상태(`reviewStatus`)와 검증 상태(`verificationStatus`)는 별개이며, 승인돼도 `COMMUNITY_SUBMITTED`다(`docs/ADMIN-REVIEW.md`)
 - Battle.net 비밀번호 수집 금지
 - 불필요한 개인정보 수집 금지
 - 외부 ID 검증

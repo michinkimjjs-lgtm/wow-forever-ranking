@@ -36,6 +36,20 @@
       "when": 1791355653996,
       "tag": "0004_static_game_data_guards",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791357961789,
+      "tag": "0005_character_submissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791357963459,
+      "tag": "0006_character_submissions_guards",
+      "breakpoints": true
     }
   ]
 }

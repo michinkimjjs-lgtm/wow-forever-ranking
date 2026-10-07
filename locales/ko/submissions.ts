@@ -1,4 +1,4 @@
-/** 캐릭터 제출 API 문구 (관리자 / 개발 검증용) */
+/** 캐릭터 제출 API 문구 */
 export const submissions = {
   issues: {
     INVALID_FORMAT: "제출 데이터 형식이 올바르지 않습니다.",
@@ -21,5 +21,14 @@ export const submissions = {
     MOCK_ENVIRONMENT: "테스트 데이터 환경에서는 검증(dryRun)만 할 수 있습니다.",
     INVALID_JSON: "JSON을 읽을 수 없습니다.",
     VALIDATION_FAILED: "제출 데이터를 처리할 수 없습니다.",
+    FORBIDDEN_ORIGIN: "허용되지 않은 요청입니다. 제출 화면에서 다시 시도해 주세요.",
+    CSRF_INVALID: "제출 화면이 만료되었습니다. 페이지를 새로고침한 뒤 다시 시도해 주세요.",
+    JSON_LIMIT: "파일 구조가 너무 깊거나 값이 너무 깁니다.",
+    INVALID_ENVELOPE: "제출 요청 형식이 올바르지 않습니다.",
+    SENSITIVE_DATA: "개인정보나 계정 정보로 보이는 값이 있어 제출할 수 없습니다.",
+    CONSENT_REQUIRED: "동의 항목에 모두 동의해야 제출할 수 있습니다.",
+    CONSENT_OUTDATED: "동의 문구가 바뀌었습니다. 페이지를 새로고침한 뒤 다시 동의해 주세요.",
+    TOO_FREQUENT: "같은 캐릭터를 너무 자주 제출했습니다. 잠시 후 다시 시도해 주세요.",
+    TOO_MANY_OPEN: "이 캐릭터는 검토를 기다리는 제출이 많습니다. 검토가 끝난 뒤 다시 제출해 주세요.",
   },
 } as const;
