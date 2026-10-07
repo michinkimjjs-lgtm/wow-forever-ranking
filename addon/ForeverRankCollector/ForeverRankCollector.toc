@@ -1,0 +1,10 @@
+## Interface: 16001
+## Title: Forever Rank Collector
+## Notes: 내 캐릭터의 레벨·장비 정보를 로컬 파일로 내보냅니다. 외부로 데이터를 보내지 않습니다.
+## Author: Forever Rank
+## Version: 0.1.0
+## SavedVariables: ForeverRankCollectorDB
+
+Core.lua
+Json.lua
+Collector.lua

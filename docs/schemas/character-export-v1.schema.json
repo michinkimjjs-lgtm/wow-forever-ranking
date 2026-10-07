@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://forever-rank.local/schemas/character-export-v1.schema.json",
+  "title": "Forever Rank Character Export v1",
+  "description": "ForeverRankCollector가 만드는 로컬 캐릭터 내보내기 형식. 얻지 못한 값은 키를 생략하고 unavailable에 경로를 적는다. docs/CHARACTER-EXPORT-V1.md 참고.",
+  "type": "object",
+  "required": ["schema", "schemaVersion", "collector", "observedAtSource", "trigger", "client", "gameMode", "character", "gear", "levelEvents", "unavailable"],
+  "properties": {
+    "schema": { "const": "forever-rank/character-export" },
+    "schemaVersion": { "const": 1 },
+    "collector": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": { "const": "ForeverRankCollector" },
+        "version": { "type": "string" }
+      }
+    },
+    "observedAt": { "type": "integer", "minimum": 0, "description": "Unix 초 (UTC)" },
+    "observedAtSource": { "enum": ["GetServerTime", "time", "none"] },
+    "trigger": { "enum": ["login", "manual", "level_up", "equipment_changed", "guild_changed", "item_data_loaded", "logout"] },
+    "client": {
+      "type": "object",
+      "properties": {
+        "buildVersion": { "type": "string" },
+        "buildNumber": { "type": "string" },
+        "buildDate": { "type": "string" },
+        "interfaceVersion": { "type": "integer" },
+        "localizedVersion": { "type": "string" },
+        "locale": { "type": "string" },
+        "regionId": { "type": "integer" },
+        "regionName": { "type": "string" }
+      }
+    },
+    "gameMode": {
+      "type": "object",
+      "properties": {
+        "activeGameMode": { "type": "integer" },
+        "gameModeRecordId": { "type": "integer" },
+        "isHardcore": { "type": "boolean" },
+        "isSelfFoundAllowed": { "type": "boolean" },
+        "isStandard": { "type": "boolean" },
+        "foreverExperiencePreset": { "type": "integer" }
+      }
+    },
+    "character": {
+      "type": "object",
+      "properties": {
+        "guid": { "type": "string" },
+        "name": { "type": "string", "minLength": 1 },
+        "surname": { "type": "string" },
+        "level": { "type": "integer", "minimum": 1 },
+        "classFile": { "type": "string" },
+        "classId": { "type": "integer" },
+        "className": { "type": "string" },
+        "raceFile": { "type": "string" },
+        "raceId": { "type": "integer" },
+        "raceName": { "type": "string" },
+        "faction": { "type": "string" },
+        "factionName": { "type": "string" },
+        "isInGuild": { "type": "boolean" },
+        "guildName": { "type": "string" }
+      }
+    },
+    "gear": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["slotName", "slotId"],
+        "properties": {
+          "slotName": { "type": "string" },
+          "slotId": { "type": "integer" },
+          "itemId": { "type": "integer" },
+          "itemLink": { "type": "string" },
+          "itemLevel": { "type": "number" },
+          "itemLevelSource": { "enum": ["C_Item.GetCurrentItemLevel", "C_Item.GetDetailedItemLevelInfo"] },
+          "quality": { "type": "integer" },
+          "icon": { "type": "integer" },
+          "inventoryType": { "type": "integer" },
+          "socketCount": { "type": "integer", "minimum": 0 },
+          "gemIds": { "type": "array", "items": { "type": "integer" } },
+          "dataCached": { "type": "boolean" }
+        }
+      }
+    },
+    "clientAverageItemLevel": {
+      "type": "object",
+      "properties": {
+        "overall": { "type": "number" },
+        "equipped": { "type": "number" },
+        "pvp": { "type": "number" }
+      }
+    },
+    "levelEvents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["level", "event"],
+        "properties": {
+          "level": { "type": "integer", "minimum": 1 },
+          "observedAt": { "type": "integer", "minimum": 0 },
+          "event": { "const": "PLAYER_LEVEL_UP" }
+        }
+      }
+    },
+    "unavailable": { "type": "array", "items": { "type": "string" } }
+  }
+}
