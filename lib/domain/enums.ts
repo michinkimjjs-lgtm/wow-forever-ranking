@@ -60,3 +60,57 @@ export function isMockTripleConsistent(
 /** Gear Profile 계산 방식. 계산 방식이 바뀌면 calculation.version을 올린다. */
 export const GEAR_CALCULATION_METHODS = ["MEAN_OF_RANKABLE_EQUIPPED"] as const;
 export type GearCalculationMethod = (typeof GEAR_CALCULATION_METHODS)[number];
+
+/** 정적 게임 데이터 종류 (docs/STATIC-GAME-DATA.md) */
+export const STATIC_DATA_KINDS = [
+  "items",
+  "classes",
+  "races",
+  "factions",
+  "game_modes",
+  "dungeons",
+  "raids",
+  "bosses",
+] as const;
+export type StaticDataKind = (typeof STATIC_DATA_KINDS)[number];
+
+/**
+ * 정적 데이터셋의 이용 조건 확인 상태
+ * - PERMITTED: 이용 조건을 확인했고 저장·표시가 허용됨 (조건 URL과 확인 날짜 필수)
+ * - MOCK: 개발용 가짜 데이터 (mock 영역 전용)
+ * - UNKNOWN: 이용 조건을 확인하지 못함 → DB에 넣지 않음
+ * - PROHIBITED: 이용 조건상 사용할 수 없음 → DB에 넣지 않음
+ */
+export const STATIC_DATA_LICENSE_STATUSES = ["PERMITTED", "MOCK", "UNKNOWN", "PROHIBITED"] as const;
+export type StaticDataLicenseStatus = (typeof STATIC_DATA_LICENSE_STATUSES)[number];
+
+/**
+ * 제출 검토 상태 (docs/ADMIN-REVIEW.md). 검증 상태(verificationStatus)와 별개다.
+ * 검토에서 ACCEPTED가 되어도 검증 상태는 COMMUNITY_SUBMITTED 그대로다.
+ */
+export const SUBMISSION_REVIEW_STATUSES = ["PENDING", "ACCEPTED", "REJECTED", "CONFLICT"] as const;
+export type SubmissionReviewStatus = (typeof SUBMISSION_REVIEW_STATUSES)[number];
+
+export const SUBMISSION_CHANNELS = ["public", "admin_api"] as const;
+export type SubmissionChannel = (typeof SUBMISSION_CHANNELS)[number];
+
+/**
+ * WoW: Forever 공식 Ruleset(게임 규칙) 코드 (docs/RULESETS.md)
+ * Blizzard 공식 자료로 확인한 규칙 이름이다. 클라이언트 내부 Enum.GameMode 숫자와는 별개다(미확인).
+ * 실제 영역(beta / live)에서는 characters.game_mode 컬럼에 이 코드를 저장한다.
+ */
+export const RULESET_CODES = ["normal", "pvp", "roleplaying", "hardcore"] as const;
+export type RulesetCode = (typeof RULESET_CODES)[number];
+
+/**
+ * Ruleset의 공개 상태 (공식 발표 기준, 클라이언트 내부 값과 무관)
+ * - AVAILABLE: 출시 시 제공
+ * - POST_LAUNCH: 출시 후 제공 예정
+ * - UNKNOWN: 공식 자료로 확인할 수 없음
+ */
+export const RULESET_PUBLIC_STATUSES = ["AVAILABLE", "POST_LAUNCH", "UNKNOWN"] as const;
+export type RulesetPublicStatus = (typeof RULESET_PUBLIC_STATUSES)[number];
+
+/** 클라이언트 내부 값 확인 상태 */
+export const CLIENT_VALUE_STATUSES = ["CONFIRMED", "UNKNOWN"] as const;
+export type ClientValueStatus = (typeof CLIENT_VALUE_STATUSES)[number];

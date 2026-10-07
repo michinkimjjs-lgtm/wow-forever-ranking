@@ -3,6 +3,10 @@
 > 상세 설계는 `WOW_FOREVER_RANKING_SPEC.md`(v2, 설계 확정본)를 따른다.
 > 이 파일은 개발할 때 반드시 지켜야 할 규칙의 요약이다. 두 문서가 충돌하면 명세서의 상세 규칙을 따르고, 두 문서를 함께 고친다.
 > Phase 1 구현 결과 문서: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA-SPEC.md`, `docs/RANKING-RULES.md`
+> Phase 2 문서: `docs/FOREVER-API-CAPABILITY.md`, `docs/CHARACTER-EXPORT-V1.md`, `docs/GEAR-PROFILE.md`, `docs/BLIZZARD-API-INTEGRATION-PLAN.md`, `docs/STATIC-GAME-DATA.md`
+> Phase 2D 문서: `docs/DATA-SOURCE-POLICY.md`, `docs/COMMUNITY-RANKING-PLAN.md`, `docs/DATA-COVERAGE-MODEL.md`
+> Phase 3A 문서: `docs/SUBMISSION-SYSTEM.md`, `docs/PRIVACY-DATA-POLICY.md`, `docs/ADMIN-REVIEW.md`
+> Phase 3C 문서: `docs/RULESETS.md` (공식 게임 규칙)
 
 ## 1. 프로젝트 목적
 
@@ -178,6 +182,7 @@ Phase 1에서는 다음과 같이 구현한다.
   - 초안(`DRAFT`) 값
   - 화면의 "준비 중" 상태
 - 미확인 항목을 코드에 확정값으로 하드코딩하지 않는다.
+- 설정이 아직 없는 영역(예: beta / live의 region·gameMode)은 오류(500)가 아니라 "데이터 설정 준비 중"으로 응답한다(`docs/ARCHITECTURE.md` §10).
 - 게임의 최대 레벨, 장비 슬롯, region / gameMode 값, 직업 목록은 설정으로 관리한다.
 
 ---
@@ -209,6 +214,15 @@ providers/
 ### BlizzardProvider
 향후 Blizzard가 WoW: Forever 호환 웹/API를 제공하는 경우 연결한다.
 확인 전까지 엔드포인트를 구현하지 않고, 호출하면 "미구성" 오류를 반환한다.
+- capability(`config/blizzard/capabilities.ts`)는 확인 전까지 모두 `UNKNOWN`. 추측으로 `AVAILABLE`로 바꾸지 않는다.
+- endpoint(`config/blizzard/endpoints.ts`)는 공식 근거가 있는 `AVAILABLE` 기능만 상대 경로로 등록한다. 지금은 비어 있다.
+- URL·namespace·인증 값은 환경변수로만 받는다. 상세: `docs/BLIZZARD-API-INTEGRATION-PLAN.md`
+
+### 공급원 우선순위
+같은 캐릭터가 여러 공급원에 있으면 `VERIFIED → LOG_VERIFIED → COMMUNITY_SUBMITTED → UNVERIFIED → MOCK` 순으로 우선한다. 데이터 출처만으로 `VERIFIED` 처리하지 않는다.
+
+### 정적 게임 데이터
+아이템·직업·종족·진영·게임 모드·던전·공격대·보스는 버전별 데이터셋(`sourceBuild`, `interfaceVersion`, `datasetVersion`, `observedAt`)으로 가져온다. 덮어쓰지 않는다. 이용 조건을 확인하지 않은 데이터는 실제 DB에 넣지 않는다. 상세: `docs/STATIC-GAME-DATA.md`
 
 ### AddonProvider
 공식 웹 API가 부족한 경우 사용자 동의 기반 데이터 제출/수집 구조를 지원한다. 파서는 `sourceBuild`별로 분리한다.
@@ -299,6 +313,8 @@ mock 배포는 검색 엔진에 노출하지 않는다(`noindex`).
   3. 둘 다 없으면 새 캐릭터
 - 고유 인덱스: `(data_environment, region, game_mode, slug)`
 - **Realm은 실제 데이터에서 필요성이 확인되기 전까지 필수값으로 가정하지 않는다.** 확인되면 명세서 §7.5 절차로 컬럼과 인덱스를 추가한다.
+- WoW: Forever는 realm이 없고 **전체 이름(이름 + 성)이 region 안에서 고유**하다(Blizzard 공식). 캐릭터는 region + ruleset(게임 규칙) + 전체 이름으로 식별한다. 첫 이름만으로 식별하지 않는다(`docs/RULESETS.md`).
+- 게임 규칙(Ruleset): `normal`(일반) / `pvp`(전쟁) / `roleplaying`(롤플레잉) / `hardcore`(하드코어, 출시 후 제공). 실제 영역에서는 `game_mode` 컬럼에 Ruleset 코드를 저장한다. 클라이언트 `Enum.GameMode` 숫자는 미확인이므로 추측하지 않는다. region과 ruleset을 한 문자열로 합치지 않는다.
 - 레벨 감소 관측은 현재 상태에 반영하지 않고 "식별 충돌"로 기록한다.
 
 URL:
@@ -419,6 +435,14 @@ MVP에서는 임의의 자체 `Gear Score`를 만들지 않는다.
 - 캐릭터, 장비, 스냅샷, milestone 데이터는 **삭제하지 않는다.**
 - 화면 안내: "최근 7일 이내에 확인된 캐릭터만 표시됩니다." (숫자는 설정값에서 가져온다)
 
+## 랭킹 범위 표시 (Phase 2D)
+
+- 랭킹 이름은 데이터 출처에 맞춘다: 커뮤니티 레벨 랭킹 → Forever Rank 커뮤니티 랭킹 → 공식 데이터 기반 랭킹 (`docs/COMMUNITY-RANKING-PLAN.md`)
+- 랭킹 화면에 데이터 기준 / 데이터 범위 / 데이터 출처 / 검증 상태를 표시한다.
+- "전체 서버 1위" 같은 전체 서버 표현은 `evaluateServerWideClaim`이 허용할 때만 쓴다. 사용자 제출만으로는 허용하지 않는다.
+- 모집단을 모르면 비율(%) 커버리지를 표시하지 않는다. 단계 기준값은 실제 데이터를 보기 전에 임의로 정하지 않는다(`config/community-ranking.ts`, `docs/DATA-COVERAGE-MODEL.md`).
+- 외부 랭킹·census 서비스 데이터와 scraping은 쓰지 않는다. Raider.IO Forever API는 사용하지 않는다(`docs/DATA-SOURCE-POLICY.md`).
+
 ---
 
 # 13. 검증 상태
@@ -427,7 +451,7 @@ MVP에서는 임의의 자체 `Gear Score`를 만들지 않는다.
 |---|---|
 | `VERIFIED` | 검증됨 |
 | `LOG_VERIFIED` | 로그 검증 |
-| `COMMUNITY_SUBMITTED` | 사용자 제출 |
+| `COMMUNITY_SUBMITTED` | 커뮤니티 제출 |
 | `UNVERIFIED` | 미검증 |
 | `MOCK` | 테스트 데이터 |
 
@@ -507,6 +531,8 @@ URL:
 MVP 필수:
 
 - `database_identity`
+- `static_datasets`, `static_data_records` (정적 게임 데이터, Phase 2C)
+- `character_submissions` (캐릭터 제출과 관리자 검토, Phase 3A)
 - `ingestion_records`
 - `characters`
 - `character_external_refs`
@@ -667,6 +693,7 @@ API 경로는 영어로 유지해도 된다.
 ```
 
 사용자가 보게 되는 문자열은 영어가 아니라 한국어를 사용한다.
+영어로 남겨도 되는 것은 고유명사와 형식·코드 이름(WoW, Forever, Armory, Blizzard, API, JSON, KST, World First 등)뿐이다. `tests/setup-pending.test.tsx`의 한국어 UI 검사가 허용 목록 밖의 영어를 찾는다.
 
 게임 고유명사/아이템명/직업명 등은 **실제 게임 클라이언트에서 사용하는 한국어 명칭을 우선**한다.
 
@@ -730,6 +757,8 @@ API 경로는 영어로 유지해도 된다.
 
 - 모든 입력값 검증
 - 공개 데이터 제출 API Rate Limit과 payload 크기 제한
+- 공개 제출: Origin + 화면 보안 토큰(CSRF), JSON 깊이·문자열 길이 제한, 개인정보 의심 값 거부, 명시적 동의 기록. IP 주소는 저장하지 않는다(`docs/SUBMISSION-SYSTEM.md`)
+- 제출 데이터는 관리자 검토 후 랭킹에 반영한다. 검토 상태(`reviewStatus`)와 검증 상태(`verificationStatus`)는 별개이며, 승인돼도 `COMMUNITY_SUBMITTED`다(`docs/ADMIN-REVIEW.md`)
 - Battle.net 비밀번호 수집 금지
 - 불필요한 개인정보 수집 금지
 - 외부 ID 검증

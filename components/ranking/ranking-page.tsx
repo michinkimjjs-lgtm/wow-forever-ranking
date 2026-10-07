@@ -10,9 +10,13 @@ import { getMessages, t } from "@/lib/i18n";
 import type { RankingType } from "@/lib/ranking/types";
 import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
-import { loadGuildOptions, loadRanking } from "@/lib/server/services";
-import { resolveGearProfile } from "@/lib/config";
+import { loadDataCoverage, loadGuildOptions, loadRanking } from "@/lib/server/services";
+import { classifyRankingStage, evaluateServerWideClaim } from "@/lib/ranking/community";
+import { GameScopeNotConfiguredError, resolveGearProfile, RulesetNotAvailableError } from "@/lib/config";
+import { RulesetFilter } from "./ruleset-filter";
+import { SetupPending } from "@/components/setup-pending";
 import { cn } from "@/lib/utils";
+import { DataScopePanel } from "./data-scope-panel";
 import { RankingFiltersForm } from "./ranking-filters";
 import { RankingTable } from "./ranking-table";
 
@@ -51,6 +55,32 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
   try {
     parsed = parseListParams(query, appEnv, { strict: false });
   } catch (error) {
+    if (error instanceof GameScopeNotConfiguredError) {
+      return (
+        <div className="flex flex-col gap-5">
+          <PageHeader
+            title={m.rankings.stageTitles[error.dataEnvironment === "mock" ? "TEST_DATA" : "COMMUNITY"][type]}
+            description={m.rankings.descriptions[type]}
+          />
+          <RankingTabs active={type} />
+          <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={null} />
+          <SetupPending dataEnvironment={error.dataEnvironment} />
+        </div>
+      );
+    }
+    if (error instanceof RulesetNotAvailableError) {
+      return (
+        <div className="flex flex-col gap-5">
+          <PageHeader
+            title={m.rankings.stageTitles[error.dataEnvironment === "mock" ? "TEST_DATA" : "COMMUNITY"][type]}
+            description={m.rankings.descriptions[type]}
+          />
+          <RankingTabs active={type} />
+          <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={error.ruleset} />
+          <EmptyState title={m.rankings.ruleset.unavailableTitle} body={m.rankings.ruleset.unavailableBody} />
+        </div>
+      );
+    }
     if (!(error instanceof InvalidQueryError)) throw error;
     return (
       <div className="flex flex-col gap-6">
@@ -64,7 +94,13 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
     );
   }
 
-  const [{ result }, guildOptions] = await Promise.all([loadRanking(type, parsed), loadGuildOptions(parsed.scope)]);
+  const [{ result }, guildOptions, coverage] = await Promise.all([
+    loadRanking(type, parsed),
+    loadGuildOptions(parsed.scope),
+    loadDataCoverage(parsed.scope),
+  ]);
+  const stage = classifyRankingStage(coverage);
+  const claim = evaluateServerWideClaim(coverage);
   const staleDays = result.policy.staleAfterDays;
   const profile = resolveGearProfile(parsed.scope.dataEnvironment, parsed.scope.gameMode);
 
@@ -77,10 +113,11 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
 
   return (
     <div className="flex flex-col gap-5">
-      <PageHeader title={m.rankings.titles[type]} description={m.rankings.descriptions[type]}>
+      <PageHeader title={m.rankings.stageTitles[stage][type]} description={m.rankings.descriptions[type]}>
         <DataFreshness lastUpdatedAt={result.status === "ok" ? result.lastUpdatedAt : null} now={now} />
       </PageHeader>
       <RankingTabs active={type} />
+      <RulesetFilter path={path} query={query} dataEnvironment={parsed.scope.dataEnvironment} active={parsed.ruleset} />
       <RankingFiltersForm
         key={query.toString()}
         action={path}
@@ -89,6 +126,7 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
         filters={parsed.filters}
         guilds={guildOptions}
       />
+      <DataScopePanel coverage={coverage} stage={stage} claim={claim} staleDays={staleDays} />
       <NoticeList items={notices} />
       {result.status === "unavailable" ? (
         <EmptyState title={m.rankings.unavailable.title} body={m.rankings.unavailable.body} />

@@ -1,0 +1,2496 @@
+{
+  "id": "73164c57-b2f1-4bb4-b065-da7cd8e79324",
+  "prevId": "1d02db24-3e84-4a63-9174-cd1268afdfd3",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.character_external_refs": {
+      "name": "character_external_refs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "character_external_refs_uq": {
+          "name": "character_external_refs_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data_source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "character_external_refs_character_fk": {
+          "name": "character_external_refs_character_fk",
+          "tableFrom": "character_external_refs",
+          "columnsFrom": [
+            "character_id",
+            "data_environment"
+          ],
+          "tableTo": "characters",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "character_external_refs_mock_pair": {
+          "name": "character_external_refs_mock_pair",
+          "value": "(data_environment = 'mock') = (data_source = 'mock')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.character_items": {
+      "name": "character_items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slot_code": {
+          "name": "slot_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "item_level": {
+          "name": "item_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enchant": {
+          "name": "enchant",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gems": {
+          "name": "gems",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "character_items_character_slot_uq": {
+          "name": "character_items_character_slot_uq",
+          "columns": [
+            {
+              "expression": "character_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slot_code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "character_items_character_fk": {
+          "name": "character_items_character_fk",
+          "tableFrom": "character_items",
+          "columnsFrom": [
+            "character_id",
+            "data_environment"
+          ],
+          "tableTo": "characters",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "character_items_item_fk": {
+          "name": "character_items_item_fk",
+          "tableFrom": "character_items",
+          "columnsFrom": [
+            "item_id",
+            "data_environment"
+          ],
+          "tableTo": "items",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "character_items_mock_pair": {
+          "name": "character_items_mock_pair",
+          "value": "(data_environment = 'mock') = (data_source = 'mock')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.character_snapshots": {
+      "name": "character_snapshots",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "average_item_level": {
+          "name": "average_item_level",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highest_item_level": {
+          "name": "highest_item_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_coverage": {
+          "name": "gear_coverage",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_profile_id": {
+          "name": "gear_profile_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_profile_version": {
+          "name": "gear_profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "normalized_data": {
+          "name": "normalized_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingestion_record_id": {
+          "name": "ingestion_record_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "verification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_updated_at": {
+          "name": "source_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "character_snapshots_character_observed_idx": {
+          "name": "character_snapshots_character_observed_idx",
+          "columns": [
+            {
+              "expression": "character_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "observed_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "character_snapshots_character_fk": {
+          "name": "character_snapshots_character_fk",
+          "tableFrom": "character_snapshots",
+          "columnsFrom": [
+            "character_id",
+            "data_environment"
+          ],
+          "tableTo": "characters",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "character_snapshots_ingestion_fk": {
+          "name": "character_snapshots_ingestion_fk",
+          "tableFrom": "character_snapshots",
+          "columnsFrom": [
+            "ingestion_record_id",
+            "data_environment"
+          ],
+          "tableTo": "ingestion_records",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "character_snapshots_id_env": {
+          "name": "character_snapshots_id_env",
+          "columns": [
+            "id",
+            "data_environment"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "character_snapshots_mock_triple": {
+          "name": "character_snapshots_mock_triple",
+          "value": "((data_environment = 'mock') = (data_source = 'mock')) AND ((data_environment = 'mock') = (verification_status = 'MOCK'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.character_submissions": {
+      "name": "character_submissions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "verification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "review_status": {
+          "name": "review_status",
+          "type": "submission_review_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "channel": {
+          "name": "channel",
+          "type": "submission_channel",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "blocked_reason": {
+          "name": "blocked_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "identity_key": {
+          "name": "identity_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "character_name": {
+          "name": "character_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_coverage": {
+          "name": "gear_coverage",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_item_level": {
+          "name": "average_item_level",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highest_item_level": {
+          "name": "highest_item_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "observation": {
+          "name": "observation",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "comparison": {
+          "name": "comparison",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "issues": {
+          "name": "issues",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "duplicate_count": {
+          "name": "duplicate_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "last_duplicate_at": {
+          "name": "last_duplicate_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ingestion_record_id": {
+          "name": "ingestion_record_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consent_version": {
+          "name": "consent_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "policy_version": {
+          "name": "policy_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consented_at": {
+          "name": "consented_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "review_note": {
+          "name": "review_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "character_submissions_payload_uq": {
+          "name": "character_submissions_payload_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "payload_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "character_submissions_identity_idx": {
+          "name": "character_submissions_identity_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "identity_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "submitted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "character_submissions_review_idx": {
+          "name": "character_submissions_review_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "review_status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "submitted_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "character_submissions_character_fk": {
+          "name": "character_submissions_character_fk",
+          "tableFrom": "character_submissions",
+          "columnsFrom": [
+            "character_id",
+            "data_environment"
+          ],
+          "tableTo": "characters",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "character_submissions_ingestion_fk": {
+          "name": "character_submissions_ingestion_fk",
+          "tableFrom": "character_submissions",
+          "columnsFrom": [
+            "ingestion_record_id",
+            "data_environment"
+          ],
+          "tableTo": "ingestion_records",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "character_submissions_real_only": {
+          "name": "character_submissions_real_only",
+          "value": "data_environment <> 'mock'"
+        },
+        "character_submissions_source": {
+          "name": "character_submissions_source",
+          "value": "data_source = 'addon'"
+        },
+        "character_submissions_community": {
+          "name": "character_submissions_community",
+          "value": "verification_status = 'COMMUNITY_SUBMITTED'"
+        },
+        "character_submissions_public_consent": {
+          "name": "character_submissions_public_consent",
+          "value": "channel <> 'public' OR (consent_version IS NOT NULL AND policy_version IS NOT NULL AND consented_at IS NOT NULL)"
+        },
+        "character_submissions_duplicate_count": {
+          "name": "character_submissions_duplicate_count",
+          "value": "duplicate_count >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.characters": {
+      "name": "characters",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region": {
+          "name": "region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "game_mode": {
+          "name": "game_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "character_name": {
+          "name": "character_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_normalized": {
+          "name": "name_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "faction_code": {
+          "name": "faction_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "race_code": {
+          "name": "race_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "class_code": {
+          "name": "class_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "current_level_reached_at": {
+          "name": "current_level_reached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "current_level_timing_basis": {
+          "name": "current_level_timing_basis",
+          "type": "milestone_timing_basis",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "average_item_level": {
+          "name": "average_item_level",
+          "type": "numeric(6, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "highest_item_level": {
+          "name": "highest_item_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_coverage": {
+          "name": "gear_coverage",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_profile_id": {
+          "name": "gear_profile_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_profile_version": {
+          "name": "gear_profile_version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gear_observed_at": {
+          "name": "gear_observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "verification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_updated_at": {
+          "name": "source_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "characters_scope_slug_uq": {
+          "name": "characters_scope_slug_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "region",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_scope_name_idx": {
+          "name": "characters_scope_name_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_name_trgm_idx": {
+          "name": "characters_name_trgm_idx",
+          "columns": [
+            {
+              "expression": "name_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last",
+              "opclass": "gin_trgm_ops"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "gin",
+          "concurrently": false
+        },
+        "characters_level_rank_idx": {
+          "name": "characters_level_rank_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "current_level_reached_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "first_seen_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_gear_rank_idx": {
+          "name": "characters_gear_rank_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "average_item_level",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "highest_item_level",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_highest_rank_idx": {
+          "name": "characters_highest_rank_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "highest_item_level",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            },
+            {
+              "expression": "average_item_level",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_env_last_seen_idx": {
+          "name": "characters_env_last_seen_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "last_seen_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "characters_guild_idx": {
+          "name": "characters_guild_idx",
+          "columns": [
+            {
+              "expression": "guild_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "characters_guild_fk": {
+          "name": "characters_guild_fk",
+          "tableFrom": "characters",
+          "columnsFrom": [
+            "guild_id",
+            "data_environment"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "characters_id_env": {
+          "name": "characters_id_env",
+          "columns": [
+            "id",
+            "data_environment"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "characters_mock_triple": {
+          "name": "characters_mock_triple",
+          "value": "((data_environment = 'mock') = (data_source = 'mock')) AND ((data_environment = 'mock') = (verification_status = 'MOCK'))"
+        },
+        "characters_level_positive": {
+          "name": "characters_level_positive",
+          "value": "\"characters\".\"level\" >= 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.database_identity": {
+      "name": "database_identity",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "default": 1
+        },
+        "allowed_data_environments": {
+          "name": "allowed_data_environments",
+          "type": "data_environment[]",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "database_identity_singleton": {
+          "name": "database_identity_singleton",
+          "value": "\"database_identity\".\"id\" = 1"
+        },
+        "database_identity_not_empty": {
+          "name": "database_identity_not_empty",
+          "value": "cardinality(\"database_identity\".\"allowed_data_environments\") > 0"
+        },
+        "database_identity_mock_isolated": {
+          "name": "database_identity_mock_isolated",
+          "value": "NOT ('mock' = ANY(\"database_identity\".\"allowed_data_environments\") AND cardinality(\"database_identity\".\"allowed_data_environments\") > 1)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.guild_external_refs": {
+      "name": "guild_external_refs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "guild_id": {
+          "name": "guild_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "guild_external_refs_uq": {
+          "name": "guild_external_refs_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "data_source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "guild_external_refs_guild_fk": {
+          "name": "guild_external_refs_guild_fk",
+          "tableFrom": "guild_external_refs",
+          "columnsFrom": [
+            "guild_id",
+            "data_environment"
+          ],
+          "tableTo": "guilds",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "guild_external_refs_mock_pair": {
+          "name": "guild_external_refs_mock_pair",
+          "value": "(data_environment = 'mock') = (data_source = 'mock')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.guilds": {
+      "name": "guilds",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "region": {
+          "name": "region",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "game_mode": {
+          "name": "game_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_normalized": {
+          "name": "name_normalized",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "faction_code": {
+          "name": "faction_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "verification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_updated_at": {
+          "name": "source_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "guilds_scope_slug_uq": {
+          "name": "guilds_scope_slug_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "region",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "slug",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "guilds_scope_name_idx": {
+          "name": "guilds_scope_name_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "region",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "game_mode",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "name_normalized",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "guilds_id_env": {
+          "name": "guilds_id_env",
+          "columns": [
+            "id",
+            "data_environment"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "guilds_mock_triple": {
+          "name": "guilds_mock_triple",
+          "value": "((data_environment = 'mock') = (data_source = 'mock')) AND ((data_environment = 'mock') = (verification_status = 'MOCK'))"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.ingestion_records": {
+      "name": "ingestion_records",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "parser_version": {
+          "name": "parser_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_at": {
+          "name": "received_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload": {
+          "name": "payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "payload_hash": {
+          "name": "payload_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "ingestion_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warnings": {
+          "name": "warnings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "rejection_reason": {
+          "name": "rejection_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "ingestion_records_env_received_idx": {
+          "name": "ingestion_records_env_received_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ingestion_records_id_env": {
+          "name": "ingestion_records_id_env",
+          "columns": [
+            "id",
+            "data_environment"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ingestion_records_mock_pair": {
+          "name": "ingestion_records_mock_pair",
+          "value": "(data_environment = 'mock') = (data_source = 'mock')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.items": {
+      "name": "items",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "external_item_id": {
+          "name": "external_item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name_locale": {
+          "name": "name_locale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "slot_code": {
+          "name": "slot_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quality_code": {
+          "name": "quality_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_item_level": {
+          "name": "base_item_level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icon_url": {
+          "name": "icon_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_updated_at": {
+          "name": "source_updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "items_env_external_uq": {
+          "name": "items_env_external_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "external_item_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "items_id_env": {
+          "name": "items_id_env",
+          "columns": [
+            "id",
+            "data_environment"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "items_mock_pair": {
+          "name": "items_mock_pair",
+          "value": "(data_environment = 'mock') = (data_source = 'mock')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.level_milestones": {
+      "name": "level_milestones",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timing_basis": {
+          "name": "timing_basis",
+          "type": "milestone_timing_basis",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reached_at": {
+          "name": "reached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_observed_at": {
+          "name": "first_observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "previous_observed_at": {
+          "name": "previous_observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "effective_reached_at": {
+          "name": "effective_reached_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "generated": {
+            "type": "stored",
+            "as": "CASE WHEN timing_basis = 'SOURCE_REPORTED' THEN reached_at ELSE first_observed_at END"
+          }
+        },
+        "data_source": {
+          "name": "data_source",
+          "type": "data_source",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verification_status": {
+          "name": "verification_status",
+          "type": "verification_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "snapshot_id": {
+          "name": "snapshot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ingestion_record_id": {
+          "name": "ingestion_record_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "level_milestones_character_level_uq": {
+          "name": "level_milestones_character_level_uq",
+          "columns": [
+            {
+              "expression": "character_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "level_milestones_env_level_idx": {
+          "name": "level_milestones_env_level_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "effective_reached_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "level_milestones_character_fk": {
+          "name": "level_milestones_character_fk",
+          "tableFrom": "level_milestones",
+          "columnsFrom": [
+            "character_id",
+            "data_environment"
+          ],
+          "tableTo": "characters",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        },
+        "level_milestones_snapshot_fk": {
+          "name": "level_milestones_snapshot_fk",
+          "tableFrom": "level_milestones",
+          "columnsFrom": [
+            "snapshot_id",
+            "data_environment"
+          ],
+          "tableTo": "character_snapshots",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        },
+        "level_milestones_ingestion_fk": {
+          "name": "level_milestones_ingestion_fk",
+          "tableFrom": "level_milestones",
+          "columnsFrom": [
+            "ingestion_record_id",
+            "data_environment"
+          ],
+          "tableTo": "ingestion_records",
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "level_milestones_mock_triple": {
+          "name": "level_milestones_mock_triple",
+          "value": "((data_environment = 'mock') = (data_source = 'mock')) AND ((data_environment = 'mock') = (verification_status = 'MOCK'))"
+        },
+        "level_milestones_reached_at_basis": {
+          "name": "level_milestones_reached_at_basis",
+          "value": "(timing_basis = 'SOURCE_REPORTED') = (reached_at IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.static_data_records": {
+      "name": "static_data_records",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "dataset_id": {
+          "name": "dataset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "static_data_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "record_key": {
+          "name": "record_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {
+        "static_data_records_dataset_key_uq": {
+          "name": "static_data_records_dataset_key_uq",
+          "columns": [
+            {
+              "expression": "dataset_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "record_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "static_data_records_env_kind_key_idx": {
+          "name": "static_data_records_env_kind_key_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "record_key",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {
+        "static_data_records_dataset_fk": {
+          "name": "static_data_records_dataset_fk",
+          "tableFrom": "static_data_records",
+          "columnsFrom": [
+            "dataset_id",
+            "data_environment",
+            "kind"
+          ],
+          "tableTo": "static_datasets",
+          "columnsTo": [
+            "id",
+            "data_environment",
+            "kind"
+          ],
+          "onUpdate": "no action",
+          "onDelete": "cascade"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.static_datasets": {
+      "name": "static_datasets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "static_data_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_version": {
+          "name": "source_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_build": {
+          "name": "source_build",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "interface_version": {
+          "name": "interface_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "dataset_version": {
+          "name": "dataset_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "license_status": {
+          "name": "license_status",
+          "type": "static_data_license_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "license_terms_url": {
+          "name": "license_terms_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "license_checked_at": {
+          "name": "license_checked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attribution": {
+          "name": "attribution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "checksum": {
+          "name": "checksum",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "record_count": {
+          "name": "record_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "imported_at": {
+          "name": "imported_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "static_datasets_version_uq": {
+          "name": "static_datasets_version_uq",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "dataset_version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        },
+        "static_datasets_latest_idx": {
+          "name": "static_datasets_latest_idx",
+          "columns": [
+            {
+              "expression": "data_environment",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "observed_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "with": {},
+          "method": "btree",
+          "concurrently": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "static_datasets_id_env_kind": {
+          "name": "static_datasets_id_env_kind",
+          "columns": [
+            "id",
+            "data_environment",
+            "kind"
+          ],
+          "nullsNotDistinct": false
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "static_datasets_mock_source": {
+          "name": "static_datasets_mock_source",
+          "value": "(data_environment = 'mock') = (source = 'mock')"
+        },
+        "static_datasets_mock_license": {
+          "name": "static_datasets_mock_license",
+          "value": "(data_environment = 'mock') = (license_status = 'MOCK')"
+        },
+        "static_datasets_license_confirmed": {
+          "name": "static_datasets_license_confirmed",
+          "value": "data_environment = 'mock' OR (license_status = 'PERMITTED' AND license_terms_url IS NOT NULL AND license_checked_at IS NOT NULL)"
+        },
+        "static_datasets_record_count": {
+          "name": "static_datasets_record_count",
+          "value": "record_count >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.data_environment": {
+      "name": "data_environment",
+      "schema": "public",
+      "values": [
+        "mock",
+        "beta",
+        "live"
+      ]
+    },
+    "public.data_source": {
+      "name": "data_source",
+      "schema": "public",
+      "values": [
+        "mock",
+        "blizzard",
+        "addon",
+        "user_submission"
+      ]
+    },
+    "public.ingestion_status": {
+      "name": "ingestion_status",
+      "schema": "public",
+      "values": [
+        "ACCEPTED",
+        "REJECTED",
+        "IDENTITY_CONFLICT"
+      ]
+    },
+    "public.milestone_timing_basis": {
+      "name": "milestone_timing_basis",
+      "schema": "public",
+      "values": [
+        "SOURCE_REPORTED",
+        "FIRST_OBSERVED",
+        "INFERRED"
+      ]
+    },
+    "public.static_data_kind": {
+      "name": "static_data_kind",
+      "schema": "public",
+      "values": [
+        "items",
+        "classes",
+        "races",
+        "factions",
+        "game_modes",
+        "dungeons",
+        "raids",
+        "bosses"
+      ]
+    },
+    "public.static_data_license_status": {
+      "name": "static_data_license_status",
+      "schema": "public",
+      "values": [
+        "PERMITTED",
+        "MOCK",
+        "UNKNOWN",
+        "PROHIBITED"
+      ]
+    },
+    "public.submission_channel": {
+      "name": "submission_channel",
+      "schema": "public",
+      "values": [
+        "public",
+        "admin_api"
+      ]
+    },
+    "public.submission_review_status": {
+      "name": "submission_review_status",
+      "schema": "public",
+      "values": [
+        "PENDING",
+        "ACCEPTED",
+        "REJECTED",
+        "CONFLICT"
+      ]
+    },
+    "public.verification_status": {
+      "name": "verification_status",
+      "schema": "public",
+      "values": [
+        "VERIFIED",
+        "LOG_VERIFIED",
+        "COMMUNITY_SUBMITTED",
+        "UNVERIFIED",
+        "MOCK"
+      ]
+    }
+  },
+  "schemas": {},
+  "views": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

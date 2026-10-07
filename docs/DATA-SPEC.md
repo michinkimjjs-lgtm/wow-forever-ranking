@@ -25,6 +25,9 @@
 | `character_items` | **현재 장착** 장비만 | `(character_id, slot_code)` |
 | `character_snapshots` | 관측 시점별 상태 이력 (정규화 데이터, content_hash) | — |
 | `level_milestones` | 캐릭터·레벨별 달성 기록 | `(character_id, level)` |
+| `static_datasets` | 정적 게임 데이터셋 메타 (kind, source, sourceVersion, sourceBuild, interfaceVersion, datasetVersion, observedAt, 이용 조건, checksum). 수정 금지 | `(data_environment, kind, source, dataset_version)` |
+| `static_data_records` | 데이터셋 레코드 (jsonb). 수정 금지 | `(dataset_id, record_key)` |
+| `character_submissions` | 캐릭터 제출과 검토 상태(PENDING / ACCEPTED / REJECTED / CONFLICT), 요약, 비교, 동의 기록. 실제 영역 전용 | `(data_environment, payload_hash)` |
 
 ### 프롬프트의 `environment` 필드
 
@@ -42,6 +45,8 @@ verification_status = MOCK
 ```
 
 ## 3. 캐릭터 식별 (명세서 §7)
+
+> Phase 3C: 실제 영역의 `game_mode`는 공식 게임 규칙(Ruleset) 코드이고, `character_name`은 전체 이름(이름 + 성)이다. 식별은 region + ruleset + 전체 이름 (`docs/RULESETS.md` §3).
 
 1. `(data_environment, data_source, external_id)` 외부 ID 매핑으로 찾는다.
 2. 없으면 자연 키 `(data_environment, region, game_mode, name_normalized)`로 찾는다.
@@ -201,3 +206,30 @@ seed는 mock 영역 데이터만 지우고 다시 만든다.
 
 - `dataEnvironment`는 서버 설정이 정합니다. export나 요청에 들어 있는 `dataEnvironment`, `verificationStatus`, `rank` 값은 쓰지 않습니다.
 - 저장되는 검증 상태는 항상 `COMMUNITY_SUBMITTED`입니다.
+
+## 11. 정적 게임 데이터 (Phase 2C)
+
+상세: [`STATIC-GAME-DATA.md`](./STATIC-GAME-DATA.md)
+
+- 종류: items / classes / races / factions / game_modes / dungeons / raids / bosses
+- 모든 데이터셋은 `sourceBuild`, `interfaceVersion`, `datasetVersion`, `observedAt`을 가진다.
+- 새 빌드·새 버전은 새 데이터셋으로 추가한다. 같은 버전을 다른 내용으로 덮어쓰지 않는다.
+- 레코드는 `(dataset_id, data_environment, kind)` 복합 외래 키로 데이터셋과 같은 영역·종류임을 보장한다.
+- 실제 영역에는 이용 조건을 확인한 데이터셋만 저장한다. 이번 단계에서 실제 외부 데이터는 넣지 않았다.
+
+## 12. 공급원 우선순위 (Phase 2C)
+
+같은 캐릭터가 여러 공급원에 있을 때: `VERIFIED → LOG_VERIFIED → COMMUNITY_SUBMITTED → UNVERIFIED → MOCK`, 같으면 최근 관측 우선 (`lib/domain/source-priority.ts`).
+저장된 검증 상태를 바꾸지 않으며, 데이터 출처만으로 `VERIFIED`가 되지 않는다. 수집 파이프라인 적용은 공식 API 단계에서 한다([`BLIZZARD-API-INTEGRATION-PLAN.md`](./BLIZZARD-API-INTEGRATION-PLAN.md) §13).
+
+## 13. 제출 기록 (Phase 3A)
+
+상세: [`SUBMISSION-SYSTEM.md`](./SUBMISSION-SYSTEM.md), [`ADMIN-REVIEW.md`](./ADMIN-REVIEW.md)
+
+- `review_status`(검토 상태)와 `verification_status`(검증 상태)는 별개다. 검증 상태는 CHECK로 `COMMUNITY_SUBMITTED`만 허용한다.
+- `payload`: 스키마 검증 후 알 수 없는 필드를 뺀 export. `payload_hash`로 중복을 막는다.
+- `identity_key`: GUID(없으면 region + gameMode + 전체 이름)의 해시. GUID 원문을 제출 표에 따로 두지 않는다.
+- `observation`: 정규화한 관측 데이터. 매핑이 없으면 null이고 `blocked_reason = MAPPING_PENDING`.
+- `comparison`: 같은 캐릭터 이전 제출과의 차이와 충돌 코드.
+- `consent_version`, `policy_version`, `consented_at`: 공개 제출은 필수(CHECK).
+- IP 주소와 파일 경로는 저장하지 않는다.

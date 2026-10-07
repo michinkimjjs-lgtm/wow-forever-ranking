@@ -26,3 +26,20 @@ export function normalizeSlugParam(raw: string): string {
   }
   return toSlug(value);
 }
+
+/**
+ * WoW: Forever 전체 이름 (docs/RULESETS.md §3)
+ * Forever는 realm이 없고 "이름 + 성" 전체 이름이 region 안에서 고유하다. 첫 이름만으로는 캐릭터를 식별하지 않는다.
+ * 이름과 성을 잇는 실제 구분자는 확인되지 않았으므로(Runtime verification required) 호출하는 쪽이 설정값을 넘긴다.
+ * 이름이나 성이 없거나 구분자를 모르면 null.
+ */
+export function buildFullName(
+  name: string | null | undefined,
+  surname: string | null | undefined,
+  separator: string | null,
+): string | null {
+  const first = name?.trim();
+  const last = surname?.trim();
+  if (!first || !last || separator === null) return null;
+  return `${first}${separator}${last}`;
+}

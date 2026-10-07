@@ -51,3 +51,37 @@ export function getSubmissionSettings(): SubmissionSettings {
   const tokenOk = token !== null && token.length >= 32;
   return { enabled: flag === "on" && tokenOk, adminToken: tokenOk ? token : null };
 }
+
+/**
+ * 공개 제출과 관리자 화면 설정 (docs/SUBMISSION-SYSTEM.md §2)
+ * - FEATURE_PUBLIC_SUBMISSIONS=on 이고 SUBMISSION_SECRET이 32자 이상이면 공개 제출을 받는다.
+ * - SUBMISSION_SECRET: 제출 화면 보안 토큰, 요청 제한용 일시 식별값, 관리자 로그인 서명에 쓴다. 저장소에 넣지 않는다.
+ * - 관리자 화면은 SUBMISSIONS_ADMIN_TOKEN(32자 이상)과 SUBMISSION_SECRET이 모두 있어야 열린다.
+ */
+export interface PublicSubmissionSettings {
+  enabled: boolean;
+  secret: string | null;
+}
+
+export function getSubmissionSecret(): string | null {
+  const secret = process.env.SUBMISSION_SECRET ?? null;
+  return secret !== null && secret.length >= 32 ? secret : null;
+}
+
+export function getPublicSubmissionSettings(): PublicSubmissionSettings {
+  const secret = getSubmissionSecret();
+  return { enabled: process.env.FEATURE_PUBLIC_SUBMISSIONS === "on" && secret !== null, secret };
+}
+
+export interface AdminSettings {
+  enabled: boolean;
+  adminToken: string | null;
+  secret: string | null;
+}
+
+export function getAdminSettings(): AdminSettings {
+  const token = process.env.SUBMISSIONS_ADMIN_TOKEN ?? null;
+  const tokenOk = token !== null && token.length >= 32;
+  const secret = getSubmissionSecret();
+  return { enabled: tokenOk && secret !== null, adminToken: tokenOk ? token : null, secret };
+}

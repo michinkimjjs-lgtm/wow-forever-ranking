@@ -14,7 +14,8 @@ import {
   SEARCH_QUERY_MAX_LENGTH,
   toURLSearchParams,
 } from "@/lib/api/params";
-import { getGameScope } from "@/lib/config";
+import { GameScopeNotConfiguredError, getGameScope } from "@/lib/config";
+import { SetupPending } from "@/components/setup-pending";
 import { formatInteger } from "@/lib/format";
 import { getMessages, labelOf, t } from "@/lib/i18n";
 import { routes } from "@/lib/routes";
@@ -38,12 +39,21 @@ export default async function CharacterSearchPage({
   const query = toURLSearchParams(await searchParams);
   const path = routes.characters();
   const gameScope = getGameScope(appEnv);
+  if (!gameScope) {
+    // 지역·게임 모드 설정이 확정되지 않은 배포: 검색 대신 준비 중 화면
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={s.title} description={s.description} />
+        <SetupPending dataEnvironment={appEnv} />
+      </div>
+    );
+  }
 
   let parsed;
   try {
     parsed = parseSearchParams(query, appEnv, { strict: false, requireQuery: false });
   } catch (error) {
-    if (!(error instanceof InvalidQueryError)) throw error;
+    if (!(error instanceof InvalidQueryError) && !(error instanceof GameScopeNotConfiguredError)) throw error;
     parsed = null;
   }
 

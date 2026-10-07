@@ -36,6 +36,13 @@ export const seo = {
     title: "WoW 포에버 통계 | Forever Rank",
     description: "WoW 포에버 캐릭터 통계 화면은 준비 중입니다.",
   },
+  submit: {
+    title: "캐릭터 데이터 제출 | Forever Rank",
+    description: "WoW 포에버 Forever Rank Character Export 파일을 제출하고 커뮤니티 랭킹에 참여합니다.",
+  },
+  admin: {
+    title: "관리자 | Forever Rank",
+  },
   notFound: {
     title: "페이지를 찾을 수 없습니다 | Forever Rank",
   },

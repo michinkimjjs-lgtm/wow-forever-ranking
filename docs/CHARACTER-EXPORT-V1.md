@@ -179,6 +179,8 @@ ForeverRankCollectorDB = {
 
 ## 6. 서버 쪽 변환 (Phase 2B에서 구현)
 
+> Phase 3C: `gameMode.activeGameMode`는 공식 게임 규칙(Ruleset) 코드로 매핑합니다(값은 미확인, 매핑 비어 있음). 성(`character.surname`)이 없으면 첫 이름만으로 식별하지 않고 `FULL_NAME_REQUIRED`로 처리합니다(`docs/RULESETS.md`).
+
 `providers/addon/parsers/character-export-v1`이 이 형식을 기존 수집 파이프라인의 정규화 관측 데이터(`lib/ingestion/schema.ts`)로 바꿉니다.
 
 | 정규화 필드 | 변환 |

@@ -5,13 +5,18 @@
  */
 import type { NextRequest } from "next/server";
 import { parseListParams } from "@/lib/api/params";
-import { buildMeta, handleApiError, jsonError, jsonOk } from "@/lib/api/response";
+import { buildMeta, handleApiError, jsonError, jsonOk as jsonOkBase, type ApiMeta } from "@/lib/api/response";
 import { serializeRankingRow } from "@/lib/api/serialize";
 import { RANKING_TYPES, type RankingType } from "@/lib/ranking";
 import { getServerContext } from "@/lib/server/context";
 import { loadRanking } from "@/lib/server/services";
 
 export const dynamic = "force-dynamic";
+
+/** 랭킹 응답 meta에 요청 범위의 공식 Ruleset을 함께 담는다. */
+function jsonOk(data: unknown, meta: ApiMeta, ruleset: string | null) {
+  return jsonOkBase(data, { ...meta, ruleset });
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ type: string }> }) {
   const { type } = await params;
@@ -34,6 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
           status: "unavailable",
           unavailableReason: result.reason,
         }),
+        parsed.ruleset,
       );
     }
     return jsonOk(
@@ -48,6 +54,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         policy: result.policy,
         status: "ok",
       }),
+      parsed.ruleset,
     );
   } catch (error) {
     return handleApiError(error);

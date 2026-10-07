@@ -22,6 +22,18 @@ export function formatKstDateTime(date: Date): string {
   return dateTimeFormatter.format(date);
 }
 
+const dateFormatter = new Intl.DateTimeFormat(DEFAULT_LOCALE, {
+  timeZone: DISPLAY_TIME_ZONE,
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
+
+/** 날짜만: 2026년 10월 7일 (KST) */
+export function formatKstDate(date: Date): string {
+  return dateFormatter.format(date);
+}
+
 export function formatRelativeTime(date: Date, now: Date): string {
   const messages = getMessages().common.time;
   const diffMinutes = Math.floor((now.getTime() - date.getTime()) / 60_000);

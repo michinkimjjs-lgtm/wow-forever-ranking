@@ -8,6 +8,8 @@ import { rankings } from "./rankings";
 import { seo } from "./seo";
 import { stats } from "./stats";
 import { submissions } from "./submissions";
+import { submit } from "./submit";
+import { admin } from "./admin";
 
-export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo, submissions };
+export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo, submissions, submit, admin };
 export type Messages = typeof ko;

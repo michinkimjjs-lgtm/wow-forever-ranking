@@ -13,7 +13,7 @@
 ## 2. 데이터 흐름
 
 ```text
-MockCharacterProvider (mock 배포 전용)       BlizzardProvider / AddonProvider (미구성)
+MockCharacterProvider (mock 배포 전용)       BlizzardProvider (미구성, §9) / AddonProvider (제출 API로 대체)
             │
             ▼
 lib/submissions/*  — Character Export v1 제출 (validate → normalize → identify → calculate gear → store, §8)
@@ -53,12 +53,13 @@ app/                    페이지와 API 라우트 (한국어 문자열 직접 �
   api/v1/               REST API
 components/             UI 컴포넌트 (ui/ = shadcn 방식 기본 컴포넌트)
 config/                 버전 관리되는 설정 (게임 범위, 코드 목록, 랭킹 정책, Gear Profile)
+  blizzard/             Blizzard capability registry, endpoint registry (비어 있음)
 db/                     Drizzle 스키마, 마이그레이션, DB 식별 표식
 lib/
   api/                  요청 검증, 응답 형식, 직렬화
   cache/                캐시 인터페이스
   config/               설정 스키마 검증, 환경변수
-  domain/               enum, 이름 정규화
+  domain/               enum, 이름 정규화, 공급원 우선순위(source-priority.ts), 출처 구분(data-origin.ts), 제출 비교(submission-consistency.ts)
   format/               KST 시간, 숫자 표시
   gear/                 장비 레벨 계산 (Gear Profile 기반)
   i18n/                 locale 접근
@@ -68,9 +69,11 @@ lib/
   submissions/          Character Export v1 제출: 스키마, 정규화, 처리, HTTP, 요청 제한
   ranking/              랭킹 엔진 (level.ts, gear.ts, highest-item.ts, index.ts)
   server/               서버 컨텍스트, 서비스 계층
+  ranking/coverage.ts   데이터 커버리지 (Phase 2D), ranking/community.ts 랭킹 단계·"전체 서버" 표시 판단
+  static-data/          정적 게임 데이터: 데이터셋 스키마, 검증, importer, 조회, Item Catalog, 표시명
 locales/ko/             한국어 UI 문자열
-providers/              Provider 인터페이스와 구현
-scripts/                db:migrate, db:init, db:seed
+providers/              Provider 인터페이스와 구현 (capabilities.ts, blizzard/: 설정·인증·endpoint·정규화)
+scripts/                db:migrate, db:init, db:seed, static-data:import
 tests/                  Vitest 테스트
 ```
 
@@ -81,7 +84,9 @@ tests/                  Vitest 테스트
 | 안전장치 | 구현 위치 |
 |---|---|
 | DB 식별 표식 | `database_identity` 테이블(단일 행, 변경·삭제 금지 트리거), `npm run db:init` |
-| 쓰기 트리거 | 마이그레이션 `0002_data_environment_guards.sql`: 9개 게임 데이터 테이블 |
+| 쓰기 트리거 | 마이그레이션 `0002_data_environment_guards.sql`: 9개 게임 데이터 테이블, `0004_static_game_data_guards.sql`: 정적 데이터 2개 테이블, `0006_character_submissions_guards.sql`: 제출 기록 (`GUARDED_TABLES`) |
+| 제출 기록 | `character_submissions` CHECK: mock 영역 금지, 공급원 addon, 검증 상태 COMMUNITY_SUBMITTED, 공개 제출은 동의 기록 필수 |
+| 정적 데이터 | importer + DB CHECK: mock 영역 ⇔ mock 데이터셋, 실제 영역은 이용 조건 확인(`PERMITTED`)만. 수정 금지 트리거 |
 | CHECK 제약 | mock 영역 ⇔ mock 공급원 ⇔ MOCK 검증 상태 (`db/schema.ts`) |
 | 부모-자식 영역 일치 | `(id, data_environment)` 복합 외래 키 |
 | 앱 시작 검사 | `instrumentation.ts` → `verifyStartup()`, 그리고 요청마다 `getServerContext()` |
@@ -111,6 +116,8 @@ tests/                  Vitest 테스트
 - `SITE_URL`
 - `FEATURE_CHARACTER_SUBMISSIONS` (`on`일 때만 제출 API 활성, 기본 꺼짐)
 - `SUBMISSIONS_ADMIN_TOKEN` (32자 이상, 제출 API 관리자 토큰)
+- `BLIZZARD_*` (Blizzard Provider, §9. 기본값 없음, 지금은 설정하지 않음)
+- `FEATURE_PUBLIC_SUBMISSIONS`, `SUBMISSION_SECRET` (공개 제출·관리자 화면, Phase 3A)
 
 ## 6. 렌더링과 캐시
 
@@ -139,7 +146,9 @@ npm run test
 npm run build
 ```
 
-## 8. 캐릭터 제출 API (Phase 2B-1, 비공개)
+## 8. 캐릭터 제출 API (Phase 2B-1 관리자 경로 / Phase 3A 공개 제출)
+
+> Phase 3A에서 공개 제출 화면(`/submit`), 검토 대기 저장(`character_submissions`), 관리자 검토(`/admin/submissions`)를 추가했다. 상세: [`SUBMISSION-SYSTEM.md`](./SUBMISSION-SYSTEM.md), [`ADMIN-REVIEW.md`](./ADMIN-REVIEW.md)
 
 `POST /api/v1/submissions/character`
 
@@ -176,3 +185,51 @@ npm run build
 - 현재 `config/export-mapping.ts`가 비어 있어서, 실제 export는 모두 `MAPPING_MISSING`으로 거부됩니다. 이것이 의도된 동작입니다.
   - 매핑 값은 실제 게임 실행으로 확인한 뒤 채웁니다(Runtime verification required).
 - 오류 응답은 `{ error: { code, message, stage, issues[] } }`이고, `message`는 한국어입니다.
+
+## 9. Provider 구조 (Phase 2C)
+
+```text
+providers/
+├─ types.ts           CharacterDataProvider, 내부 데이터 계약(providerCharacterSchema / providerGearSchema)
+├─ capabilities.ts    capability 8개 × 상태 4개 (AVAILABLE / UNAVAILABLE / UNKNOWN / RUNTIME_REQUIRED)
+├─ registry.ts        dataEnvironment별 Provider 등록 제한
+├─ mock/              MockCharacterProvider
+├─ addon/             AddonProvider (조회하지 않음. 제출 API 사용)
+└─ blizzard/
+   ├─ BlizzardProvider.ts  설정 → capability → endpoint 확인 후에만 요청. 기본 상태는 항상 "미구성"
+   ├─ config.ts            BLIZZARD_* 환경변수 (URL 기본값 없음)
+   ├─ auth.ts              BlizzardAuth 인터페이스, ClientCredentialsAuth
+   ├─ endpoints.ts         EndpointRegistry (AVAILABLE + 근거가 있는 기능만, 상대 경로만)
+   ├─ normalizer.ts        BlizzardResponseNormalizer 인터페이스
+   ├─ transport.ts         HTTP 전송 (테스트는 가짜 transport)
+   └─ errors.ts            BlizzardApiError (retryable 구분)
+config/blizzard/
+├─ capabilities.ts    모두 UNKNOWN
+└─ endpoints.ts       비어 있음
+```
+
+모든 Provider는 `getCapabilities()`를 제공하고, 같은 내부 계약으로 결과를 넘깁니다. `tests/provider-contract.test.ts`가 MockProvider와 BlizzardProvider(가짜 transport)에 같은 계약 테스트를 실행합니다.
+
+연동 계획은 [`BLIZZARD-API-INTEGRATION-PLAN.md`](./BLIZZARD-API-INTEGRATION-PLAN.md), 정적 데이터는 [`STATIC-GAME-DATA.md`](./STATIC-GAME-DATA.md)를 봅니다.
+
+## 10. 오류와 준비 중 상태 (Phase 3B)
+
+사용자에게 **오류(500)**를 보여 줘야 하는 경우와 **정상 응답 + 준비 중 화면**을 보여 줘야 하는 경우를 구분합니다.
+
+| 상황 | 화면 | API | 비고 |
+|---|---|---|---|
+| 지역·게임 모드 설정 미완료 (현재 beta / live) | 200, "데이터 설정 준비 중" + 데이터 영역 표시 (홈, 랭킹 3종, 캐릭터 검색) | 200, `data: []`, `meta.status = "unavailable"`, `unavailableReason = "GAME_SCOPE_NOT_CONFIGURED"`, 한국어 `meta.notice` | `GameScopeNotConfiguredError`. 확인되지 않은 지역·게임 모드 값을 만들어 표시하지 않음 |
+| 장비 기준(APPROVED Gear Profile) 없음 | 200, "장비 랭킹 준비 중" | 200, `unavailableReason = "GEAR_PROFILE_NOT_APPROVED"` | 기존 동작 |
+| 잘못된 경로 | 404, "페이지를 찾을 수 없습니다." | 404 `NOT_FOUND` | |
+| 없는 캐릭터 / 길드 | 404 | 404 `NOT_FOUND` (캐릭터·길드 한국어 문구) | |
+| 잘못된 필터 | 200, "요청 값이 올바르지 않습니다" 안내 + 초기화 버튼 | 400 `INVALID_QUERY` (알 수 없는 파라미터 포함) | |
+| 제출 기능 OFF | `/submit`: 200, "현재 제출을 받지 않습니다" (파일 확인·미리보기는 가능) | 404 | |
+| 잘못된 파일 | `/submit`: 한국어 오류 문구 | 400 / 413 / 415 / 422 (한국어 `message`) | `docs/SUBMISSION-SYSTEM.md` §3 |
+| 실행 중 DB 연결 실패 | **500**, "데이터를 불러오지 못했습니다." + 다시 시도 (DB가 필요 없는 화면은 정상) | **500** `INTERNAL_ERROR` (한국어) | 실제 장애이므로 오류로 보여 준다 |
+| 시작할 때 DB 연결 실패 / DB 식별 표식 불일치 / `APP_DATA_ENVIRONMENT` 없음 | 서버가 요청을 처리하지 않음 | 같음 | 의도한 fail-closed (명세서 §6.4-4). mock/실제 데이터 혼용을 막기 위한 안전장치 |
+| 설정 파일 검증 실패 등 그 밖의 설정 오류 | 500 | 503 `SERVICE_UNAVAILABLE` | 배포 설정 문제 |
+
+테스트: `tests/setup-pending.test.tsx`
+- beta / live 화면을 서버 컨텍스트를 바꿔 DB 없이 렌더링하고, 준비 중 화면이 나오는지 확인합니다.
+- API 응답 코드를 구분하는지 확인합니다.
+- 한국어 UI 검사와 파일 선택 UI도 함께 확인합니다.

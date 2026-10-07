@@ -30,7 +30,7 @@ export const rankings = {
     faction: "진영",
     guild: "길드",
     environment: "환경",
-    gameMode: "게임 모드",
+    gameMode: "게임 규칙",
     region: "지역",
     verifiedOnly: "검증된 데이터만",
   },
@@ -39,6 +39,47 @@ export const rankings = {
     gearRule: "장비 정보가 충분한 캐릭터만 표시됩니다. (랭킹 대상 슬롯의 {percent}% 이상)",
     provisionalProfile: "장비 계산 기준은 개발용 임시 기준입니다.",
     submittedOnly: "제출된 캐릭터를 기준으로 한 랭킹입니다.",
+  },
+  /** 데이터 출처·범위에 맞는 랭킹 이름 (docs/COMMUNITY-RANKING-PLAN.md §3) */
+  stageTitles: {
+    TEST_DATA: { level: "레벨 랭킹", gear: "장비 랭킹", "highest-item": "최고 아이템" },
+    COMMUNITY: { level: "커뮤니티 레벨 랭킹", gear: "커뮤니티 장비 랭킹", "highest-item": "커뮤니티 최고 아이템" },
+    BRANDED_COMMUNITY: {
+      level: "Forever Rank 커뮤니티 레벨 랭킹",
+      gear: "Forever Rank 커뮤니티 장비 랭킹",
+      "highest-item": "Forever Rank 커뮤니티 최고 아이템",
+    },
+    OFFICIAL: { level: "공식 데이터 기반 레벨 랭킹", gear: "공식 데이터 기반 장비 랭킹", "highest-item": "공식 데이터 기반 최고 아이템" },
+  },
+  stageBadges: {
+    TEST_DATA: "테스트 데이터",
+    COMMUNITY: "커뮤니티 랭킹",
+    BRANDED_COMMUNITY: "Forever Rank 커뮤니티 랭킹",
+    OFFICIAL: "공식 데이터 기반 랭킹",
+  },
+  dataScope: {
+    label: "데이터 안내",
+    basis: "데이터 기준",
+    range: "데이터 범위",
+    rangeValue: "Forever Rank가 확인한 캐릭터 {count}명 (최근 {days}일)",
+    source: "데이터 출처",
+    verification: "검증 상태",
+    noData: "아직 확인한 캐릭터가 없습니다.",
+    observedRankMeaning: "순위는 Forever Rank가 확인한 캐릭터 안에서의 순위입니다.",
+    serverWideRankMeaning: "공식 데이터로 확인한 전체 캐릭터 기준 순위입니다.",
+  },
+  /** 순위 문구. serverWide는 evaluateServerWideClaim이 허용할 때만 쓴다. */
+  rankScope: {
+    observed: "Forever Rank 확인 캐릭터 중 {rank}위",
+    serverWide: "전체 서버 {rank}위",
+  },
+  /** 게임 규칙(Ruleset) 필터 (docs/RULESETS.md) */
+  ruleset: {
+    label: "게임 규칙",
+    pending: "데이터 준비 중",
+    unavailableTitle: "이 게임 규칙의 데이터는 준비 중입니다",
+    unavailableBody: "아직 이 규칙의 랭킹 데이터가 없습니다. 확인되지 않은 값은 표시하지 않습니다.",
+    separateNote: "랭킹은 게임 규칙별로 따로 계산합니다. 규칙이 다른 캐릭터는 함께 순위를 매기지 않습니다.",
   },
   empty: "조건에 맞는 캐릭터가 없습니다.",
   unavailable: {

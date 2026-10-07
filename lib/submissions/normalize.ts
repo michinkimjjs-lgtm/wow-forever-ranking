@@ -9,6 +9,7 @@
 import type { ExportMapping, GearProfile } from "@/lib/config";
 import type { CharacterObservationInput } from "@/lib/ingestion/schema";
 import type { CharacterExportV1 } from "./export-schema";
+import { buildFullName } from "@/lib/domain/names";
 import type { SubmissionIssue } from "./issues";
 
 export const EXPORT_PARSER_VERSION = "character-export-v1@1";
@@ -86,12 +87,16 @@ export function normalizeCharacterExport(input: CharacterExportV1, ctx: Normaliz
   const c = input.character;
   if (!c.name) issues.push({ code: "CHARACTER_NAME_REQUIRED", path: "character.name" });
   if (c.level === undefined) issues.push({ code: "CHARACTER_LEVEL_REQUIRED", path: "character.level" });
-  let characterName = c.name;
-  if (c.name && c.surname) {
+  // 전체 이름(이름 + 성)으로 식별한다. 첫 이름만으로는 식별하지 않는다(docs/RULESETS.md §3).
+  let characterName: string | undefined;
+  if (c.name && !c.surname) {
+    if (mapping.requireSurname !== false) issues.push({ code: "FULL_NAME_REQUIRED", path: "character.surname" });
+    else characterName = c.name;
+  } else if (c.name && c.surname) {
     if (mapping.nameSeparator === null) {
       issues.push({ code: "NAME_SEPARATOR_UNCONFIRMED", path: "character.surname" });
     } else {
-      characterName = `${c.name}${mapping.nameSeparator}${c.surname}`;
+      characterName = buildFullName(c.name, c.surname, mapping.nameSeparator) ?? undefined;
     }
   }
   const classCode = mapValue(mapping.classByFile, c.classFile, "character.classFile", issues);

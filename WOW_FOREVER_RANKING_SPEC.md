@@ -583,7 +583,7 @@ Gear Profile 항목:
 |---|---|---|
 | `VERIFIED` | 검증됨 | 공식 공급원 등 신뢰할 수 있는 출처로 확인됨 |
 | `LOG_VERIFIED` | 로그 검증 | 전투 로그 등으로 확인됨(향후) |
-| `COMMUNITY_SUBMITTED` | 사용자 제출 | 사용자/애드온이 제출했고 별도 검증 전 |
+| `COMMUNITY_SUBMITTED` | 커뮤니티 제출 | 사용자/애드온이 제출했고 별도 검증 전 (Phase 2D에서 "사용자 제출" → "커뮤니티 제출"로 변경) |
 | `UNVERIFIED` | 미검증 | 출처를 확인할 수 없음 |
 | `MOCK` | 테스트 데이터 | Mock 데이터 |
 
@@ -982,6 +982,10 @@ interface CharacterDataProvider {
 - `BlizzardProvider`
   - 공식 API가 확인되기 전까지 엔드포인트를 구현하지 않는다.
   - 호출하면 "미구성" 오류를 반환한다.
+  - 구조(Phase 2C): 설정(환경변수, URL 기본값 없음) → capability registry(`config/blizzard/capabilities.ts`, 확인 전 모두 `UNKNOWN`) → endpoint registry(`config/blizzard/endpoints.ts`, 확인 전 비어 있음) → 인증 → 응답 정규화. 상세: `docs/BLIZZARD-API-INTEGRATION-PLAN.md`
+- 모든 Provider는 `getCapabilities()`로 기능 상태(`AVAILABLE` / `UNAVAILABLE` / `UNKNOWN` / `RUNTIME_REQUIRED`)를 알린다. 추측으로 `AVAILABLE`을 쓰지 않는다.
+- 같은 캐릭터가 여러 공급원에 있으면 검증 상태 `VERIFIED → LOG_VERIFIED → COMMUNITY_SUBMITTED → UNVERIFIED → MOCK` 순, 같으면 최근 관측을 우선한다. 데이터 출처만으로 `VERIFIED`가 되지 않는다.
+- 정적 게임 데이터(아이템·직업·종족·진영·게임 모드·던전·공격대·보스)는 버전별 데이터셋으로 가져온다(`docs/STATIC-GAME-DATA.md`). 실제 영역에는 이용 조건을 확인한 데이터셋만 저장한다.
 
 권장 폴더:
 
@@ -1119,7 +1123,7 @@ World First는 게임 고유 용어로 사용하되 설명 문구는 한국어�
 마지막 확인
 검증됨
 로그 검증
-사용자 제출
+커뮤니티 제출
 미검증
 테스트 데이터
 데이터 없음
@@ -1443,6 +1447,16 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 14 | 클라이언트 빌드 번호 체계 | `source_build`, 파서 분리 기준 |
 | 15 | 정식 출시 시 베타 데이터 처리(초기화 여부) | `beta`/`live` 전환 |
 | 16 | "WoW", "Warcraft" 상표 사용 범위와 서비스명 "Forever Rank" | 사이트명, SEO |
+| 17 | Blizzard Forever API의 인증 방식, API base, namespace, 호출 한도, 응답 형식 | `BlizzardProvider` 설정·endpoint·정규화 |
+| 18 | 정적 데이터 공급원(아이템 카탈로그 등)의 이용 조건, attribution, 재배포 가능 여부 | `static_datasets` 가져오기 |
+| 19 | 클라이언트 `Enum.InventoryType` / `Enum.ItemQuality` 값의 의미 | Item Catalog → 슬롯·품질 코드 매핑 |
+| 20 | 제3자 Forever 서비스(WoWCensus, ForeverDB 등)의 이용 조건 원문 | 사용하지 않음. 확인돼도 핵심 공급원으로 고정하지 않음 (`docs/DATA-SOURCE-POLICY.md`) |
+| 21 | 성(surname) 숨김 캐릭터의 이름 공개 가능 범위 | 캐릭터 이름 표시 |
+| 22 | 커뮤니티 랭킹 2단계·"전체 서버" 표시 기준값, 모집단 수 근거 | `config/community-ranking.ts` (`docs/DATA-COVERAGE-MODEL.md`) |
+| 23 | Collector SavedVariables의 Lua 문자열 이스케이프 형식 (.lua 업로드 추출) | `lib/submissions/preview.ts` |
+| 24 | 제출 데이터 보관 기간, 삭제 요청 창구, 관련 법령 검토 | `docs/PRIVACY-DATA-POLICY.md` |
+| 25 | `Enum.GameMode` 숫자와 공식 Ruleset(일반 / 전쟁 / 롤플레잉 / 하드코어)의 대응. Ruleset 이름·공개 상태는 공식 자료로 확인됨 | `config/rulesets.ts`, `config/export-mapping.ts` (`docs/RULESETS.md`) |
+| 26 | 같은 전체 이름이 다른 Ruleset에 있을 수 있는지, 숨긴 성이 export에 담기는지 | 캐릭터 식별 (`docs/RULESETS.md` §3) |
 
 ---
 
