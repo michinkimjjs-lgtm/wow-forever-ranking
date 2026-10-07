@@ -484,7 +484,7 @@ Gear Profile 항목:
 | 항목 | 설명 |
 |---|---|
 | `id`, `version` | 프로필 식별자와 버전. 계산 결과에 함께 저장해 재현할 수 있게 한다 |
-| `status` | `PROVISIONAL`(임시) / `APPROVED`(실제 데이터로 확인됨) |
+| `status` | `DRAFT`(초안, 실제 데이터 미확인) / `APPROVED`(실제 데이터로 확인됨) |
 | `appliesTo` | 적용 범위: `dataEnvironments`, `gameModes`, `sourceBuilds` |
 | `slots` | 슬롯 목록. 슬롯마다 `code`, 한국어 라벨 키 `labelKey`, `rankable`(랭킹 대상 여부), `group`(armor / jewelry / weapon / cosmetic 등), `displayOrder` |
 | `excludedSlots` | 랭킹 계산에서 제외할 슬롯(예: 외형용 슬롯) |
@@ -522,7 +522,7 @@ Gear Profile 항목:
   - 장비 랭킹과 최고 아이템 랭킹을 계산하지 않는다.
   - 화면에 "장비 랭킹 준비 중"을 표시한다.
   - Armory는 장착 아이템 목록만 보여주고, 평균 값 자리에 "계산 기준 확인 중"을 표시한다.
-- `mock` 환경은 `PROVISIONAL` 프로필(`mock-provisional`)을 사용할 수 있다. 이 프로필의 슬롯 목록과 정책은 개발용 가정이며 실제 게임 규칙이 아니다.
+- `mock` 환경은 `DRAFT` 프로필(`mock-provisional`)을 사용할 수 있다. 이 프로필의 슬롯 목록과 정책은 개발용 가정이며 실제 게임 규칙이 아니다.
 
 ## 9.6 기타 규칙
 
@@ -1423,7 +1423,7 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 
 # 30. 실제 데이터 확인이 필요한 항목
 
-아래 항목은 **확인 전까지 코드에서 확정값으로 하드코딩하지 않는다.** 설정값, 임시(`PROVISIONAL`) 값, 또는 "준비 중" 상태로 처리한다.
+아래 항목은 **확인 전까지 코드에서 확정값으로 하드코딩하지 않는다.** 설정값, 초안(`DRAFT`) 값, 또는 "준비 중" 상태로 처리한다.
 
 | 번호 | 항목 | 영향 범위 |
 |---|---|---|

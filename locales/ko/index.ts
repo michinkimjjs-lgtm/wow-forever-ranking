@@ -7,6 +7,7 @@ import { home } from "./home";
 import { rankings } from "./rankings";
 import { seo } from "./seo";
 import { stats } from "./stats";
+import { submissions } from "./submissions";
 
-export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo };
+export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo, submissions };
 export type Messages = typeof ko;

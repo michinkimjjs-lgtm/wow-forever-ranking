@@ -45,6 +45,8 @@ export const game = {
     trinket_2: "장신구 2",
     main_hand: "주 무기",
     off_hand: "보조 무기",
+    ranged: "원거리",
+    ammo: "탄약",
     shirt: "셔츠",
     tabard: "휘장",
   } as Record<string, string>,

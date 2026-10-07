@@ -31,7 +31,8 @@ export type MilestoneTimingBasis = (typeof MILESTONE_TIMING_BASES)[number];
 export const INGESTION_STATUSES = ["ACCEPTED", "REJECTED", "IDENTITY_CONFLICT"] as const;
 export type IngestionStatus = (typeof INGESTION_STATUSES)[number];
 
-export const GEAR_PROFILE_STATUSES = ["PROVISIONAL", "APPROVED"] as const;
+/** DRAFT: 초안(실제 데이터 미확인). mock 영역에서만 랭킹에 쓸 수 있다. APPROVED: 실제 데이터로 확인되어 승인됨 */
+export const GEAR_PROFILE_STATUSES = ["DRAFT", "APPROVED"] as const;
 export type GearProfileStatus = (typeof GEAR_PROFILE_STATUSES)[number];
 
 export const TWO_HAND_WEAPON_POLICIES = ["COUNT_ONCE", "COUNT_TWICE", "OFFHAND_AS_EMPTY"] as const;
@@ -55,3 +56,7 @@ export function isMockTripleConsistent(
   if (verificationStatus === undefined) return true;
   return envIsMock === (verificationStatus === "MOCK");
 }
+
+/** Gear Profile 계산 방식. 계산 방식이 바뀌면 calculation.version을 올린다. */
+export const GEAR_CALCULATION_METHODS = ["MEAN_OF_RANKABLE_EQUIPPED"] as const;
+export type GearCalculationMethod = (typeof GEAR_CALCULATION_METHODS)[number];

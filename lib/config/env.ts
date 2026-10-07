@@ -33,3 +33,21 @@ export function getSiteUrl(): string {
 export function getRequestableEnvironments(appEnv: DataEnvironment): DataEnvironment[] {
   return appEnv === "mock" ? ["mock"] : ["beta", "live"];
 }
+
+/**
+ * 캐릭터 제출 API 기능 플래그 (docs/ARCHITECTURE.md §8)
+ * - FEATURE_CHARACTER_SUBMISSIONS=on 이고 SUBMISSIONS_ADMIN_TOKEN이 32자 이상일 때만 켜진다.
+ * - 기본값은 꺼짐. 꺼져 있으면 API는 404로 응답한다(존재를 드러내지 않음).
+ * - 지금은 관리자 / 개발 환경 검증용이다. 공개하지 않는다.
+ */
+export interface SubmissionSettings {
+  enabled: boolean;
+  adminToken: string | null;
+}
+
+export function getSubmissionSettings(): SubmissionSettings {
+  const flag = process.env.FEATURE_CHARACTER_SUBMISSIONS;
+  const token = process.env.SUBMISSIONS_ADMIN_TOKEN ?? null;
+  const tokenOk = token !== null && token.length >= 32;
+  return { enabled: flag === "on" && tokenOk, adminToken: tokenOk ? token : null };
+}

@@ -16,6 +16,9 @@
 MockCharacterProvider (mock 배포 전용)       BlizzardProvider / AddonProvider (미구성)
             │
             ▼
+lib/submissions/*  — Character Export v1 제출 (validate → normalize → identify → calculate gear → store, §8)
+            │
+            ▼
 lib/ingestion/ingest.ts  — 수집 파이프라인
   1. ingestion_records에 원본 저장
   2. 금지 필드(rank 등) 제거, 입력 스키마 검증
@@ -62,6 +65,7 @@ lib/
   ingestion/            수집 파이프라인
   mock/                 결정적 mock 데이터 생성기, seed
   queries/              검색 / 캐릭터 / 길드 / 홈 조회
+  submissions/          Character Export v1 제출: 스키마, 정규화, 처리, HTTP, 요청 제한
   ranking/              랭킹 엔진 (level.ts, gear.ts, highest-item.ts, index.ts)
   server/               서버 컨텍스트, 서비스 계층
 locales/ko/             한국어 UI 문자열
@@ -97,13 +101,16 @@ tests/                  Vitest 테스트
 | `config/game-scopes.ts` | 영역별 region / gameMode / 최대 레벨. beta / live는 미확정이라 `null` |
 | `config/codes.ts` | 직업 / 종족 / 진영 / 품질 코드. mock 임시 값 |
 | `config/ranking.ts` | 오래된 데이터 기준(7일), 랭킹 포함 검증 상태, 페이지 크기, 스냅샷 주기(24시간) |
-| `config/gear-profiles/*` | Gear Profile. 현재 `mock-provisional`(PROVISIONAL) 하나뿐 |
+| `config/gear-profiles/*` | Gear Profile (`docs/GEAR-PROFILE.md`). `mock-provisional`(DRAFT, mock), `forever-draft`(DRAFT, beta·live — 랭킹에 쓰지 않음) |
+| `config/export-mapping.ts` | Character Export v1의 원본 값 → 우리 코드 매핑. 모든 값이 Runtime verification required라 비어 있음 |
 
 환경변수:
 
 - `APP_DATA_ENVIRONMENT` (필수)
 - `DATABASE_URL` (필수)
 - `SITE_URL`
+- `FEATURE_CHARACTER_SUBMISSIONS` (`on`일 때만 제출 API 활성, 기본 꺼짐)
+- `SUBMISSIONS_ADMIN_TOKEN` (32자 이상, 제출 API 관리자 토큰)
 
 ## 6. 렌더링과 캐시
 
@@ -131,3 +138,41 @@ npm run lint
 npm run test
 npm run build
 ```
+
+## 8. 캐릭터 제출 API (Phase 2B-1, 비공개)
+
+`POST /api/v1/submissions/character`
+
+이 API는 공개하지 않습니다. 관리자 / 개발 환경에서 Character Export v1을 검증하는 용도입니다.
+
+### 접근 조건
+
+| 조건 | 응답 |
+|---|---|
+| 기능 플래그 꺼짐 (`FEATURE_CHARACTER_SUBMISSIONS != on` 또는 토큰 없음) — **기본값** | `404` (존재를 드러내지 않음) |
+| `Authorization: Bearer <SUBMISSIONS_ADMIN_TOKEN>` 불일치 | `401` |
+| 요청 제한 초과 (토큰당 분당 30회, 메모리 기반) | `429` |
+| `Content-Type`이 JSON이 아님 | `415` |
+| 본문 256KB 초과 | `413` |
+| mock 배포에서 `dryRun` 없이 요청 | `409` (mock DB에는 실제 데이터를 넣을 수 없음) |
+
+### 처리 순서 (`lib/submissions/submit.ts`)
+
+```text
+1. validate   characterExportV1Schema (zod, docs/schemas/character-export-v1.schema.json과 같은 구조)
+              실패 → 400, DB에 아무것도 쓰지 않음
+2. normalize  config/export-mapping.ts로 원본 값 → 우리 코드. 매핑이 없으면 추정하지 않고 거부
+              슬롯 이름 → 슬롯 코드는 resolveSlotMappingProfile (DRAFT 포함)
+              실패 → 422, DB에 아무것도 쓰지 않음
+3. identify   읽기 전용: 외부 ID(GUID) → 자연 키 (region, gameMode, 이름+성)
+4. calculate  calculateEquippedItemLevel. 랭킹용 APPROVED 프로필이 없으면 초안으로 미리보기만 (usableForRanking = false)
+5. store      ingestObservation (dryRun이면 생략)
+              ingestion_records에 원본 export 보관, parserVersion = character-export-v1@1
+              dataSource = addon, verificationStatus = COMMUNITY_SUBMITTED (자동으로 VERIFIED가 되지 않음)
+```
+
+- 대상 영역: 배포가 `live`면 live, 그 밖에는 beta입니다.
+- mock 배포의 dryRun은 beta 설정으로 검증하고 DB를 조회하지 않습니다(identify = `SKIPPED`).
+- 현재 `config/export-mapping.ts`가 비어 있어서, 실제 export는 모두 `MAPPING_MISSING`으로 거부됩니다. 이것이 의도된 동작입니다.
+  - 매핑 값은 실제 게임 실행으로 확인한 뒤 채웁니다(Runtime verification required).
+- 오류 응답은 `{ error: { code, message, stage, issues[] } }`이고, `message`는 한국어입니다.

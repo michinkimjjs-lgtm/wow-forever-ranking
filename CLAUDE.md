@@ -175,7 +175,7 @@ Phase 1에서는 다음과 같이 구현한다.
 - 존재가 확인되지 않은 Blizzard API 엔드포인트, 애드온 API, 게임 서버 구조(Realm 등)를 임의로 만들어 구현하지 않는다.
 - 미확인 항목(명세서 §30)은 다음 중 하나로 처리한다.
   - 설정값
-  - 임시(`PROVISIONAL`) 값
+  - 초안(`DRAFT`) 값
   - 화면의 "준비 중" 상태
 - 미확인 항목을 코드에 확정값으로 하드코딩하지 않는다.
 - 게임의 최대 레벨, 장비 슬롯, region / gameMode 값, 직업 목록은 설정으로 관리한다.
@@ -384,7 +384,7 @@ Gear Profile의 **랭킹 대상 슬롯**에 장착한 아이템의 아이템 레
 - 양손 무기 처리(`twoHandWeaponPolicy`: `COUNT_ONCE` | `COUNT_TWICE` | `OFFHAND_AS_EMPTY`)
 - 미착용 슬롯 처리(`emptySlotPolicy`: `EXCLUDE_FROM_DENOMINATOR` | `COUNT_AS_ZERO`)
 - 최소 데이터 커버리지(`minimumCoverage`)
-- 프로필 상태(`PROVISIONAL` | `APPROVED`)와 버전
+- 프로필 상태(`DRAFT` | `APPROVED`)와 버전 (상세: `docs/GEAR-PROFILE.md`)
 
 계산 결과에는 사용한 프로필 ID와 버전을 함께 저장한다.
 

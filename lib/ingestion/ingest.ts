@@ -28,7 +28,7 @@ import {
   type VerificationStatus,
 } from "@/lib/domain/enums";
 import { normalizeName, toSlug } from "@/lib/domain/names";
-import { calculateGear, type GearCalculation } from "@/lib/gear/calculate";
+import { calculateEquippedItemLevel, type EquippedItemLevelResult } from "@/lib/gear/calculate";
 import { sha256, stableStringify } from "@/lib/util/stable-json";
 import {
   characterObservationSchema,
@@ -51,6 +51,11 @@ export interface IngestionContext {
   newId?: () => string;
   /** 수신 시각. 기본값은 현재 시각 */
   receivedAt?: Date;
+  /**
+   * ingestion_records에 보관할 원본. 기본값은 raw.
+   * 제출 API처럼 원본(예: Character Export v1)을 정규화한 뒤 넘기는 경우, 재처리를 위해 원본을 보관한다.
+   */
+  originalPayload?: unknown;
 }
 
 export interface IngestionResult {
@@ -158,8 +163,8 @@ export async function ingestObservation(
       sourceBuild: typeof payload.sourceBuild === "string" ? payload.sourceBuild : null,
       parserVersion: ctx.parserVersion,
       receivedAt,
-      payload: raw as object,
-      payloadHash: sha256(stableStringify(raw)),
+      payload: (ctx.originalPayload ?? raw) as object,
+      payloadHash: sha256(stableStringify(ctx.originalPayload ?? raw)),
       status: failure ? "REJECTED" : "ACCEPTED",
       warnings,
       rejectionReason: failure ?? null,
@@ -277,15 +282,15 @@ async function applyObservation(
   }
 
   const profile = resolveGearProfile(env, gameMode, obs.sourceBuild ?? null);
-  const gear: GearCalculation | null =
+  const gear: EquippedItemLevelResult | null =
     obs.equipment && profile
-      ? calculateGear(
-          profile,
+      ? calculateEquippedItemLevel(
           obs.equipment.map((e) => ({
             slotCode: e.slotCode,
             itemLevel: e.itemLevel,
             itemSlotCode: e.itemSlotCode ?? null,
           })),
+          profile,
         )
       : null;
   const gearFields = obs.equipment
@@ -630,7 +635,7 @@ async function saveSnapshot(
     obs: CharacterObservation;
     verificationStatus: VerificationStatus;
     guildId: string | null;
-    gear: GearCalculation | null;
+    gear: EquippedItemLevelResult | null;
     profileId: string | null;
     profileVersion: number | null;
     isNew: boolean;

@@ -157,7 +157,7 @@ describe("장비 / 최고 아이템 랭킹", () => {
     const result = await getGearRanking(db, { scope, pagination: page1, now: NOW });
     expect(result.policy).toEqual({
       staleAfterDays: 7,
-      gearProfile: { id: "mock-provisional", version: 1, status: "PROVISIONAL" },
+      gearProfile: { id: "mock-provisional", version: 1, status: "DRAFT" },
     });
   });
 });
