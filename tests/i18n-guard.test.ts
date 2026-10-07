@@ -37,7 +37,7 @@ describe("한국어 UI 문자열 분리", () => {
     expect(ko.game.verificationStatuses).toEqual({
       VERIFIED: "검증됨",
       LOG_VERIFIED: "로그 검증",
-      COMMUNITY_SUBMITTED: "사용자 제출",
+      COMMUNITY_SUBMITTED: "커뮤니티 제출",
       UNVERIFIED: "미검증",
       MOCK: "테스트 데이터",
     });

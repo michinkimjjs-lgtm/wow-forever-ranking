@@ -583,7 +583,7 @@ Gear Profile 항목:
 |---|---|---|
 | `VERIFIED` | 검증됨 | 공식 공급원 등 신뢰할 수 있는 출처로 확인됨 |
 | `LOG_VERIFIED` | 로그 검증 | 전투 로그 등으로 확인됨(향후) |
-| `COMMUNITY_SUBMITTED` | 사용자 제출 | 사용자/애드온이 제출했고 별도 검증 전 |
+| `COMMUNITY_SUBMITTED` | 커뮤니티 제출 | 사용자/애드온이 제출했고 별도 검증 전 (Phase 2D에서 "사용자 제출" → "커뮤니티 제출"로 변경) |
 | `UNVERIFIED` | 미검증 | 출처를 확인할 수 없음 |
 | `MOCK` | 테스트 데이터 | Mock 데이터 |
 
@@ -1123,7 +1123,7 @@ World First는 게임 고유 용어로 사용하되 설명 문구는 한국어�
 마지막 확인
 검증됨
 로그 검증
-사용자 제출
+커뮤니티 제출
 미검증
 테스트 데이터
 데이터 없음
@@ -1450,6 +1450,9 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 17 | Blizzard Forever API의 인증 방식, API base, namespace, 호출 한도, 응답 형식 | `BlizzardProvider` 설정·endpoint·정규화 |
 | 18 | 정적 데이터 공급원(아이템 카탈로그 등)의 이용 조건, attribution, 재배포 가능 여부 | `static_datasets` 가져오기 |
 | 19 | 클라이언트 `Enum.InventoryType` / `Enum.ItemQuality` 값의 의미 | Item Catalog → 슬롯·품질 코드 매핑 |
+| 20 | 제3자 Forever 서비스(WoWCensus, ForeverDB 등)의 이용 조건 원문 | 사용하지 않음. 확인돼도 핵심 공급원으로 고정하지 않음 (`docs/DATA-SOURCE-POLICY.md`) |
+| 21 | 성(surname) 숨김 캐릭터의 이름 공개 가능 범위 | 캐릭터 이름 표시 |
+| 22 | 커뮤니티 랭킹 2단계·"전체 서버" 표시 기준값, 모집단 수 근거 | `config/community-ranking.ts` (`docs/DATA-COVERAGE-MODEL.md`) |
 
 ---
 

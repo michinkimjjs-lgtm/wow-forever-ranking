@@ -59,7 +59,7 @@ lib/
   api/                  요청 검증, 응답 형식, 직렬화
   cache/                캐시 인터페이스
   config/               설정 스키마 검증, 환경변수
-  domain/               enum, 이름 정규화, 공급원 우선순위(source-priority.ts)
+  domain/               enum, 이름 정규화, 공급원 우선순위(source-priority.ts), 출처 구분(data-origin.ts), 제출 비교(submission-consistency.ts)
   format/               KST 시간, 숫자 표시
   gear/                 장비 레벨 계산 (Gear Profile 기반)
   i18n/                 locale 접근
@@ -69,6 +69,7 @@ lib/
   submissions/          Character Export v1 제출: 스키마, 정규화, 처리, HTTP, 요청 제한
   ranking/              랭킹 엔진 (level.ts, gear.ts, highest-item.ts, index.ts)
   server/               서버 컨텍스트, 서비스 계층
+  ranking/coverage.ts   데이터 커버리지 (Phase 2D), ranking/community.ts 랭킹 단계·"전체 서버" 표시 판단
   static-data/          정적 게임 데이터: 데이터셋 스키마, 검증, importer, 조회, Item Catalog, 표시명
 locales/ko/             한국어 UI 문자열
 providers/              Provider 인터페이스와 구현 (capabilities.ts, blizzard/: 설정·인증·endpoint·정규화)

@@ -14,6 +14,7 @@ import {
 } from "@/lib/queries/characters";
 import { getGuildById, getGuildBySlug, listGuilds } from "@/lib/queries/guilds";
 import { getHomeOverview } from "@/lib/queries/home";
+import { getDataCoverage, type DataCoverage } from "@/lib/ranking/coverage";
 import type { RankingScope } from "@/lib/ranking/types";
 import { getServerContext } from "./context";
 
@@ -89,6 +90,13 @@ export async function loadGuildList(gameMode?: string) {
 }
 
 /** 필터 선택지용 길드 목록 (짧게 캐시) */
+/** 랭킹 화면의 데이터 범위·출처 안내 (docs/DATA-COVERAGE-MODEL.md) */
+export async function loadDataCoverage(scope: RankingScope) {
+  const ctx = await getServerContext();
+  const key = cacheKey(scope.dataEnvironment, "coverage", scope.gameMode);
+  return cached<DataCoverage>(ctx.cache, key, RANKING_TTL_MS, () => getDataCoverage(ctx.db, scope, ctx.now));
+}
+
 export async function loadGuildOptions(scope: RankingScope) {
   const ctx = await getServerContext();
   const key = cacheKey(scope.dataEnvironment, "guild-options", scope.gameMode);

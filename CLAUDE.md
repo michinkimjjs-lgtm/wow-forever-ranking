@@ -4,6 +4,7 @@
 > 이 파일은 개발할 때 반드시 지켜야 할 규칙의 요약이다. 두 문서가 충돌하면 명세서의 상세 규칙을 따르고, 두 문서를 함께 고친다.
 > Phase 1 구현 결과 문서: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA-SPEC.md`, `docs/RANKING-RULES.md`
 > Phase 2 문서: `docs/FOREVER-API-CAPABILITY.md`, `docs/CHARACTER-EXPORT-V1.md`, `docs/GEAR-PROFILE.md`, `docs/BLIZZARD-API-INTEGRATION-PLAN.md`, `docs/STATIC-GAME-DATA.md`
+> Phase 2D 문서: `docs/DATA-SOURCE-POLICY.md`, `docs/COMMUNITY-RANKING-PLAN.md`, `docs/DATA-COVERAGE-MODEL.md`
 
 ## 1. 프로젝트 목적
 
@@ -429,6 +430,14 @@ MVP에서는 임의의 자체 `Gear Score`를 만들지 않는다.
 - 캐릭터, 장비, 스냅샷, milestone 데이터는 **삭제하지 않는다.**
 - 화면 안내: "최근 7일 이내에 확인된 캐릭터만 표시됩니다." (숫자는 설정값에서 가져온다)
 
+## 랭킹 범위 표시 (Phase 2D)
+
+- 랭킹 이름은 데이터 출처에 맞춘다: 커뮤니티 레벨 랭킹 → Forever Rank 커뮤니티 랭킹 → 공식 데이터 기반 랭킹 (`docs/COMMUNITY-RANKING-PLAN.md`)
+- 랭킹 화면에 데이터 기준 / 데이터 범위 / 데이터 출처 / 검증 상태를 표시한다.
+- "전체 서버 1위" 같은 전체 서버 표현은 `evaluateServerWideClaim`이 허용할 때만 쓴다. 사용자 제출만으로는 허용하지 않는다.
+- 모집단을 모르면 비율(%) 커버리지를 표시하지 않는다. 단계 기준값은 실제 데이터를 보기 전에 임의로 정하지 않는다(`config/community-ranking.ts`, `docs/DATA-COVERAGE-MODEL.md`).
+- 외부 랭킹·census 서비스 데이터와 scraping은 쓰지 않는다. Raider.IO Forever API는 사용하지 않는다(`docs/DATA-SOURCE-POLICY.md`).
+
 ---
 
 # 13. 검증 상태
@@ -437,7 +446,7 @@ MVP에서는 임의의 자체 `Gear Score`를 만들지 않는다.
 |---|---|
 | `VERIFIED` | 검증됨 |
 | `LOG_VERIFIED` | 로그 검증 |
-| `COMMUNITY_SUBMITTED` | 사용자 제출 |
+| `COMMUNITY_SUBMITTED` | 커뮤니티 제출 |
 | `UNVERIFIED` | 미검증 |
 | `MOCK` | 테스트 데이터 |
 

@@ -71,9 +71,15 @@ export const game = {
   verificationStatuses: {
     VERIFIED: "검증됨",
     LOG_VERIFIED: "로그 검증",
-    COMMUNITY_SUBMITTED: "사용자 제출",
+    COMMUNITY_SUBMITTED: "커뮤니티 제출",
     UNVERIFIED: "미검증",
     MOCK: "테스트 데이터",
+  },
+  /** 화면의 데이터 출처 구분 (lib/domain/data-origin.ts) */
+  dataOrigins: {
+    official: "공식",
+    community: "커뮤니티 제출",
+    test: "테스트 데이터",
   },
   dataSources: {
     mock: "테스트 데이터",
