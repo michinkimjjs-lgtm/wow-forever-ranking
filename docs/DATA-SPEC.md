@@ -141,7 +141,7 @@ seed는 mock 영역 데이터만 지우고 다시 만든다.
     "page": 1, "pageSize": 50, "total": 81,
     "dataEnvironment": "mock", "isMockData": true,
     "lastUpdatedAt": "2026-10-05T23:36:00.000Z", "generatedAt": "…",
-    "policy": { "staleAfterDays": 7, "gearProfile": { "id": "mock-provisional", "version": 1, "status": "PROVISIONAL" } },
+    "policy": { "staleAfterDays": 7, "gearProfile": { "id": "mock-provisional", "version": 1, "status": "DRAFT" } },
     "status": "ok"
   }
 }
@@ -165,4 +165,39 @@ seed는 mock 영역 데이터만 지우고 다시 만든다.
 명세서 §30의 16개 항목이 그대로 남아 있다. 이번 단계에서 어떤 항목도 실제 값으로 확정하지 않았다.
 
 - beta / live의 `gameScopes`와 `codes`는 `null`이다.
-- beta / live에 쓸 `APPROVED` Gear Profile이 없다.
+- beta / live에 쓸 `APPROVED` Gear Profile이 없다. Forever 초안 `forever-draft`(DRAFT)만 있다.
+- `config/export-mapping.ts`의 매핑 값이 모두 비어 있다(Runtime verification required).
+
+## 9. 장비 계산 결과 (Phase 2B-1)
+
+`calculateEquippedItemLevel(gear, profile)`의 결과 중 다음 값을 저장합니다. 계산 규칙은 [`GEAR-PROFILE.md`](./GEAR-PROFILE.md)를 따릅니다.
+
+| 저장 위치 | 값 |
+|---|---|
+| `characters.average_item_level` | `averageItemLevel` (`numeric(6,2)`) |
+| `characters.highest_item_level` | `highestItemLevel` |
+| `characters.gear_coverage` | `coverage` (`numeric(4,3)`) |
+| `characters.gear_profile_id` / `gear_profile_version` | 계산에 쓴 프로필. 계산 방식 버전은 프로필 버전에 묶임 |
+| `character_snapshots` | 위 값과 장비 목록(정규화 데이터) |
+
+- 랭킹용 프로필이 없는 영역(현재 beta / live)에서는 위 값을 `null`로 둡니다. 장착 장비(`character_items`)는 저장합니다.
+- `status`(`OK` / `INSUFFICIENT_COVERAGE` / `NO_GEAR_DATA`)는 저장하지 않습니다. 랭킹 쿼리가 저장된 `gear_coverage`와 현재 프로필의 최소 기준으로 매번 판단합니다.
+
+## 10. 제출 데이터 검증 (Character Export v1)
+
+처리 순서는 `validate → normalize → identify → calculate gear → store`입니다. API 구조는 [`ARCHITECTURE.md`](./ARCHITECTURE.md) §8에 있습니다.
+
+| 단계 | 거부 조건 (DB에 쓰지 않음) |
+|---|---|
+| validate | 필수 필드 누락, 잘못된 타입, `schema` / `schemaVersion` 불일치, 잘못된 itemLevel(1 미만, 숫자가 아님, 무한대), 슬롯 이름 형식 오류, 같은 슬롯 이름 중복, 배열 크기 초과(장비 30, 레벨 기록 200) |
+| normalize | 관측 시각 없음 / 미래(5분 초과) / 너무 오래됨(14일 초과), 빌드 정보 없음, 이름·레벨 없음, 매핑 없는 원본 값(`MAPPING_MISSING`), 이름+성 구분자 미확인(`NAME_SEPARATOR_UNCONFIRMED`), 프로필에 없는 슬롯 이름(`UNKNOWN_SLOT`) |
+
+경고만 남기는 경우 (해당 슬롯만 제외하고 계속 처리):
+
+- 아이템 ID가 없거나, 아이템 링크에서 이름을 읽을 수 없는 경우
+- 아이템 레벨이 정수가 아닌 경우: 그 아이템의 레벨을 계산에서 뺍니다.
+
+변환 규칙은 [`CHARACTER-EXPORT-V1.md`](./CHARACTER-EXPORT-V1.md) §6을 따릅니다.
+
+- `dataEnvironment`는 서버 설정이 정합니다. export나 요청에 들어 있는 `dataEnvironment`, `verificationStatus`, `rank` 값은 쓰지 않습니다.
+- 저장되는 검증 상태는 항상 `COMMUNITY_SUBMITTED`입니다.

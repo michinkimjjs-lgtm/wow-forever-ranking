@@ -16,9 +16,9 @@
 | 같은 dataEnvironment / gameMode | ✓ | ✓ | ✓ |
 | 마지막 관측(`last_seen_at`)이 7일 이내 | ✓ | ✓ | ✓ |
 | 검증 상태가 허용 목록에 있음 (mock: MOCK / beta·live: MOCK 외 전부) | ✓ | ✓ | ✓ |
-| 적용 가능한 Gear Profile이 있고 같은 id / version으로 계산됨 | | ✓ | ✓ |
+| 랭킹용 Gear Profile이 있고(beta·live는 `APPROVED`, mock은 `DRAFT` 허용) 같은 id / version으로 계산됨 | | ✓ | ✓ |
 | 장비 관측(`gear_observed_at`)이 7일 이내 | | ✓ | ✓ |
-| 최소 커버리지 충족 (mock-provisional: 75%) | | ✓ | ✓ (`highestItemRequiresCoverage`) |
+| 최소 coverage 충족 (현재 프로필 모두 75%) | | ✓ | ✓ (`highestItemRequiresCoverage = true`, §5) |
 
 - 7일 기준은 `config/ranking.ts`의 `staleAfterDays`로 영역별로 바꿀 수 있다.
 - 제외된 캐릭터의 데이터는 삭제하지 않는다. 검색과 Armory에서는 계속 보이고 "현재 랭킹 제외"로 표시한다.
@@ -47,20 +47,21 @@
 4. id ASC
 ```
 
-평균 장비 레벨 계산(`lib/gear/calculate.ts`)은 Gear Profile 설정만 따른다.
+평균 장비 레벨은 `calculateEquippedItemLevel`(`lib/gear/calculate.ts`)이 Gear Profile 설정만 따라 계산합니다. 상세 공식과 프로필 구조는 [`GEAR-PROFILE.md`](./GEAR-PROFILE.md)에 있습니다.
 
-- 계산 대상: `rankable = true`이고 `excludedSlots`에 없는 슬롯(셔츠, 휘장 제외)
-- 양손 무기(`twoHandWeapon.policy`)
-  - `COUNT_ONCE`: 보조 무기 슬롯을 분모에서 뺀다 (mock-provisional)
-  - `COUNT_TWICE`: 주 무기 레벨을 두 번 센다
-  - `OFFHAND_AS_EMPTY`: 보조 무기를 빈 슬롯으로 본다
-- 빈 슬롯(`emptySlotPolicy`)
-  - `EXCLUDE_FROM_DENOMINATOR` (mock-provisional)
-  - `COUNT_AS_ZERO`
-- 아이템 레벨을 모르는 아이템은 계산하지 않고 커버리지만 낮춘다.
-- 커버리지 = 아이템 레벨을 아는 장착 슬롯 수 ÷ 예상 슬롯 수
-- 평균은 소수점 둘째 자리에서 반올림해 저장한다(`numeric(6,2)`). 정렬과 표시가 같은 값을 쓴다.
-- 자체 Gear Score는 만들지 않는다.
+- 계산 대상: `rankable = true`이고 `excludedSlots`에 없는 슬롯 (셔츠·휘장 제외. Forever 초안은 탄약도 제외)
+- 빈 슬롯: 평균에 넣지 않습니다(`EXCLUDE_FROM_DENOMINATOR`). coverage는 낮아집니다.
+- 양손 무기: 실제 Forever 장비 데이터로 확인하기 전까지 **두 슬롯으로 중복 계산하지 않습니다**.
+  - `COUNT_ONCE`가 기본이며, 보조 무기 슬롯을 분모에서 뺍니다.
+  - 설정으로 `COUNT_TWICE` / `OFFHAND_AS_EMPTY`로 바꿀 수 있습니다.
+- 잘못된 아이템 레벨(null, 숫자가 아님, NaN, 무한대, 음수·0, `itemLevelBounds` 밖): 계산하지 않고 coverage만 낮춥니다.
+- coverage = 유효 아이템 수 ÷ 예상 슬롯 수
+- coverage가 최소 기준보다 낮으면(`INSUFFICIENT_COVERAGE`):
+  - 평균은 저장하지만 **랭킹에 쓰지 않습니다**.
+  - 장비 랭킹에서 제외하고, Armory에 "장비 정보 부족"을 표시합니다.
+- 평균은 소수점 둘째 자리에서 반올림해 저장합니다(`numeric(6,2)`). 정렬과 표시가 같은 값을 씁니다.
+- 동률은 `highest_item_level`, 이름, `id` 순으로 끊습니다. 순위는 동률이어도 1, 2, 3…으로 이어집니다.
+- 자체 Gear Score는 만들지 않습니다.
 
 ## 5. 최고 아이템 랭킹
 
@@ -71,16 +72,21 @@
 4. id ASC
 ```
 
-- 최고 아이템은 랭킹 대상 슬롯 중 가장 높은 아이템 레벨이다.
-- 아이템명은 그 아이템 레벨을 가진 슬롯 중 표시 순서가 앞선 슬롯의 아이템이다.
+- 최고 아이템은 랭킹 대상 슬롯의 유효 아이템 중 가장 높은 아이템 레벨입니다.
+- 아이템명은 그 아이템 레벨을 가진 슬롯 중 표시 순서가 앞선 슬롯의 아이템입니다.
+- **coverage 정책: 최고 아이템 랭킹에도 최소 coverage를 적용합니다** (`highestItemRequiresCoverage = true`).
+  - 장비 일부만 담긴 제출 데이터가 최고 아이템 랭킹을 차지하지 않게 하기 위해서입니다.
+  - 장비 랭킹과 대상 캐릭터를 같게 맞춥니다.
+  - 근거와 변경 방법은 [`GEAR-PROFILE.md`](./GEAR-PROFILE.md) §5에 있습니다.
 
 ## 6. Gear Profile이 없을 때
 
-- beta / live에는 `APPROVED` 프로필이 아직 없다.
-- 이 경우 장비 / 최고 아이템 랭킹은 계산하지 않는다.
+- beta / live에는 Forever 초안 `forever-draft`(**DRAFT**)만 있고, `APPROVED` 프로필은 아직 없습니다.
+- 이 경우 장비 / 최고 아이템 랭킹은 계산하지 않고, 추정 숫자도 표시하지 않습니다.
   - API: `meta.status = "unavailable"`, `unavailableReason = "GEAR_PROFILE_NOT_APPROVED"`
   - 화면: "장비 랭킹 준비 중"
-- mock은 `mock-provisional`(PROVISIONAL)을 사용한다. 화면에 "장비 계산 기준은 개발용 임시 기준입니다."를 표시한다.
+  - 수집할 때도 평균 장비 레벨을 저장하지 않습니다(`gear_profile_id = null`).
+- mock은 `mock-provisional`(**DRAFT**)을 사용합니다. 화면에 "장비 계산 기준은 개발용 임시 기준입니다."를 표시합니다.
 
 ## 7. Armory "현재 랭킹"
 

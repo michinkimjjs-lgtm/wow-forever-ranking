@@ -6,7 +6,7 @@ import { and, asc, count, desc, eq, ilike, inArray, max, sql, type SQL } from "d
 import { characterItems, characters, guilds, items, levelMilestones } from "@/db/schema";
 import type { AppDatabase } from "@/db/types";
 import { resolveGearProfile } from "@/lib/config";
-import type { DataEnvironment } from "@/lib/domain/enums";
+import type { DataEnvironment, GearProfileStatus } from "@/lib/domain/enums";
 import { escapeLikePattern, normalizeName } from "@/lib/domain/names";
 import { getCharacterRanks, type CharacterRank } from "@/lib/ranking";
 import { staleCutoff } from "@/lib/ranking/common";
@@ -177,7 +177,7 @@ export interface CharacterDetail extends CharacterSummary {
   sourceBuild: string | null;
   gearCoverage: number | null;
   gearObservedAt: Date | null;
-  gearProfile: { id: string; version: number; status: "PROVISIONAL" | "APPROVED"; meetsCoverage: boolean } | null;
+  gearProfile: { id: string; version: number; status: GearProfileStatus; meetsCoverage: boolean } | null;
   currentLevel: {
     level: number;
     effectiveReachedAt: Date;

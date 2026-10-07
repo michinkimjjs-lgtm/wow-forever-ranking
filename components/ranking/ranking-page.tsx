@@ -72,7 +72,7 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
   if (type !== "level" && profile?.minimumCoverage.minRankableSlotRatio !== undefined) {
     notices.push(t(m.rankings.notices.gearRule, { percent: formatPercent(profile.minimumCoverage.minRankableSlotRatio) }));
   }
-  if (type !== "level" && profile?.status === "PROVISIONAL") notices.push(m.rankings.notices.provisionalProfile);
+  if (type !== "level" && profile?.status === "DRAFT") notices.push(m.rankings.notices.provisionalProfile);
   if (parsed.scope.dataEnvironment !== "mock") notices.push(m.rankings.notices.submittedOnly);
 
   return (

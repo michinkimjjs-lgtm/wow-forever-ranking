@@ -1,4 +1,4 @@
-import type { DataEnvironment, MilestoneTimingBasis, VerificationStatus, DataSource } from "@/lib/domain/enums";
+import type { DataEnvironment, DataSource, GearProfileStatus, MilestoneTimingBasis, VerificationStatus } from "@/lib/domain/enums";
 
 /** 랭킹은 항상 하나의 dataEnvironment와 하나의 gameMode 안에서만 계산한다(명세서 §10.3). */
 export interface RankingScope {
@@ -54,7 +54,7 @@ export interface RankingRow {
 
 export interface RankingPolicy {
   staleAfterDays: number;
-  gearProfile: { id: string; version: number; status: "PROVISIONAL" | "APPROVED" } | null;
+  gearProfile: { id: string; version: number; status: GearProfileStatus } | null;
 }
 
 export type RankingResult =

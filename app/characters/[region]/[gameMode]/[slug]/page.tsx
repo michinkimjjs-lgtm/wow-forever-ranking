@@ -73,7 +73,7 @@ export default async function CharacterPage({ params }: { params: Params }) {
   if (!profile) gearNotices.push(g.profilePending);
   else {
     if (!profile.meetsCoverage) gearNotices.push(g.insufficient);
-    if (profile.status === "PROVISIONAL") gearNotices.push(g.provisional);
+    if (profile.status === "DRAFT") gearNotices.push(g.provisional);
   }
 
   return (
