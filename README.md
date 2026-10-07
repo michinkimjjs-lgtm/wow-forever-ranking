@@ -14,6 +14,7 @@ docker compose up -d               # 로컬 PostgreSQL (이미 있으면 생략)
 npm run db:migrate
 npm run db:init -- --allow=mock    # DB 식별 표식 (한 번만)
 npm run db:seed -- --confirm-mock  # mock 데이터 생성
+npm run static-data:import -- --mock --confirm-mock --commit  # (선택) mock 정적 게임 데이터셋
 npm run dev
 ```
 

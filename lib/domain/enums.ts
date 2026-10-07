@@ -60,3 +60,26 @@ export function isMockTripleConsistent(
 /** Gear Profile 계산 방식. 계산 방식이 바뀌면 calculation.version을 올린다. */
 export const GEAR_CALCULATION_METHODS = ["MEAN_OF_RANKABLE_EQUIPPED"] as const;
 export type GearCalculationMethod = (typeof GEAR_CALCULATION_METHODS)[number];
+
+/** 정적 게임 데이터 종류 (docs/STATIC-GAME-DATA.md) */
+export const STATIC_DATA_KINDS = [
+  "items",
+  "classes",
+  "races",
+  "factions",
+  "game_modes",
+  "dungeons",
+  "raids",
+  "bosses",
+] as const;
+export type StaticDataKind = (typeof STATIC_DATA_KINDS)[number];
+
+/**
+ * 정적 데이터셋의 이용 조건 확인 상태
+ * - PERMITTED: 이용 조건을 확인했고 저장·표시가 허용됨 (조건 URL과 확인 날짜 필수)
+ * - MOCK: 개발용 가짜 데이터 (mock 영역 전용)
+ * - UNKNOWN: 이용 조건을 확인하지 못함 → DB에 넣지 않음
+ * - PROHIBITED: 이용 조건상 사용할 수 없음 → DB에 넣지 않음
+ */
+export const STATIC_DATA_LICENSE_STATUSES = ["PERMITTED", "MOCK", "UNKNOWN", "PROHIBITED"] as const;
+export type StaticDataLicenseStatus = (typeof STATIC_DATA_LICENSE_STATUSES)[number];

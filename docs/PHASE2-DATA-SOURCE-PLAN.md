@@ -133,7 +133,7 @@
 | **C. Blizzard Game Data API** | 공식 item / item class / media | 공개 대기 |
 | **D. 커뮤니티 데이터셋** | 데이터셋마다 다름 | 라이선스 확인 필요 |
 
-### 7-2. 구조 (구현은 다음 단계)
+### 7-2. 구조 (Phase 2C에서 importer·검증 구현. 현재 구조는 [`STATIC-GAME-DATA.md`](./STATIC-GAME-DATA.md))
 
 ```text
 ItemCatalogSource (공급원별 어댑터)

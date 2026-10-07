@@ -29,6 +29,8 @@ import {
   DATA_SOURCES,
   INGESTION_STATUSES,
   MILESTONE_TIMING_BASES,
+  STATIC_DATA_KINDS,
+  STATIC_DATA_LICENSE_STATUSES,
   VERIFICATION_STATUSES,
 } from "../lib/domain/enums";
 
@@ -37,6 +39,8 @@ export const dataSourceEnum = pgEnum("data_source", DATA_SOURCES);
 export const verificationStatusEnum = pgEnum("verification_status", VERIFICATION_STATUSES);
 export const milestoneTimingBasisEnum = pgEnum("milestone_timing_basis", MILESTONE_TIMING_BASES);
 export const ingestionStatusEnum = pgEnum("ingestion_status", INGESTION_STATUSES);
+export const staticDataKindEnum = pgEnum("static_data_kind", STATIC_DATA_KINDS);
+export const staticDataLicenseStatusEnum = pgEnum("static_data_license_status", STATIC_DATA_LICENSE_STATUSES);
 
 const tz = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 const createdAt = () => tz("created_at").notNull().defaultNow();
@@ -404,7 +408,71 @@ export const levelMilestones = pgTable(
   ],
 );
 
-/** data_environment 쓰기 트리거를 거는 게임 데이터 테이블 목록 (마이그레이션 0002와 일치해야 한다) */
+// ---------------------------------------------------------------------------
+// static_datasets — 정적 게임 데이터셋 (Phase 2C, docs/STATIC-GAME-DATA.md)
+//
+// 데이터셋은 버전별로 쌓는다. 같은 (영역, 종류, 공급원, datasetVersion)을 다른 내용으로 덮어쓰지 않는다.
+// 행 수정은 트리거(마이그레이션 0004)가 막는다.
+// ---------------------------------------------------------------------------
+export const staticDatasets = pgTable(
+  "static_datasets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
+    kind: staticDataKindEnum("kind").notNull(),
+    /** 데이터셋 공급원 코드 (예: mock). 캐릭터 dataSource와는 별개 */
+    source: text("source").notNull(),
+    sourceVersion: text("source_version").notNull(),
+    sourceBuild: text("source_build"),
+    interfaceVersion: text("interface_version"),
+    datasetVersion: text("dataset_version").notNull(),
+    observedAt: tz("observed_at").notNull(),
+    licenseStatus: staticDataLicenseStatusEnum("license_status").notNull(),
+    licenseTermsUrl: text("license_terms_url"),
+    licenseCheckedAt: text("license_checked_at"),
+    attribution: text("attribution"),
+    checksum: text("checksum").notNull(),
+    recordCount: integer("record_count").notNull(),
+    importedAt: tz("imported_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check("static_datasets_mock_source", sql`(data_environment = 'mock') = (source = 'mock')`),
+    check("static_datasets_mock_license", sql`(data_environment = 'mock') = (license_status = 'MOCK')`),
+    // 실제 영역에는 이용 조건을 확인한 데이터셋만 넣는다.
+    check(
+      "static_datasets_license_confirmed",
+      sql`data_environment = 'mock' OR (license_status = 'PERMITTED' AND license_terms_url IS NOT NULL AND license_checked_at IS NOT NULL)`,
+    ),
+    check("static_datasets_record_count", sql`record_count >= 0`),
+    unique("static_datasets_id_env_kind").on(t.id, t.dataEnvironment, t.kind),
+    uniqueIndex("static_datasets_version_uq").on(t.dataEnvironment, t.kind, t.source, t.datasetVersion),
+    index("static_datasets_latest_idx").on(t.dataEnvironment, t.kind, t.observedAt),
+  ],
+);
+
+export const staticDataRecords = pgTable(
+  "static_data_records",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    datasetId: uuid("dataset_id").notNull(),
+    dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
+    kind: staticDataKindEnum("kind").notNull(),
+    /** 데이터셋 안의 고유 키 (아이템: itemId, 그 밖: code) */
+    recordKey: text("record_key").notNull(),
+    data: jsonb("data").notNull(),
+  },
+  (t) => [
+    foreignKey({
+      name: "static_data_records_dataset_fk",
+      columns: [t.datasetId, t.dataEnvironment, t.kind],
+      foreignColumns: [staticDatasets.id, staticDatasets.dataEnvironment, staticDatasets.kind],
+    }).onDelete("cascade"),
+    uniqueIndex("static_data_records_dataset_key_uq").on(t.datasetId, t.recordKey),
+    index("static_data_records_env_kind_key_idx").on(t.dataEnvironment, t.kind, t.recordKey),
+  ],
+);
+
+/** data_environment 쓰기 트리거를 거는 게임 데이터 테이블 목록 (마이그레이션 0002, 0004와 일치해야 한다) */
 export const GUARDED_TABLES = [
   "ingestion_records",
   "guilds",
@@ -415,4 +483,6 @@ export const GUARDED_TABLES = [
   "character_items",
   "character_snapshots",
   "level_milestones",
+  "static_datasets",
+  "static_data_records",
 ] as const;

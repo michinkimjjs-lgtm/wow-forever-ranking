@@ -3,6 +3,7 @@
 > 상세 설계는 `WOW_FOREVER_RANKING_SPEC.md`(v2, 설계 확정본)를 따른다.
 > 이 파일은 개발할 때 반드시 지켜야 할 규칙의 요약이다. 두 문서가 충돌하면 명세서의 상세 규칙을 따르고, 두 문서를 함께 고친다.
 > Phase 1 구현 결과 문서: `docs/PRD.md`, `docs/ARCHITECTURE.md`, `docs/DATA-SPEC.md`, `docs/RANKING-RULES.md`
+> Phase 2 문서: `docs/FOREVER-API-CAPABILITY.md`, `docs/CHARACTER-EXPORT-V1.md`, `docs/GEAR-PROFILE.md`, `docs/BLIZZARD-API-INTEGRATION-PLAN.md`, `docs/STATIC-GAME-DATA.md`
 
 ## 1. 프로젝트 목적
 
@@ -209,6 +210,15 @@ providers/
 ### BlizzardProvider
 향후 Blizzard가 WoW: Forever 호환 웹/API를 제공하는 경우 연결한다.
 확인 전까지 엔드포인트를 구현하지 않고, 호출하면 "미구성" 오류를 반환한다.
+- capability(`config/blizzard/capabilities.ts`)는 확인 전까지 모두 `UNKNOWN`. 추측으로 `AVAILABLE`로 바꾸지 않는다.
+- endpoint(`config/blizzard/endpoints.ts`)는 공식 근거가 있는 `AVAILABLE` 기능만 상대 경로로 등록한다. 지금은 비어 있다.
+- URL·namespace·인증 값은 환경변수로만 받는다. 상세: `docs/BLIZZARD-API-INTEGRATION-PLAN.md`
+
+### 공급원 우선순위
+같은 캐릭터가 여러 공급원에 있으면 `VERIFIED → LOG_VERIFIED → COMMUNITY_SUBMITTED → UNVERIFIED → MOCK` 순으로 우선한다. 데이터 출처만으로 `VERIFIED` 처리하지 않는다.
+
+### 정적 게임 데이터
+아이템·직업·종족·진영·게임 모드·던전·공격대·보스는 버전별 데이터셋(`sourceBuild`, `interfaceVersion`, `datasetVersion`, `observedAt`)으로 가져온다. 덮어쓰지 않는다. 이용 조건을 확인하지 않은 데이터는 실제 DB에 넣지 않는다. 상세: `docs/STATIC-GAME-DATA.md`
 
 ### AddonProvider
 공식 웹 API가 부족한 경우 사용자 동의 기반 데이터 제출/수집 구조를 지원한다. 파서는 `sourceBuild`별로 분리한다.
@@ -507,6 +517,7 @@ URL:
 MVP 필수:
 
 - `database_identity`
+- `static_datasets`, `static_data_records` (정적 게임 데이터, Phase 2C)
 - `ingestion_records`
 - `characters`
 - `character_external_refs`

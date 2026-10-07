@@ -224,6 +224,8 @@ ForeverRank 애드온 (수집용, Probe 결과로 확인된 API만 사용)
 
 ## 7. Blizzard 웹 API가 열렸을 때 연결 방법
 
+> 상세 계획과 체크리스트: [`BLIZZARD-API-INTEGRATION-PLAN.md`](./BLIZZARD-API-INTEGRATION-PLAN.md) (Phase 2C)
+
 공식 API가 **발표되고 이용약관을 확인한 뒤에만** 진행합니다. 지금은 엔드포인트를 만들거나 가정하지 않습니다.
 
 1. **문서 확인**
