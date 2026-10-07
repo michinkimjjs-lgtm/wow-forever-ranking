@@ -62,6 +62,14 @@ export const common = {
     timezone: "모든 시각은 한국 시간(KST) 기준입니다.",
     submit: "캐릭터 데이터 제출",
   },
+  /** region / gameMode 설정이 확정되지 않은 영역 (Phase 3B) */
+  setupPending: {
+    title: "데이터 설정 준비 중",
+    body: "이 배포의 지역·게임 모드 설정이 아직 확인되지 않아 랭킹과 검색 데이터를 표시하지 않습니다.",
+    note: "확인되지 않은 값을 실제 게임 값처럼 표시하지 않습니다. 설정이 확인되면 자동으로 표시됩니다.",
+    environment: "데이터 영역: {env}",
+    submitLink: "캐릭터 데이터 제출 안내 보기",
+  },
   notFound: {
     title: "페이지를 찾을 수 없습니다.",
     body: "주소가 바뀌었거나 삭제된 페이지일 수 있습니다.",

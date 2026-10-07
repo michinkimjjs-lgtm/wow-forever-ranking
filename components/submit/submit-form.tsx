@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEvent } from "react";
+import { useRef, useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import type { GearProfile } from "@/lib/config";
 import { formatKstDateTime, formatPercent } from "@/lib/format";
@@ -59,6 +59,8 @@ export function SubmitForm(props: SubmitFormProps) {
   const [serverError, setServerError] = useState<string | null>(null);
   const [result, setResult] = useState<SubmitResponse | null>(null);
   const [inputKey, setInputKey] = useState(0);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   const sizeKb = Math.floor(props.maxBytes / 1024);
   const fail = (code: ClientError) => setFileError(t(s.errors[code], { size: sizeKb }));
@@ -71,6 +73,7 @@ export function SubmitForm(props: SubmitFormProps) {
     setAgreeNoPersonal(false);
     setServerError(null);
     setResult(null);
+    setFileName(null);
     setInputKey((k) => k + 1);
   }
 
@@ -81,6 +84,7 @@ export function SubmitForm(props: SubmitFormProps) {
     setPreview(null);
     setResult(null);
     setServerError(null);
+    setFileName(file?.name ?? null);
     if (!file) return;
     // .lua 파일은 JSON보다 커질 수 있으므로 두 배까지 읽고, 꺼낸 JSON을 다시 제한한다.
     if (file.size > props.maxBytes * 2) return fail("TOO_LARGE");
@@ -145,18 +149,45 @@ export function SubmitForm(props: SubmitFormProps) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-4">
-        <label htmlFor="export-file" className="text-sm font-medium text-foreground">
+        <p id="export-file-label" className="text-sm font-medium text-foreground">
           {s.file.label}
-        </label>
+        </p>
+        {/* 브라우저 기본 파일 선택 UI(영어 "Choose File")는 숨기고 한국어 버튼을 쓴다. */}
         <input
           key={inputKey}
+          ref={fileInput}
           id="export-file"
           type="file"
           accept=".json,.lua,application/json"
           onChange={onFile}
-          className="w-full text-sm text-muted file:mr-3 file:rounded-md file:border file:border-border-strong file:bg-surface-raised file:px-3 file:py-2 file:text-sm file:text-foreground"
+          className="hidden"
+          tabIndex={-1}
+          aria-hidden="true"
         />
-        <p className="text-xs text-subtle">{t(s.file.hint, { size: sizeKb })}</p>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInput.current?.click()}
+            aria-describedby="export-file-name export-file-formats"
+            className="w-full sm:w-auto"
+          >
+            {fileName ? s.file.change : s.file.choose}
+          </Button>
+          <p id="export-file-name" className="min-w-0 break-all text-sm" aria-live="polite">
+            {fileName ? (
+              <>
+                <span className="text-subtle">{s.file.selected}</span> <span className="text-foreground">{fileName}</span>
+              </>
+            ) : (
+              <span className="text-muted">{s.file.none}</span>
+            )}
+          </p>
+        </div>
+        <p id="export-file-formats" className="text-xs text-subtle">
+          {t(s.file.formats, { size: sizeKb })}
+        </p>
+        <p className="text-xs text-subtle">{s.file.hint}</p>
         {reading ? <p className="text-xs text-muted">{s.file.reading}</p> : null}
         {fileError ? (
           <p role="alert" className="text-sm text-danger">

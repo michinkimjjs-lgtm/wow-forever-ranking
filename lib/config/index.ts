@@ -57,11 +57,24 @@ export function getGameScope(env: DataEnvironment): GameScope | null {
   return loadConfig().gameScopes[env];
 }
 
+/**
+ * region / gameMode 설정이 아직 확정되지 않은 영역 (명세서 §30-5, 6).
+ * 애플리케이션 오류가 아니라 "준비 중" 상태다. 화면과 API는 500 대신 준비 중 상태로 응답한다.
+ */
+export class GameScopeNotConfiguredError extends ConfigurationError {
+  constructor(readonly dataEnvironment: DataEnvironment) {
+    super(`${dataEnvironment} 영역의 region / gameMode 설정이 아직 확정되지 않았습니다.`);
+    this.name = "GameScopeNotConfiguredError";
+  }
+}
+
+export function isGameScopeConfigured(env: DataEnvironment): boolean {
+  return getGameScope(env) !== null;
+}
+
 export function requireGameScope(env: DataEnvironment): GameScope {
   const scope = getGameScope(env);
-  if (!scope) {
-    throw new ConfigurationError(`${env} 영역의 region / gameMode 설정이 아직 확정되지 않았습니다.`);
-  }
+  if (!scope) throw new GameScopeNotConfiguredError(env);
   return scope;
 }
 

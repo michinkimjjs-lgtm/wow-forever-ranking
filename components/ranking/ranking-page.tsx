@@ -12,7 +12,8 @@ import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
 import { loadDataCoverage, loadGuildOptions, loadRanking } from "@/lib/server/services";
 import { classifyRankingStage, evaluateServerWideClaim } from "@/lib/ranking/community";
-import { resolveGearProfile } from "@/lib/config";
+import { GameScopeNotConfiguredError, resolveGearProfile } from "@/lib/config";
+import { SetupPending } from "@/components/setup-pending";
 import { cn } from "@/lib/utils";
 import { DataScopePanel } from "./data-scope-panel";
 import { RankingFiltersForm } from "./ranking-filters";
@@ -53,6 +54,18 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
   try {
     parsed = parseListParams(query, appEnv, { strict: false });
   } catch (error) {
+    if (error instanceof GameScopeNotConfiguredError) {
+      return (
+        <div className="flex flex-col gap-5">
+          <PageHeader
+            title={m.rankings.stageTitles[error.dataEnvironment === "mock" ? "TEST_DATA" : "COMMUNITY"][type]}
+            description={m.rankings.descriptions[type]}
+          />
+          <RankingTabs active={type} />
+          <SetupPending dataEnvironment={error.dataEnvironment} />
+        </div>
+      );
+    }
     if (!(error instanceof InvalidQueryError)) throw error;
     return (
       <div className="flex flex-col gap-6">

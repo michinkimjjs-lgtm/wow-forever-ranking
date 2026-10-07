@@ -70,6 +70,11 @@ character_submissions (검토 대기 PENDING / CONFLICT)
   - 삭제 요청
   - 데이터 출처와 검증 상태
   - 파일 만드는 방법
+- 파일 선택 UI (Phase 3B):
+  - 브라우저 기본 파일 입력("Choose File")은 숨깁니다.
+  - 한국어 버튼 "파일 선택"(선택 후 "다른 파일 선택")을 씁니다.
+  - "선택된 파일: (파일 이름)" 또는 "파일을 선택하세요."를 표시합니다.
+  - "지원 형식: .json / .lua · 최대 256KB"를 안내합니다.
 - 지원 파일:
   - `.json`: Character Export v1 JSON
   - `.lua`: Collector SavedVariables. 그 안의 `latestExportJson` 문자열을 브라우저에서 꺼냅니다

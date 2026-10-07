@@ -11,9 +11,9 @@ export const home = {
     lastUpdated: "최근 데이터 갱신",
   },
   cards: {
-    level: "최고 레벨 Top 10",
-    gear: "최고 장비 Top 10",
-    highestItem: "최고 아이템 Top 10",
+    level: "최고 레벨 상위 10명",
+    gear: "최고 장비 상위 10명",
+    highestItem: "최고 아이템 상위 10명",
     recentlyUpdated: "최근 데이터가 갱신된 캐릭터",
     recentLevelUps: "최근 레벨이 상승한 캐릭터",
   },

@@ -18,7 +18,7 @@ export const submissions = {
     UNSUPPORTED_MEDIA_TYPE: "JSON 형식으로 보내야 합니다.",
     PAYLOAD_TOO_LARGE: "제출 데이터가 너무 큽니다.",
     RATE_LIMITED: "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.",
-    MOCK_ENVIRONMENT: "테스트 데이터 환경에서는 검증(dryRun)만 할 수 있습니다.",
+    MOCK_ENVIRONMENT: "테스트 데이터 환경에서는 검증만 할 수 있습니다.",
     INVALID_JSON: "JSON을 읽을 수 없습니다.",
     VALIDATION_FAILED: "제출 데이터를 처리할 수 없습니다.",
     FORBIDDEN_ORIGIN: "허용되지 않은 요청입니다. 제출 화면에서 다시 시도해 주세요.",

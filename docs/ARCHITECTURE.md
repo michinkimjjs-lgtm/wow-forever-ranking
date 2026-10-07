@@ -211,3 +211,25 @@ config/blizzard/
 모든 Provider는 `getCapabilities()`를 제공하고, 같은 내부 계약으로 결과를 넘깁니다. `tests/provider-contract.test.ts`가 MockProvider와 BlizzardProvider(가짜 transport)에 같은 계약 테스트를 실행합니다.
 
 연동 계획은 [`BLIZZARD-API-INTEGRATION-PLAN.md`](./BLIZZARD-API-INTEGRATION-PLAN.md), 정적 데이터는 [`STATIC-GAME-DATA.md`](./STATIC-GAME-DATA.md)를 봅니다.
+
+## 10. 오류와 준비 중 상태 (Phase 3B)
+
+사용자에게 **오류(500)**를 보여 줘야 하는 경우와 **정상 응답 + 준비 중 화면**을 보여 줘야 하는 경우를 구분합니다.
+
+| 상황 | 화면 | API | 비고 |
+|---|---|---|---|
+| 지역·게임 모드 설정 미완료 (현재 beta / live) | 200, "데이터 설정 준비 중" + 데이터 영역 표시 (홈, 랭킹 3종, 캐릭터 검색) | 200, `data: []`, `meta.status = "unavailable"`, `unavailableReason = "GAME_SCOPE_NOT_CONFIGURED"`, 한국어 `meta.notice` | `GameScopeNotConfiguredError`. 확인되지 않은 지역·게임 모드 값을 만들어 표시하지 않음 |
+| 장비 기준(APPROVED Gear Profile) 없음 | 200, "장비 랭킹 준비 중" | 200, `unavailableReason = "GEAR_PROFILE_NOT_APPROVED"` | 기존 동작 |
+| 잘못된 경로 | 404, "페이지를 찾을 수 없습니다." | 404 `NOT_FOUND` | |
+| 없는 캐릭터 / 길드 | 404 | 404 `NOT_FOUND` (캐릭터·길드 한국어 문구) | |
+| 잘못된 필터 | 200, "요청 값이 올바르지 않습니다" 안내 + 초기화 버튼 | 400 `INVALID_QUERY` (알 수 없는 파라미터 포함) | |
+| 제출 기능 OFF | `/submit`: 200, "현재 제출을 받지 않습니다" (파일 확인·미리보기는 가능) | 404 | |
+| 잘못된 파일 | `/submit`: 한국어 오류 문구 | 400 / 413 / 415 / 422 (한국어 `message`) | `docs/SUBMISSION-SYSTEM.md` §3 |
+| 실행 중 DB 연결 실패 | **500**, "데이터를 불러오지 못했습니다." + 다시 시도 (DB가 필요 없는 화면은 정상) | **500** `INTERNAL_ERROR` (한국어) | 실제 장애이므로 오류로 보여 준다 |
+| 시작할 때 DB 연결 실패 / DB 식별 표식 불일치 / `APP_DATA_ENVIRONMENT` 없음 | 서버가 요청을 처리하지 않음 | 같음 | 의도한 fail-closed (명세서 §6.4-4). mock/실제 데이터 혼용을 막기 위한 안전장치 |
+| 설정 파일 검증 실패 등 그 밖의 설정 오류 | 500 | 503 `SERVICE_UNAVAILABLE` | 배포 설정 문제 |
+
+테스트: `tests/setup-pending.test.tsx`
+- beta / live 화면을 서버 컨텍스트를 바꿔 DB 없이 렌더링하고, 준비 중 화면이 나오는지 확인합니다.
+- API 응답 코드를 구분하는지 확인합니다.
+- 한국어 UI 검사와 파일 선택 UI도 함께 확인합니다.
