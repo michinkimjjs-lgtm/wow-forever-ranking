@@ -7,13 +7,17 @@ import { exportMappingConfig } from "@/config/export-mapping";
 import { gameScopesConfig } from "@/config/game-scopes";
 import { gearProfiles } from "@/config/gear-profiles";
 import { rankingConfig } from "@/config/ranking";
-import type { DataEnvironment } from "@/lib/domain/enums";
+import { rulesetsConfig } from "@/config/rulesets";
+import { RULESET_CODES, type DataEnvironment, type RulesetCode } from "@/lib/domain/enums";
 import {
   codesConfigSchema,
   exportMappingConfigSchema,
   gameScopesConfigSchema,
   gearProfilesSchema,
   rankingConfigSchema,
+  rulesetsConfigSchema,
+  type RulesetDefinition,
+  type RulesetsConfig,
   type Codes,
   type ExportMapping,
   type GameScope,
@@ -21,7 +25,7 @@ import {
   type RankingConfig,
 } from "./schema";
 
-export type { Codes, ExportMapping, GameScope, GearProfile, RankingConfig } from "./schema";
+export type { Codes, ExportMapping, GameScope, GearProfile, RankingConfig, RulesetDefinition } from "./schema";
 
 interface LoadedConfig {
   gameScopes: Record<DataEnvironment, GameScope | null>;
@@ -29,6 +33,7 @@ interface LoadedConfig {
   codes: Record<DataEnvironment, Codes | null>;
   gearProfiles: GearProfile[];
   exportMapping: { beta: ExportMapping; live: ExportMapping };
+  rulesets: RulesetsConfig;
 }
 
 let cached: LoadedConfig | null = null;
@@ -41,6 +46,7 @@ export function loadConfig(): LoadedConfig {
     codes: codesConfigSchema.parse(codesConfig),
     gearProfiles: gearProfilesSchema.parse(gearProfiles),
     exportMapping: exportMappingConfigSchema.parse(exportMappingConfig),
+    rulesets: rulesetsConfigSchema.parse(rulesetsConfig),
   };
   return cached;
 }
@@ -147,4 +153,51 @@ function findGearProfile(
 /** Character Export v1 매핑. 실제 영역(beta / live)에만 있다. */
 export function getExportMapping(env: "beta" | "live"): ExportMapping {
   return loadConfig().exportMapping[env];
+}
+
+// ---------------------------------------------------------------------------
+// 공식 Ruleset (docs/RULESETS.md)
+// ---------------------------------------------------------------------------
+
+/** 공식 Ruleset 목록 (RULESET_CODES 순서) */
+export function getRulesets(): RulesetDefinition[] {
+  const list = loadConfig().rulesets.rulesets;
+  return RULESET_CODES.map((code) => list.find((r) => r.code === code)!);
+}
+
+export function getRulesetSources() {
+  return loadConfig().rulesets.officialSources;
+}
+
+export function isRulesetCode(value: string): value is RulesetCode {
+  return (RULESET_CODES as readonly string[]).includes(value);
+}
+
+/** 데이터 영역의 gameMode 코드가 뜻하는 Ruleset. 연결이 없으면 null */
+export function rulesetOfGameMode(env: DataEnvironment, gameMode: string): RulesetCode | null {
+  const mode = getGameScope(env)?.gameModes.find((m) => m.code === gameMode);
+  if (!mode) return null;
+  if (mode.ruleset) return mode.ruleset;
+  return isRulesetCode(mode.code) ? mode.code : null;
+}
+
+/** 데이터 영역에서 Ruleset에 해당하는 gameMode 코드. 설정이 없거나 데이터가 없으면 null */
+export function gameModeForRuleset(env: DataEnvironment, ruleset: RulesetCode): string | null {
+  const scope = getGameScope(env);
+  if (!scope) return null;
+  return scope.gameModes.find((m) => rulesetOfGameMode(env, m.code) === ruleset)?.code ?? null;
+}
+
+/**
+ * 요청한 Ruleset이 이 데이터 영역에 아직 없음 (예: 출시 후 제공되는 하드코어, 설정되지 않은 규칙).
+ * 오류가 아니라 "데이터 준비 중" 상태다.
+ */
+export class RulesetNotAvailableError extends ConfigurationError {
+  constructor(
+    readonly dataEnvironment: DataEnvironment,
+    readonly ruleset: RulesetCode,
+  ) {
+    super(`${dataEnvironment} 영역에는 ${ruleset} 규칙 데이터가 아직 없습니다.`);
+    this.name = "RulesetNotAvailableError";
+  }
 }

@@ -1455,6 +1455,8 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 22 | 커뮤니티 랭킹 2단계·"전체 서버" 표시 기준값, 모집단 수 근거 | `config/community-ranking.ts` (`docs/DATA-COVERAGE-MODEL.md`) |
 | 23 | Collector SavedVariables의 Lua 문자열 이스케이프 형식 (.lua 업로드 추출) | `lib/submissions/preview.ts` |
 | 24 | 제출 데이터 보관 기간, 삭제 요청 창구, 관련 법령 검토 | `docs/PRIVACY-DATA-POLICY.md` |
+| 25 | `Enum.GameMode` 숫자와 공식 Ruleset(일반 / 전쟁 / 롤플레잉 / 하드코어)의 대응. Ruleset 이름·공개 상태는 공식 자료로 확인됨 | `config/rulesets.ts`, `config/export-mapping.ts` (`docs/RULESETS.md`) |
+| 26 | 같은 전체 이름이 다른 Ruleset에 있을 수 있는지, 숨긴 성이 export에 담기는지 | 캐릭터 식별 (`docs/RULESETS.md` §3) |
 
 ---
 

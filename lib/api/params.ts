@@ -4,9 +4,17 @@
  * 순위 값(rank 등)은 받지 않는다(명세서 §10.1).
  */
 import { z } from "zod";
-import { getCodes, getRankingConfig, requireGameScope } from "@/lib/config";
+import {
+  gameModeForRuleset,
+  getCodes,
+  getRankingConfig,
+  isRulesetCode,
+  requireGameScope,
+  rulesetOfGameMode,
+  RulesetNotAvailableError,
+} from "@/lib/config";
 import { getRequestableEnvironments } from "@/lib/config/env";
-import { DATA_ENVIRONMENTS, type DataEnvironment } from "@/lib/domain/enums";
+import { DATA_ENVIRONMENTS, type DataEnvironment, type RulesetCode } from "@/lib/domain/enums";
 import type { RankingFilters, RankingScope, Pagination } from "@/lib/ranking/types";
 
 export class InvalidQueryError extends Error {
@@ -33,7 +41,7 @@ interface ParseOptions {
   strict: boolean;
 }
 
-const LIST_KEYS = ["page", "pageSize", "gameMode", "region", "class", "faction", "guild", "verifiedOnly", "dataEnvironment"] as const;
+const LIST_KEYS = ["page", "pageSize", "gameMode", "ruleset", "region", "class", "faction", "guild", "verifiedOnly", "dataEnvironment"] as const;
 
 function single(params: URLSearchParams, key: string): string | undefined {
   const values = params.getAll(key);
@@ -60,6 +68,8 @@ export interface ParsedListParams {
   scope: RankingScope;
   filters: RankingFilters;
   pagination: Pagination;
+  /** scope.gameMode가 뜻하는 공식 Ruleset. 연결이 없으면 null */
+  ruleset: RulesetCode | null;
 }
 
 /** 목록 / 랭킹 공통 파라미터 */
@@ -88,7 +98,19 @@ export function parseListParams(
   const gameScope = requireGameScope(dataEnvironment);
   const codes = getCodes(dataEnvironment);
 
-  const gameMode = single(params, "gameMode") ?? gameScope.defaultGameMode;
+  // ruleset 파라미터 (docs/RULESETS.md): 공식 Ruleset 코드 → 이 영역의 gameMode. 기존 gameMode 파라미터도 그대로 받는다.
+  const rulesetParam = single(params, "ruleset");
+  const gameModeParam = single(params, "gameMode");
+  let gameMode = gameModeParam ?? gameScope.defaultGameMode;
+  if (rulesetParam !== undefined) {
+    if (!isRulesetCode(rulesetParam)) throw new InvalidQueryError("ruleset 값이 올바르지 않습니다.");
+    const mapped = gameModeForRuleset(dataEnvironment, rulesetParam);
+    if (mapped === null) throw new RulesetNotAvailableError(dataEnvironment, rulesetParam);
+    if (gameModeParam !== undefined && gameModeParam !== mapped) {
+      throw new InvalidQueryError("ruleset과 gameMode가 서로 맞지 않습니다.");
+    }
+    gameMode = mapped;
+  }
   if (!gameScope.gameModes.some((m) => m.code === gameMode)) throw new InvalidQueryError("gameMode 값이 올바르지 않습니다.");
 
   const region = single(params, "region");
@@ -110,6 +132,7 @@ export function parseListParams(
   }
 
   return {
+    ruleset: rulesetOfGameMode(dataEnvironment, gameMode),
     scope: { dataEnvironment, gameMode },
     filters: {
       region,
@@ -142,7 +165,8 @@ export function parseSearchParams(
   const q = single(params, "q") ?? null;
   if (q !== null && q.length > SEARCH_QUERY_MAX_LENGTH) throw new InvalidQueryError("검색어가 너무 깁니다.");
   if (q === null && options.requireQuery) throw new InvalidQueryError("q 파라미터가 필요합니다.");
-  return { ...parsed, q, gameModeSpecified: params.has("gameMode") && single(params, "gameMode") !== undefined };
+  const specified = (key: string) => params.has(key) && single(params, key) !== undefined;
+  return { ...parsed, q, gameModeSpecified: specified("gameMode") || specified("ruleset") };
 }
 
 export function assertNoParams(input: SearchParamsInput, options: ParseOptions, allowed: readonly string[] = []): void {

@@ -30,7 +30,7 @@ export const rankings = {
     faction: "진영",
     guild: "길드",
     environment: "환경",
-    gameMode: "게임 모드",
+    gameMode: "게임 규칙",
     region: "지역",
     verifiedOnly: "검증된 데이터만",
   },
@@ -72,6 +72,14 @@ export const rankings = {
   rankScope: {
     observed: "Forever Rank 확인 캐릭터 중 {rank}위",
     serverWide: "전체 서버 {rank}위",
+  },
+  /** 게임 규칙(Ruleset) 필터 (docs/RULESETS.md) */
+  ruleset: {
+    label: "게임 규칙",
+    pending: "데이터 준비 중",
+    unavailableTitle: "이 게임 규칙의 데이터는 준비 중입니다",
+    unavailableBody: "아직 이 규칙의 랭킹 데이터가 없습니다. 확인되지 않은 값은 표시하지 않습니다.",
+    separateNote: "랭킹은 게임 규칙별로 따로 계산합니다. 규칙이 다른 캐릭터는 함께 순위를 매기지 않습니다.",
   },
   empty: "조건에 맞는 캐릭터가 없습니다.",
   unavailable: {

@@ -45,16 +45,8 @@ export function RankingFiltersForm({
             ))}
           </NativeSelect>
         </label>
-        <label className={field}>
-          {f.gameMode}
-          <NativeSelect name="gameMode" defaultValue={scope.gameMode}>
-            {gameScope?.gameModes.map((mode) => (
-              <option key={mode.code} value={mode.code}>
-                {labelOf(m.game.gameModes, mode.code)}
-              </option>
-            ))}
-          </NativeSelect>
-        </label>
+        {/* 게임 규칙은 RulesetFilter에서 고른다. 필터를 적용해도 현재 규칙을 유지한다. */}
+        <input type="hidden" name="gameMode" value={scope.gameMode} />
         <label className={field}>
           {f.class}
           <NativeSelect name="class" defaultValue={filters.classCode ?? ""}>

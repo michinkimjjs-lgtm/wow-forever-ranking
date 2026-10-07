@@ -46,6 +46,8 @@ verification_status = MOCK
 
 ## 3. 캐릭터 식별 (명세서 §7)
 
+> Phase 3C: 실제 영역의 `game_mode`는 공식 게임 규칙(Ruleset) 코드이고, `character_name`은 전체 이름(이름 + 성)이다. 식별은 region + ruleset + 전체 이름 (`docs/RULESETS.md` §3).
+
 1. `(data_environment, data_source, external_id)` 외부 ID 매핑으로 찾는다.
 2. 없으면 자연 키 `(data_environment, region, game_mode, name_normalized)`로 찾는다.
 3. 둘 다 없으면 새 캐릭터를 만든다.

@@ -6,6 +6,7 @@
 > Phase 2 문서: `docs/FOREVER-API-CAPABILITY.md`, `docs/CHARACTER-EXPORT-V1.md`, `docs/GEAR-PROFILE.md`, `docs/BLIZZARD-API-INTEGRATION-PLAN.md`, `docs/STATIC-GAME-DATA.md`
 > Phase 2D 문서: `docs/DATA-SOURCE-POLICY.md`, `docs/COMMUNITY-RANKING-PLAN.md`, `docs/DATA-COVERAGE-MODEL.md`
 > Phase 3A 문서: `docs/SUBMISSION-SYSTEM.md`, `docs/PRIVACY-DATA-POLICY.md`, `docs/ADMIN-REVIEW.md`
+> Phase 3C 문서: `docs/RULESETS.md` (공식 게임 규칙)
 
 ## 1. 프로젝트 목적
 
@@ -312,6 +313,8 @@ mock 배포는 검색 엔진에 노출하지 않는다(`noindex`).
   3. 둘 다 없으면 새 캐릭터
 - 고유 인덱스: `(data_environment, region, game_mode, slug)`
 - **Realm은 실제 데이터에서 필요성이 확인되기 전까지 필수값으로 가정하지 않는다.** 확인되면 명세서 §7.5 절차로 컬럼과 인덱스를 추가한다.
+- WoW: Forever는 realm이 없고 **전체 이름(이름 + 성)이 region 안에서 고유**하다(Blizzard 공식). 캐릭터는 region + ruleset(게임 규칙) + 전체 이름으로 식별한다. 첫 이름만으로 식별하지 않는다(`docs/RULESETS.md`).
+- 게임 규칙(Ruleset): `normal`(일반) / `pvp`(전쟁) / `roleplaying`(롤플레잉) / `hardcore`(하드코어, 출시 후 제공). 실제 영역에서는 `game_mode` 컬럼에 Ruleset 코드를 저장한다. 클라이언트 `Enum.GameMode` 숫자는 미확인이므로 추측하지 않는다. region과 ruleset을 한 문자열로 합치지 않는다.
 - 레벨 감소 관측은 현재 상태에 반영하지 않고 "식별 충돌"로 기록한다.
 
 URL:

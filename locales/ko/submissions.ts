@@ -8,6 +8,7 @@ export const submissions = {
     SOURCE_BUILD_REQUIRED: "클라이언트 빌드 정보가 없습니다.",
     CHARACTER_NAME_REQUIRED: "캐릭터 이름이 없습니다.",
     CHARACTER_LEVEL_REQUIRED: "캐릭터 레벨이 없습니다.",
+    FULL_NAME_REQUIRED: "전체 이름(이름과 성)을 확인할 수 없어 처리할 수 없습니다. 첫 이름만으로는 캐릭터를 구분하지 않습니다.",
     NAME_SEPARATOR_UNCONFIRMED: "이름과 성의 구분 방식이 아직 확인되지 않아 처리할 수 없습니다.",
     MAPPING_MISSING: "아직 확인되지 않은 게임 값이 있어 처리할 수 없습니다.",
     UNKNOWN_SLOT: "알 수 없는 장비 슬롯입니다.",

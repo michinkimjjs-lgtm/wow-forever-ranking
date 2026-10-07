@@ -77,6 +77,8 @@ const ADMIN_API_REVIEW: SubmissionReviewOptions = {
 const MAPPING_PENDING_CODES: readonly SubmissionIssueCode[] = [
   "MAPPING_MISSING",
   "NAME_SEPARATOR_UNCONFIRMED",
+  // 숨긴 성이 export에 담기는지는 Runtime verification required. 확인 전까지는 버리지 않고 검토 대기로 보관한다.
+  "FULL_NAME_REQUIRED",
   "SLOT_MAPPING_UNAVAILABLE",
   "UNKNOWN_SLOT",
 ];

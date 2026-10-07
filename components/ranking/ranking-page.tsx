@@ -12,7 +12,8 @@ import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
 import { loadDataCoverage, loadGuildOptions, loadRanking } from "@/lib/server/services";
 import { classifyRankingStage, evaluateServerWideClaim } from "@/lib/ranking/community";
-import { GameScopeNotConfiguredError, resolveGearProfile } from "@/lib/config";
+import { GameScopeNotConfiguredError, resolveGearProfile, RulesetNotAvailableError } from "@/lib/config";
+import { RulesetFilter } from "./ruleset-filter";
 import { SetupPending } from "@/components/setup-pending";
 import { cn } from "@/lib/utils";
 import { DataScopePanel } from "./data-scope-panel";
@@ -62,7 +63,21 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
             description={m.rankings.descriptions[type]}
           />
           <RankingTabs active={type} />
+          <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={null} />
           <SetupPending dataEnvironment={error.dataEnvironment} />
+        </div>
+      );
+    }
+    if (error instanceof RulesetNotAvailableError) {
+      return (
+        <div className="flex flex-col gap-5">
+          <PageHeader
+            title={m.rankings.stageTitles[error.dataEnvironment === "mock" ? "TEST_DATA" : "COMMUNITY"][type]}
+            description={m.rankings.descriptions[type]}
+          />
+          <RankingTabs active={type} />
+          <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={error.ruleset} />
+          <EmptyState title={m.rankings.ruleset.unavailableTitle} body={m.rankings.ruleset.unavailableBody} />
         </div>
       );
     }
@@ -102,6 +117,7 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
         <DataFreshness lastUpdatedAt={result.status === "ok" ? result.lastUpdatedAt : null} now={now} />
       </PageHeader>
       <RankingTabs active={type} />
+      <RulesetFilter path={path} query={query} dataEnvironment={parsed.scope.dataEnvironment} active={parsed.ruleset} />
       <RankingFiltersForm
         key={query.toString()}
         action={path}

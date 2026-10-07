@@ -7,6 +7,8 @@ import {
   EMPTY_SLOT_POLICIES,
   GEAR_CALCULATION_METHODS,
   GEAR_PROFILE_STATUSES,
+  RULESET_CODES,
+  RULESET_PUBLIC_STATUSES,
   TWO_HAND_WEAPON_POLICIES,
   VERIFICATION_STATUSES,
 } from "@/lib/domain/enums";
@@ -19,14 +21,76 @@ const perEnvironment = <T extends z.ZodType>(schema: T) =>
 export const gameScopeSchema = z
   .object({
     regions: z.array(z.object({ code })).min(1),
-    gameModes: z.array(z.object({ code, maxLevel: z.number().int().positive().nullable() })).min(1),
+    gameModes: z
+      .array(
+        z.object({
+          code,
+          maxLevel: z.number().int().positive().nullable(),
+          /**
+           * 이 gameMode가 뜻하는 공식 Ruleset (docs/RULESETS.md).
+           * beta / live는 gameMode 코드 자체가 Ruleset 코드여야 한다. mock은 개발용 코드를 Ruleset에 연결한다.
+           */
+          ruleset: z.enum(RULESET_CODES).optional(),
+        }),
+      )
+      .min(1),
     defaultRegion: code,
     defaultGameMode: code,
   })
   .refine((s) => s.regions.some((r) => r.code === s.defaultRegion), "defaultRegion이 regions에 없습니다.")
   .refine((s) => s.gameModes.some((m) => m.code === s.defaultGameMode), "defaultGameMode가 gameModes에 없습니다.");
 
-export const gameScopesConfigSchema = perEnvironment(gameScopeSchema.nullable());
+export const gameScopesConfigSchema = perEnvironment(gameScopeSchema.nullable()).superRefine((config, ctx) => {
+  // 실제 영역은 gameMode 코드 = 공식 Ruleset 코드 (지역과 규칙을 하나의 문자열로 합치지 않는다)
+  for (const env of ["beta", "live"] as const) {
+    for (const mode of config[env]?.gameModes ?? []) {
+      if (!(RULESET_CODES as readonly string[]).includes(mode.code) || (mode.ruleset && mode.ruleset !== mode.code)) {
+        ctx.addIssue({ code: "custom", path: [env, "gameModes"], message: `${env}의 gameMode는 공식 Ruleset 코드여야 합니다: ${mode.code}` });
+      }
+    }
+  }
+});
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+/** 공식 Ruleset 설정 (config/rulesets.ts) */
+export const rulesetsConfigSchema = z
+  .object({
+    rulesets: z
+      .array(
+        z.object({
+          code: z.enum(RULESET_CODES),
+          publicStatus: z.enum(RULESET_PUBLIC_STATUSES),
+          /** 클라이언트 Enum.GameMode 값. 확인 전에는 null + UNKNOWN */
+          clientGameMode: z.discriminatedUnion("status", [
+            z.object({ status: z.literal("UNKNOWN"), value: z.null() }),
+            z.object({ status: z.literal("CONFIRMED"), value: z.number().int().min(0) }),
+          ]),
+          factionRule: z.enum(["BOTH_FACTIONS", "SINGLE_FACTION_PER_ACCOUNT", "UNKNOWN"]),
+          evidence: z.array(z.string()).min(1),
+        }),
+      )
+      .length(RULESET_CODES.length),
+    officialSources: z
+      .array(
+        z.object({
+          id: z.string(),
+          title: z.string().min(1),
+          url: z.string().url().startsWith("https://"),
+          checkedAt: isoDate,
+          finding: z.string().min(1),
+        }),
+      )
+      .min(1),
+  })
+  .refine((c) => RULESET_CODES.every((code) => c.rulesets.some((r) => r.code === code)), "모든 공식 Ruleset이 있어야 합니다.")
+  .refine(
+    (c) => c.rulesets.every((r) => r.evidence.every((id) => c.officialSources.some((s) => s.id === id))),
+    "evidence는 officialSources의 id여야 합니다.",
+  );
+export type RulesetsConfig = z.infer<typeof rulesetsConfigSchema>;
+export type RulesetsConfigInput = z.input<typeof rulesetsConfigSchema>;
+export type RulesetDefinition = RulesetsConfig["rulesets"][number];
 
 export const rankingConfigSchema = z
   .object({
@@ -158,13 +222,22 @@ export const exportMappingSchema = z.object({
   twoHandInventoryTypes: z.array(z.number().int()),
   /** 이름과 성을 잇는 구분자. 확인 전에는 null이며, 성이 있는 제출은 처리하지 않는다. */
   nameSeparator: z.string().min(1).max(3).nullable(),
+  /**
+   * 전체 이름(이름 + 성)을 요구할지. 생략하면 true.
+   * Forever는 전체 이름이 region 안에서 고유하므로 첫 이름만으로 식별하지 않는다(docs/RULESETS.md §3).
+   */
+  requireSurname: z.boolean().optional(),
   /** 관측 시각 허용 범위 */
   maxObservationAgeDays: z.number().int().positive(),
   maxFutureSkewSeconds: z.number().int().min(0),
 });
+const realExportMappingSchema = exportMappingSchema.refine(
+  (m) => Object.values(m.gameModeByActiveGameMode).every((v) => (RULESET_CODES as readonly string[]).includes(v)),
+  { message: "gameModeByActiveGameMode의 값은 공식 Ruleset 코드여야 합니다.", path: ["gameModeByActiveGameMode"] },
+);
 export const exportMappingConfigSchema = z.object({
-  beta: exportMappingSchema,
-  live: exportMappingSchema,
+  beta: realExportMappingSchema,
+  live: realExportMappingSchema,
 });
 export type ExportMapping = z.infer<typeof exportMappingSchema>;
 export type ExportMappingConfigInput = z.input<typeof exportMappingConfigSchema>;

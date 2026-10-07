@@ -29,7 +29,7 @@ export const characters = {
     verification: "검증 상태",
     dataEnvironment: "데이터 영역",
     region: "지역",
-    gameMode: "게임 모드",
+    gameMode: "게임 규칙",
     currentLevelReached: "현재 레벨 달성",
     timingBasis: "시각 근거",
     gearCoverage: "장비 정보 범위",

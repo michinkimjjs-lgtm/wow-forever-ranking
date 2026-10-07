@@ -64,10 +64,31 @@ export const game = {
   regions: {
     kr: "한국 (임시)",
   } as Record<string, string>,
+  /**
+   * gameMode 코드 → 표시 이름.
+   * - 실제 영역(beta / live)의 gameMode 코드는 공식 Ruleset 코드다.
+   * - standard / alternate는 mock 개발용 코드이며 각각 일반 / 전쟁 규칙에 연결한 테스트 데이터다.
+   */
   gameModes: {
-    standard: "기본 모드 (임시)",
-    alternate: "대체 모드 (임시)",
+    normal: "일반",
+    pvp: "전쟁",
+    roleplaying: "롤플레잉",
+    hardcore: "하드코어",
+    standard: "일반 (테스트)",
+    alternate: "전쟁 (테스트)",
   } as Record<string, string>,
+  /** 공식 Ruleset(게임 규칙) 한국어 이름 (docs/RULESETS.md) */
+  rulesets: {
+    normal: "일반",
+    pvp: "전쟁",
+    roleplaying: "롤플레잉",
+    hardcore: "하드코어",
+  },
+  rulesetStatuses: {
+    AVAILABLE: "제공",
+    POST_LAUNCH: "출시 후 제공",
+    UNKNOWN: "확인 필요",
+  },
   verificationStatuses: {
     VERIFIED: "검증됨",
     LOG_VERIFIED: "로그 검증",

@@ -4,7 +4,7 @@
  */
 import { NextResponse } from "next/server";
 import { DatabaseIdentityError } from "@/db/identity";
-import { ConfigurationError, GameScopeNotConfiguredError } from "@/lib/config";
+import { ConfigurationError, GameScopeNotConfiguredError, RulesetNotAvailableError } from "@/lib/config";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { getMessages } from "@/lib/i18n";
 import type { RankingPolicy } from "@/lib/ranking/types";
@@ -25,6 +25,8 @@ export interface ApiMeta {
   unavailableReason?: string;
   /** 준비 중 상태의 한국어 안내 */
   notice?: string;
+  /** 요청 범위의 공식 Ruleset (docs/RULESETS.md) */
+  ruleset?: string | null;
 }
 
 export function buildMeta(input: {
@@ -78,9 +80,25 @@ export function scopeNotConfiguredResponse(error: GameScopeNotConfiguredError, n
   });
 }
 
+/** 요청한 Ruleset의 데이터가 아직 없음: 오류가 아니라 "데이터 준비 중" (200) */
+export function rulesetNotAvailableResponse(error: RulesetNotAvailableError, now = new Date()) {
+  return jsonOk([], {
+    ...buildMeta({
+      dataEnvironment: error.dataEnvironment,
+      now,
+      lastUpdatedAt: null,
+      status: "unavailable",
+      unavailableReason: "RULESET_NOT_AVAILABLE",
+    }),
+    ruleset: error.ruleset,
+    notice: getMessages().api.RULESET_NOT_AVAILABLE,
+  });
+}
+
 /** 예외를 API 오류 응답으로 바꾼다. 내부 오류 내용은 응답에 넣지 않는다. */
 export function handleApiError(error: unknown) {
   if (error instanceof GameScopeNotConfiguredError) return scopeNotConfiguredResponse(error);
+  if (error instanceof RulesetNotAvailableError) return rulesetNotAvailableResponse(error);
   if (error instanceof InvalidQueryError) return jsonError("INVALID_QUERY", 400);
   if (error instanceof ConfigurationError || error instanceof DatabaseIdentityError) {
     console.error(error);
