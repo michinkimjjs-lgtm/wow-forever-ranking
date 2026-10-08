@@ -55,7 +55,7 @@ ForeverRankCollectorDB = {
 {
   "schema": "forever-rank/character-export",
   "schemaVersion": 1,
-  "collector": { "name": "ForeverRankCollector", "version": "0.1.0" },
+  "collector": { "name": "ForeverRankCollector", "version": "1.0.0" },
 
   "observedAt": 1791273972,               // 관측 시각 (Unix 초, UTC)
   "observedAtSource": "GetServerTime",    // "GetServerTime" | "time"
@@ -204,6 +204,10 @@ ForeverRankCollectorDB = {
 
 ## 7. 버전 관리
 
+- `schemaVersion`(Export 형식 버전)과 `collector.version`(Collector 버전)은 서로 다른 값입니다(Phase 4A, `docs/CONTRIBUTOR-GUIDE.md` §5).
+  - 현재: Export 형식 `1`, Collector `1.0.0`. 설정은 `config/collector.ts`에 있습니다.
+  - 서버는 `schemaVersion`만으로 받을지 정합니다. 같은 형식이면 Collector 버전이 달라도 받습니다.
+  - 지원하지 않는 `schemaVersion`은 형식 검증 전에 거부합니다. 한국어 안내와 함께 `EXPORT_SCHEMA_OUTDATED` / `EXPORT_SCHEMA_TOO_NEW` 오류를 냅니다.
 - 필드를 **추가**하는 변경은 `schemaVersion`을 유지할 수 있습니다. 서버 파서는 모르는 필드를 무시합니다.
 - 필드의 **의미나 형식이 바뀌면** `schemaVersion`을 올리고, 서버에 새 파서를 추가합니다.
 - 서버는 `schemaVersion`과 `client.buildNumber`로 파서를 고릅니다. 모르는 조합은 원본만 저장하고 처리하지 않습니다.

@@ -18,6 +18,8 @@ npm run static-data:import -- --mock --confirm-mock --commit  # (선택) mock �
 npm run dev
 ```
 
+`npm run dev` / `npm run build` 전에 Collector 다운로드 파일(`public/downloads/ForeverRankCollector.zip`)과 배포 정보(`lib/collector/release-manifest.json`)가 자동으로 만들어집니다. 애드온을 고친 뒤에는 `npm run collector:build`로 다시 만들고 manifest를 커밋합니다(`docs/CONTRIBUTOR-GUIDE.md`).
+
 ## 검증
 
 ```bash

@@ -7,7 +7,9 @@
     "node": ">=20.12"
   },
   "scripts": {
+    "predev": "tsx scripts/build-collector.ts",
     "dev": "next dev",
+    "prebuild": "tsx scripts/build-collector.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
@@ -18,7 +20,9 @@
     "db:migrate": "tsx scripts/db-migrate.ts",
     "db:init": "tsx scripts/db-init.ts",
     "db:seed": "tsx scripts/db-seed-mock.ts",
-    "static-data:import": "tsx scripts/static-data-import.ts"
+    "static-data:import": "tsx scripts/static-data-import.ts",
+    "collector:build": "tsx scripts/build-collector.ts",
+    "collector:check": "tsx scripts/build-collector.ts --check"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.4.0",

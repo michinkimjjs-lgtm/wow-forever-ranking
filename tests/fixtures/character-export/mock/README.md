@@ -39,4 +39,14 @@
 | `10-conflict.json` | 01과 충돌 (같은 GUID, 늦은 시각, 레벨 감소, 직업 변경) |
 | `11-missing-surname.json` | 성 없음 → `FULL_NAME_REQUIRED` |
 | `12-unknown-ruleset-value.json` | 매핑에 없는 게임 규칙 값 → `MAPPING_MISSING` |
+| `13-outdated-schema-version.json` | 지원하지 않는 오래된 Export 형식 버전(`schemaVersion` 0) → `EXPORT_SCHEMA_OUTDATED` (Phase 4A) |
 | `mapping.json` | 테스트 전용 가짜 매핑 |
+
+## 사이트의 테스트용 예시 파일 (Phase 4A)
+
+`lib/collector/test-export.template.json`은 `01-valid-character.json`의 `export`를 그대로 옮긴 것입니다(테스트가 같은지 확인합니다).
+
+- mock 배포의 `/contribute/test-export`가 이 파일로 테스트용 예시 Export를 내려 줍니다.
+  - 관측 시각만 요청 시각 기준으로 바꾸고, `collector.version`은 `<Collector 버전>-mock-fixture`로 씁니다.
+- mock 배포의 `/submit`은 이 파일을 **검증만** 합니다. 검증 상태는 `MOCK`(테스트 데이터)이며 저장하지 않습니다.
+- beta / live 배포에서는 예시 파일을 내려 주지 않고(404), 제출해도 `MOCK_FIXTURE_REJECTED`로 거부합니다.

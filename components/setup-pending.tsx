@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { getMessages, t } from "@/lib/i18n";
+import { routes } from "@/lib/routes";
 
 /**
  * region / gameMode 설정이 확정되지 않은 영역의 "준비 중" 화면 (Phase 3B).
@@ -18,7 +19,7 @@ export function SetupPending({ dataEnvironment }: { dataEnvironment: DataEnviron
       <p className="max-w-xl text-sm text-muted">{s.body}</p>
       <p className="max-w-xl text-xs text-subtle">{s.note}</p>
       <p className="text-xs text-subtle">{t(s.environment, { env: m.game.dataEnvironments[dataEnvironment] })}</p>
-      <Link href="/submit" className="mt-1 text-sm text-accent hover:underline">
+      <Link href={routes.contribute()} className="mt-1 text-sm text-accent hover:underline">
         {s.submitLink}
       </Link>
     </section>

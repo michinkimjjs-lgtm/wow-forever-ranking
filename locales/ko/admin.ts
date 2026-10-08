@@ -27,6 +27,7 @@ export const admin = {
       duplicate: "중복",
       conflict: "충돌",
       status: "처리 상태",
+      origin: "제출 경로 · 데이터 출처",
     },
     duplicateValue: "{count}회 다시 제출됨",
     none: "-",
@@ -35,7 +36,8 @@ export const admin = {
     blocked: {
       MAPPING_PENDING: "게임 값 매핑 확인 필요",
     } as Record<string, string>,
-    channel: { public: "공개 제출", admin_api: "관리자 API" },
+    /** 제출 경로: 공개 제출 화면(/submit)에서 올린 파일은 "웹 업로드" */
+    channel: { public: "웹 업로드", admin_api: "관리자 API" },
     detail: {
       summary: "상세 보기",
       preview: "제출 내용",
@@ -47,6 +49,10 @@ export const admin = {
       reviewedAt: "검토 시각",
       note: "검토 메모",
       channel: "제출 경로",
+      dataSource: "데이터 출처",
+      reviewStatus: "검토 상태",
+      collector: "Collector 버전",
+      exportSchema: "Export 형식 버전",
     },
     actions: {
       accept: "랭킹에 반영",

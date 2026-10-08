@@ -1457,6 +1457,7 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 24 | 제출 데이터 보관 기간, 삭제 요청 창구, 관련 법령 검토 | `docs/PRIVACY-DATA-POLICY.md` |
 | 25 | `Enum.GameMode` 숫자와 공식 Ruleset(일반 / 전쟁 / 롤플레잉 / 하드코어)의 대응. Ruleset 이름·공개 상태는 공식 자료로 확인됨 | `config/rulesets.ts`, `config/export-mapping.ts` (`docs/RULESETS.md`) |
 | 26 | 같은 전체 이름이 다른 Ruleset에 있을 수 있는지, 숨긴 성이 export에 담기는지 | 캐릭터 식별 (`docs/RULESETS.md` §3) |
+| 27 | Collector 애드온의 실제 게임 실행: 인터페이스 번호(`## Interface`), 애드온 목록·"오래된 애드온" 표시, `/frc export` 동작, `/reload`·로그아웃 때 SavedVariables 저장 위치와 파일 이름 | Collector 배포·설치 안내 (`docs/CONTRIBUTOR-GUIDE.md` §10) |
 
 ---
 

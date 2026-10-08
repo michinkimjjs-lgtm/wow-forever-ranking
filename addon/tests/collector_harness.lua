@@ -112,6 +112,13 @@ for file in string.gmatch(toc, "\n([%w_]+%.lua)") do
 end
 
 io.write("[collector:", scenario, "]\n")
+local tocVersion = string.match(toc, "## Version: ([%w%.%-]+)")
+check(ns.VERSION == tocVersion, "Core.lua 버전과 TOC 버전이 같다 (" .. tostring(tocVersion) .. ")")
+check(ns.EXPORT_SCHEMA_VERSION == 1 and ns.FORMAT_VERSION == 1, "Export 형식 버전과 저장소 형식 버전은 따로 둔다")
+messages = {}
+SlashCmdList.FOREVERRANKCOLLECTOR("")
+check(string.find(messages[1] or "", "Collector " .. ns.VERSION, 1, true) ~= nil
+  and string.find(messages[1] or "", "Export 형식 1", 1, true) ~= nil, "/frc 도움말 첫 줄에 Collector 버전과 Export 형식 버전")
 check(type(SlashCmdList.FOREVERRANKCOLLECTOR) == "function" and SLASH_FOREVERRANKCOLLECTOR1 == "/frc", "/frc 명령 등록")
 
 -- JSON 인코더
@@ -134,6 +141,8 @@ if scenario == "stubbed" then
   timers[1]()
   local export = ForeverRankCollectorDB.latestExport
   check(export and export.trigger == "equipment_changed", "마지막 이벤트의 trigger로 내보낸다")
+  check(export.collector.version == ns.VERSION and export.schemaVersion == ns.EXPORT_SCHEMA_VERSION,
+    "export에 Collector 버전과 Export 형식 버전을 적는다")
   check(export.observedAt == 2000 and export.observedAtSource == "GetServerTime", "관측 시각은 GetServerTime")
   check(export.client.interfaceVersion == 16001 and export.client.buildNumber == "11111", "GetBuildInfo 값")
   check(export.client.regionName == nil, "없는 API의 값은 넣지 않는다")

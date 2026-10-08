@@ -2,9 +2,22 @@
 export const submit = {
   title: "캐릭터 데이터 제출",
   description: [
-    "WoW: Forever에서 생성한 Forever Rank Character Export 파일을 제출할 수 있습니다.",
-    "현재 랭킹은 제출된 캐릭터를 기준으로 합니다.",
+    "WoW: Forever에서 Forever Rank Collector로 만든 Character Export 파일을 제출할 수 있습니다.",
+    "현재 랭킹은 Forever Rank가 확인한 캐릭터 기준입니다. 제출된 데이터는 검증과 관리자 검토 후 반영됩니다.",
   ],
+  beforeSubmit: {
+    title: "제출 전에 확인하세요",
+    items: [
+      "본인 캐릭터 데이터만 제출하세요. 다른 사람의 캐릭터 파일은 제출하지 않습니다.",
+      "계정 정보(Battle.net 계정, BattleTag, 이메일)를 제출하지 마세요.",
+      "비밀번호를 제출하지 마세요. Forever Rank는 어떤 비밀번호도 요구하지 않습니다.",
+      "파일에 개인정보(실명, 연락처, 주소 등)가 들어 있지 않은지 확인하세요. 파일을 고르면 제출 전에 미리보기로 내용을 볼 수 있습니다.",
+      "제출한 데이터는 커뮤니티 랭킹과 캐릭터 Armory에 사용될 수 있습니다.",
+      "삭제 요청: 제출하면 제출 번호가 표시됩니다. 삭제를 요청할 때 필요하니 보관해 주세요. 삭제 요청 창구는 정식 공개 전에 이 화면에 안내합니다.",
+    ],
+    noFile: "아직 Export 파일이 없다면 랭킹 등록 안내를 먼저 확인하세요.",
+    guideLink: "랭킹 등록 안내 보기",
+  },
   scope: {
     range: "데이터 범위",
     rangeValue: "Forever Rank가 확인한 캐릭터",
@@ -62,12 +75,13 @@ export const submit = {
   howTo: {
     title: "파일 만드는 방법",
     steps: [
-      "ForeverRankCollector 애드온을 설치하고 본인 캐릭터로 게임에 접속합니다.",
+      "Forever Rank Collector(버전 {collector})를 받아 설치하고 본인 캐릭터로 게임에 접속합니다.",
       "채팅창에 /frc export 를 입력합니다.",
       "로그아웃하거나 /reload 를 입력하면 파일이 저장됩니다.",
       "WTF\\Account\\(계정 폴더)\\SavedVariables\\ForeverRankCollector.lua 파일을 선택합니다.",
     ],
-    note: "애드온은 인터넷에 접속하지 않습니다. 파일은 직접 선택해서 제출합니다. 실제 게임에서의 저장 동작은 게임 내 실행 검증이 필요합니다.",
+    note: "애드온은 인터넷에 접속하지 않습니다. 파일은 직접 선택해서 제출합니다. 실제 게임에서의 저장 동작은 실제 게임에서 확인 필요입니다.",
+    versions: "지원하는 Export 형식 버전: {schemas} · 최신 Collector 버전: {collector}",
   },
   file: {
     label: "Export 파일",
@@ -87,6 +101,10 @@ export const submit = {
     INVALID_JSON: "지원하지 않는 파일입니다. JSON 형식이 아닙니다.",
     JSON_LIMIT: "파일 구조가 너무 깊거나 값이 너무 깁니다.",
     SCHEMA: "캐릭터 데이터 형식이 올바르지 않습니다.",
+    SCHEMA_OUTDATED:
+      "지원하지 않는 오래된 Export 형식(버전 {version})입니다. 최신 Collector {collector}(Export 형식 {current})를 받아 Export 파일을 다시 만들어 주세요.",
+    SCHEMA_TOO_NEW: "아직 지원하지 않는 새 Export 형식(버전 {version})입니다. 이 사이트에서 받은 Collector {collector}(Export 형식 {current})를 사용해 주세요.",
+    MOCK_FIXTURE: "테스트용 데이터 파일은 제출할 수 없습니다. 게임에서 직접 만든 Export 파일을 선택해 주세요.",
     SENSITIVE: "개인정보나 계정 정보로 보이는 값이 있어 제출할 수 없습니다.",
     NETWORK: "서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.",
     UNKNOWN: "제출하지 못했습니다. 잠시 후 다시 시도해 주세요.",
@@ -137,6 +155,7 @@ export const submit = {
     dryRun: "검증을 통과했습니다. 테스트 데이터 환경에서는 저장하지 않습니다.",
     dryRunMappingPending:
       "파일 형식 검증을 통과했습니다. 아직 확인되지 않은 게임 값이 있어 실제 제출은 확인 후 처리됩니다. 테스트 데이터 환경에서는 저장하지 않습니다.",
+    testFixture: "테스트용 예시 파일입니다. 검증 상태는 '테스트 데이터'이며 저장하지 않고 랭킹에도 반영되지 않습니다.",
     submissionId: "제출 번호",
     reviewStatus: "검토 상태",
     verificationStatus: "검증 상태",

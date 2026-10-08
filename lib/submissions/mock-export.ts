@@ -23,6 +23,7 @@ import { ingestObservation } from "@/lib/ingestion/ingest";
 import { characterObservationSchema, type CharacterObservation } from "@/lib/ingestion/schema";
 import { sha256, stableStringify } from "@/lib/util/stable-json";
 import { characterExportV1Schema } from "./export-schema";
+import { exportVersionIssue } from "./export-version";
 import type { SubmissionIssue } from "./issues";
 import { normalizeCharacterExport } from "./normalize";
 
@@ -108,6 +109,8 @@ export async function processMockCharacterExport(input: unknown, ctx: MockExport
   const stages: MockExportStage[] = [];
 
   // 1. validate
+  const versionIssue = exportVersionIssue(input);
+  if (versionIssue) return { ok: false, stage: "validate", issues: [versionIssue] };
   const parsed = characterExportV1Schema.safeParse(input);
   if (!parsed.success) {
     return {

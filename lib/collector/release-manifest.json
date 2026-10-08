@@ -1,0 +1,44 @@
+{
+  "addonName": "ForeverRankCollector",
+  "version": "1.0.0",
+  "releaseDate": "2026-10-08",
+  "exportSchema": "forever-rank/character-export",
+  "exportSchemaVersion": 1,
+  "interfaceVersion": 16001,
+  "fileName": "ForeverRankCollector.zip",
+  "downloadPath": "/downloads/ForeverRankCollector.zip",
+  "size": 32307,
+  "sha256": "f5f5d2c1b5f4eaa3b7fc44ecf5947674e61a13b86c830bf87503a6291def6577",
+  "files": [
+    {
+      "path": "ForeverRankCollector/ForeverRankCollector.toc",
+      "size": 324,
+      "sha256": "753f2fb65f4e25c244113e13adeb926f8e3145e2bb80302b569167da8f2ae090"
+    },
+    {
+      "path": "ForeverRankCollector/Core.lua",
+      "size": 7528,
+      "sha256": "079e82edea05cc31a457fbcff9ad912137784a83a259f2ab3a70e160d6756d4d"
+    },
+    {
+      "path": "ForeverRankCollector/SavedVariables.lua",
+      "size": 1100,
+      "sha256": "6f0ff25f3da15f3b0e0d0afffaad40f7d849888d68337957929ad60319e565a6"
+    },
+    {
+      "path": "ForeverRankCollector/Collector.lua",
+      "size": 10691,
+      "sha256": "67fcaa8204e46713342cab2f69cef590ccb59d6c42b8fb183212f40674a14bd4"
+    },
+    {
+      "path": "ForeverRankCollector/Export.lua",
+      "size": 5573,
+      "sha256": "1176ea87ecf424806af6156ce6f9c397bde2e126d0be686c86244ebea389bb81"
+    },
+    {
+      "path": "ForeverRankCollector/README.md",
+      "size": 6079,
+      "sha256": "173d74a2211eb7ffb250fd5ed9876786b6c79235096628a32b5eefbd6161093c"
+    }
+  ]
+}

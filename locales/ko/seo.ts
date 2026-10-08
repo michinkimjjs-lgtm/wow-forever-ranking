@@ -38,7 +38,28 @@ export const seo = {
   },
   submit: {
     title: "캐릭터 데이터 제출 | Forever Rank",
-    description: "WoW 포에버 Forever Rank Character Export 파일을 제출하고 커뮤니티 랭킹에 참여합니다.",
+    description: "Forever Rank Collector로 만든 WoW 포에버 캐릭터 Export 파일을 제출하고 커뮤니티 랭킹 등록을 요청합니다.",
+  },
+  contribute: {
+    title: "내 캐릭터 랭킹 등록 | Forever Rank",
+    description: "WoW 포에버 캐릭터를 Forever Rank 랭킹에 등록하는 방법. Collector 다운로드부터 파일 제출, 검토 후 반영까지 5단계로 안내합니다.",
+  },
+  contributeDownload: {
+    title: "Forever Rank Collector 다운로드 | Forever Rank",
+    description: "내 WoW 포에버 캐릭터 정보를 파일로 저장하는 Forever Rank Collector 애드온. 버전, 파일 크기, SHA-256, 수집 범위를 확인하세요.",
+  },
+  contributeInstall: {
+    title: "Collector 설치 방법 | Forever Rank",
+    description: "Forever Rank Collector 애드온을 WoW 포에버 애드온 폴더에 설치하고 Export 파일을 만드는 순서를 단계별로 안내합니다.",
+  },
+  contributeHowToUse: {
+    title: "Collector 사용 방법 | Forever Rank",
+    description: "Forever Rank Collector의 게임 내 명령어(/frc export)와 Export 파일 위치, 파일 이름 규칙을 안내합니다.",
+  },
+  /** 테스트 데이터 배포(mock)의 제목·설명 표시. 검색 엔진과 공유 화면에서 실제 랭킹으로 오해하지 않도록 붙인다. */
+  testData: {
+    titlePrefix: "[테스트 데이터] ",
+    descriptionPrefix: "테스트 데이터 화면입니다. 실제 WoW 포에버 랭킹이 아닙니다. ",
   },
   admin: {
     title: "관리자 | Forever Rank",

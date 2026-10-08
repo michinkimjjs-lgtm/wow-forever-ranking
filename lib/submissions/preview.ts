@@ -81,6 +81,9 @@ export interface ExportPreview {
   observedAt: string | null;
   sourceBuild: string | null;
   interfaceVersion: number | null;
+  /** 파일을 만든 Collector 버전과 Export 형식 버전 (Phase 4A, 관리자 검토 화면 표시용) */
+  collectorVersion: string | null;
+  exportSchemaVersion: number | null;
 }
 
 export function buildExportPreview(data: CharacterExportV1, slotProfile: GearProfile | null): ExportPreview {
@@ -116,6 +119,8 @@ export function buildExportPreview(data: CharacterExportV1, slotProfile: GearPro
     observedAt: data.observedAt !== undefined ? new Date(data.observedAt * 1000).toISOString() : null,
     sourceBuild: buildVersion && buildNumber ? `${buildVersion}.${buildNumber}` : null,
     interfaceVersion: interfaceVersion ?? null,
+    collectorVersion: data.collector.version,
+    exportSchemaVersion: data.schemaVersion,
   };
 }
 

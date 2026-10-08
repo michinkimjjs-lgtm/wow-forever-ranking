@@ -1,5 +1,6 @@
 --[[
-  Forever Rank Collector — 수집과 내보내기 (Character Export v1)
+  Forever Rank Collector — 수집 (Character Export v1의 각 부분)
+  - 내보내기 조립과 JSON 변환은 Export.lua에서 한다.
 
   형식: docs/CHARACTER-EXPORT-V1.md
   API 근거: docs/FOREVER-API-CAPABILITY.md (공개 자료 분석. 게임 내 실행 검증 필요)
@@ -10,7 +11,6 @@
 
 local _, ns = ...
 
-local SCHEMA = "forever-rank/character-export"
 local MAX_LEVEL_EVENTS = 100
 
 -- Forever 캐릭터 창(UI 소스 Camelot PaperDollFrame.xml)에 있는 장비 슬롯 이름.
@@ -26,7 +26,7 @@ ns.SLOT_NAMES = {
 local Builder = {}
 Builder.__index = Builder
 
-local function newBuilder()
+function ns.NewBuilder()
   return setmetatable({ unavailable = ns.Array({}) }, Builder)
 end
 
@@ -274,83 +274,13 @@ local function levelEventsFor(guid)
   return list
 end
 
--- 내보내기 ------------------------------------------------------------------------
+-- Export.lua가 쓰는 수집 단계 ----------------------------------------------------------
 
-function ns.BuildExport(trigger)
-  local builder = newBuilder()
-  local observedAt, source = ns.Now()
-  local export = {
-    schema = SCHEMA,
-    schemaVersion = 1,
-    collector = { name = "ForeverRankCollector", version = ns.VERSION },
-    observedAt = observedAt,
-    observedAtSource = source,
-    trigger = trigger,
-  }
-  if observedAt == nil then
-    builder:missing("observedAt")
-  end
-
-  local steps = {
-    { "client", collectClient },
-    { "gameMode", collectGameMode },
-    { "character", collectCharacter },
-    { "gear", collectGear },
-  }
-  for _, step in ipairs(steps) do
-    local ok, value = pcall(step[2], builder)
-    if ok then
-      export[step[1]] = value
-    else
-      builder:missing(step[1])
-      export[step[1]] = step[1] == "gear" and ns.Array({}) or {}
-    end
-  end
-
-  local okAverage, average = pcall(collectAverageItemLevel, builder)
-  if okAverage and average then
-    export.clientAverageItemLevel = average
-  end
-  export.levelEvents = levelEventsFor(export.character.guid)
-  export.unavailable = builder.unavailable
-  return export
-end
-
-function ns.Refresh(trigger)
-  local db = ns.GetDB()
-  local okBuild, export = pcall(ns.BuildExport, trigger or "manual")
-  if not okBuild then
-    db.lastError = tostring(export)
-    return nil
-  end
-  local okJson, json = pcall(ns.EncodeJson, export)
-  db.latestExport = export
-  db.latestExportJson = okJson and json or nil
-  db.lastError = (not okJson) and tostring(json) or nil
-  return export
-end
-
-function ns.PrintStatus()
-  local db = ns.GetDB()
-  local export = db.latestExport
-  if type(export) ~= "table" then
-    ns.Print("아직 내보낸 내용이 없습니다. /frc export를 입력하세요.")
-    return
-  end
-  local c = export.character or {}
-  local withLevel = 0
-  for _, item in ipairs(export.gear or {}) do
-    if item.itemLevel then
-      withLevel = withLevel + 1
-    end
-  end
-  ns.Print("내보내기 요약")
-  ns.PrintLine("캐릭터: " .. tostring(c.name or "-") .. " · 레벨 " .. tostring(c.level or "-"))
-  ns.PrintLine("장비: " .. #(export.gear or {}) .. "개 (아이템 레벨 확인 " .. withLevel .. "개)")
-  ns.PrintLine("레벨 상승 기록: " .. #(export.levelEvents or {}) .. "개")
-  ns.PrintLine("얻지 못한 항목: " .. #(export.unavailable or {}) .. "개")
-  if db.lastError then
-    ns.PrintLine("오류: " .. tostring(db.lastError))
-  end
-  ns.PrintLine("파일은 로그아웃하거나 /reload 할 때 저장됩니다.")
-end
+ns.Collect = {
+  client = collectClient,
+  gameMode = collectGameMode,
+  character = collectCharacter,
+  gear = collectGear,
+  averageItemLevel = collectAverageItemLevel,
+  levelEventsFor = levelEventsFor,
+}

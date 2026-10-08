@@ -2,6 +2,8 @@
 export const submissions = {
   issues: {
     INVALID_FORMAT: "제출 데이터 형식이 올바르지 않습니다.",
+    EXPORT_SCHEMA_OUTDATED: "지원하지 않는 오래된 Export 형식입니다. 최신 Collector를 받아 Export 파일을 다시 만들어 주세요.",
+    EXPORT_SCHEMA_TOO_NEW: "아직 지원하지 않는 새 Export 형식입니다. 사이트가 지원할 때까지 기다리거나 사이트에서 받은 Collector를 사용해 주세요.",
     MOCK_FIXTURE_REJECTED: "테스트용 데이터 파일은 제출할 수 없습니다.",
     OBSERVED_AT_REQUIRED: "관측 시각이 없습니다.",
     OBSERVED_AT_IN_FUTURE: "관측 시각이 현재보다 미래입니다.",

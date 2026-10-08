@@ -131,6 +131,7 @@ async function handleAdminSubmission(request: Request, deps: SubmissionHttpDeps)
     now: deps.now,
     dryRun,
     db: deps.appEnv === "mock" ? null : deps.db,
+    allowMockFixture: deps.appEnv === "mock" && dryRun,
   });
 
   if (!result.ok) return failure(result);
@@ -211,6 +212,8 @@ async function handlePublicSubmission(request: Request, deps: SubmissionHttpDeps
     now: deps.now,
     dryRun,
     db: deps.appEnv === "mock" ? null : deps.db,
+    // mock 배포의 검증 전용 제출에서만 테스트 fixture를 검증한다(검증 상태 MOCK, 저장 없음).
+    allowMockFixture: deps.appEnv === "mock" && dryRun,
     review: {
       channel: "public",
       mode: "queue",
@@ -227,6 +230,7 @@ async function handlePublicSubmission(request: Request, deps: SubmissionHttpDeps
         submissionId: result.submissionId,
         reviewStatus: result.reviewStatus,
         verificationStatus: result.verificationStatus,
+        testFixture: result.testFixture,
         duplicate: result.duplicate,
         blockedReason: result.blockedReason ?? null,
         preview: result.preview,

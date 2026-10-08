@@ -58,6 +58,10 @@ character_submissions (검토 대기 PENDING / CONFLICT)
 
 ## 3. 화면 (`/submit`)
 
+- 랭킹 등록 안내(`/contribute` → 다운로드 → 설치 → 사용 → 제출)의 마지막 단계입니다(Phase 4A, `docs/CONTRIBUTOR-GUIDE.md`).
+  - 위쪽에 안내 단계 버튼 [Collector 다운로드] [설치 방법] [사용 방법] [캐릭터 데이터 제출]이 있습니다.
+- 파일 선택 영역 위에 "제출 전에 확인하세요"를 표시합니다(Phase 4A).
+  - 본인 캐릭터만, 계정 정보·비밀번호 제출 금지, 개인정보 확인, 커뮤니티 랭킹 사용, 삭제 요청 방법
 - 제목은 "캐릭터 데이터 제출"이고, 설명 2줄을 표시합니다.
 - 데이터 범위 / 데이터 출처 / 검증 상태:
   - Forever Rank가 확인한 캐릭터
@@ -89,7 +93,9 @@ character_submissions (검토 대기 PENDING / CONFLICT)
 | JSON 파싱 | 지원하지 않는 파일입니다. JSON 형식이 아닙니다. |
 | 깊이·길이·값 개수 | 파일 구조가 너무 깊거나 값이 너무 깁니다. |
 | 개인정보 의심 값 | 개인정보나 계정 정보로 보이는 값이 있어 제출할 수 없습니다. |
+| Export 형식 버전 (Phase 4A) | 지원하지 않는 오래된 Export 형식(버전 N)입니다. 최신 Collector …를 받아 Export 파일을 다시 만들어 주세요. |
 | 스키마 | 캐릭터 데이터 형식이 올바르지 않습니다. |
+| 테스트 fixture (beta / live) | 테스트용 데이터 파일은 제출할 수 없습니다. 게임에서 직접 만든 Export 파일을 선택해 주세요. |
 
 - 미리보기 항목:
   - 캐릭터 이름, 성, 레벨, 직업, 종족, 진영, 길드
@@ -107,7 +113,7 @@ character_submissions (검토 대기 PENDING / CONFLICT)
 
 | 단계 | 내용 | 실패 시 |
 |---|---|---|
-| validate | `characterExportV1Schema` (zod) | 400, 저장 안 함 |
+| validate | Export 형식 버전 확인(`checkExportSchemaVersion`, Phase 4A) → `characterExportV1Schema` (zod) → 테스트 fixture 표식 | 400, 저장 안 함 |
 | normalize | `config/export-mapping.ts`로 게임 값 변환 | 422, 저장 안 함.<br>**예외**: 공개 제출에서 원인이 매핑 미확인(`MAPPING_MISSING`, `NAME_SEPARATOR_UNCONFIRMED`, `SLOT_MAPPING_UNAVAILABLE`, `UNKNOWN_SLOT`)뿐이면 `MAPPING_PENDING`으로 보관 |
 | identify | 외부 ID(GUID) → 자연 키 (읽기 전용) | — |
 | calculate gear | 랭킹용 프로필(APPROVED) 또는 슬롯 매핑 프로필 | — |
@@ -227,3 +233,11 @@ validate → normalize → identify → Gear Profile → duplicate check → con
   - 충돌: 캐릭터 현재 상태와 비교합니다. 충돌이면 저장하지 않습니다.
 - 매핑은 테스트 전용 가짜 매핑(`tests/fixtures/character-export/mock/mapping.json`)을 씁니다. Gear Profile은 `forever-draft`(DRAFT)를 씁니다.
 - 실제 제출 경로는 fixture 표식(`mock-fixture`)이 있는 export를 `MOCK_FIXTURE_REJECTED`로 거부합니다.
+
+### mock 배포의 검증 전용 제출 (Phase 4A)
+
+- mock 배포의 `/submit`(dryRun, DB 없음)에서만 fixture 표식이 있는 Export를 검증합니다(`allowMockFixture`).
+- 응답의 검증 상태는 `MOCK`이고 `testFixture: true`입니다. 저장하지 않습니다.
+- 테스트용 예시 파일은 mock 배포의 `/contribute/test-export`에서 받을 수 있습니다. beta / live에서는 404입니다.
+- beta / live는 검증 전용 제출이어도 fixture를 `MOCK_FIXTURE_REJECTED`로 거부합니다.
+- fixture가 저장 단계에 오면 예외로 멈춥니다. 그래서 fixture는 `COMMUNITY_SUBMITTED` / `VERIFIED`가 되지 않습니다.

@@ -15,6 +15,12 @@ export const routes = {
   guild: (g: { region: string; gameMode: string; slug: string }) =>
     `/guilds/${seg(g.region)}/${seg(g.gameMode)}/${seg(g.slug)}`,
   stats: () => "/stats",
+  submit: () => "/submit",
+  contribute: () => "/contribute",
+  contributeDownload: () => "/contribute/download",
+  contributeInstall: () => "/contribute/install",
+  contributeHowToUse: () => "/contribute/how-to-use",
+  contributeTestExport: () => "/contribute/test-export",
 };
 
 /** 현재 쿼리를 유지하면서 일부 값만 바꾼 URL */
