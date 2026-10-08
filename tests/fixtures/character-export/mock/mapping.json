@@ -1,0 +1,30 @@
+{
+  "_comment": "테스트 전용 가짜 매핑. 실제 WoW: Forever 값이 아니다. config/export-mapping.ts에 넣지 않는다.",
+  "regionById": {
+    "9901": "kr"
+  },
+  "gameModeByActiveGameMode": {
+    "9911": "normal",
+    "9912": "pvp",
+    "9913": "roleplaying"
+  },
+  "classByFile": {
+    "MOCKWARRIOR": "warrior",
+    "MOCKMAGE": "mage"
+  },
+  "raceByFile": {
+    "MockOrc": "orc"
+  },
+  "factionByTag": {
+    "MockHorde": "horde"
+  },
+  "qualityById": {
+    "9903": "rare"
+  },
+  "twoHandInventoryTypes": [
+    9917
+  ],
+  "nameSeparator": " ",
+  "maxObservationAgeDays": 14,
+  "maxFutureSkewSeconds": 300
+}

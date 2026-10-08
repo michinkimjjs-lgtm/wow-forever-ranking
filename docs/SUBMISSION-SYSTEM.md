@@ -212,3 +212,18 @@ character_submissions (검토 대기 PENDING / CONFLICT)
 | 중복·충돌·반복 제출 | 실제 GUID 형식과 안정성 |
 | MAPPING_PENDING 보관 → 매핑 후 승인 | `config/export-mapping.ts` 값 (직업·종족·진영·지역·게임 모드·품질·구분자) |
 | 승인 시 랭킹 반영, 검증 상태 유지 | 민감정보 검사 오탐 여부 (실제 아이템 링크·길드 이름) |
+
+## 10. mock 전용 처리 경로 (Phase 3D)
+
+`lib/submissions/mock-export.ts`의 `processMockCharacterExport`는 테스트 fixture로 제출 흐름 전체를 게임 접속 없이 검증하는 경로입니다.
+
+```text
+validate → normalize → identify → Gear Profile → duplicate check → conflict check → storage → (ranking)
+```
+
+- `appEnv = mock`에서만 동작합니다. 저장되는 행은 `mock` / `mock` / `MOCK`입니다.
+- `character_submissions`(실제 영역 전용)는 쓰지 않습니다.
+  - 중복: `ingestion_records`의 원본 해시로 판단합니다.
+  - 충돌: 캐릭터 현재 상태와 비교합니다. 충돌이면 저장하지 않습니다.
+- 매핑은 테스트 전용 가짜 매핑(`tests/fixtures/character-export/mock/mapping.json`)을 씁니다. Gear Profile은 `forever-draft`(DRAFT)를 씁니다.
+- 실제 제출 경로는 fixture 표식(`mock-fixture`)이 있는 export를 `MOCK_FIXTURE_REJECTED`로 거부합니다.

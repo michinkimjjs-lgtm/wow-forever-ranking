@@ -172,6 +172,10 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
   const parsed = characterExportV1Schema.safeParse(input);
   if (!parsed.success) return { ok: false, stage: "validate", issues: zodIssues(parsed.error) };
   const data = parsed.data;
+  // 테스트 fixture(mock 전용 표식)는 실제 영역 제출로 받지 않는다. 커뮤니티 제출로 승격되지 않게 하기 위해서다.
+  if (isMockFixtureExport(data)) {
+    return { ok: false, stage: "validate", issues: [{ code: "MOCK_FIXTURE_REJECTED", path: "collector.version" }] };
+  }
   const preview = buildExportPreview(data, ctx.slotProfile);
   // 공개 제출은 알 수 없는 필드를 뺀 검증 결과만 보관한다. 관리자 API는 기존처럼 받은 원본을 보관한다.
   const storedPayload: unknown = review.channel === "public" ? data : input;
@@ -340,6 +344,13 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
       comparison,
     };
   });
+}
+
+/** 테스트 fixture 표식 (tests/fixtures/character-export/mock/README.md) */
+export const MOCK_FIXTURE_COLLECTOR_MARK = "mock-fixture";
+
+export function isMockFixtureExport(data: Pick<CharacterExportV1, "collector">): boolean {
+  return data.collector.version.includes(MOCK_FIXTURE_COLLECTOR_MARK);
 }
 
 /** 수집 파이프라인 결과 → 제출 검토 상태 */

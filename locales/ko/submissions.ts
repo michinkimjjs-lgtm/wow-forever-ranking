@@ -2,6 +2,7 @@
 export const submissions = {
   issues: {
     INVALID_FORMAT: "제출 데이터 형식이 올바르지 않습니다.",
+    MOCK_FIXTURE_REJECTED: "테스트용 데이터 파일은 제출할 수 없습니다.",
     OBSERVED_AT_REQUIRED: "관측 시각이 없습니다.",
     OBSERVED_AT_IN_FUTURE: "관측 시각이 현재보다 미래입니다.",
     OBSERVED_AT_TOO_OLD: "관측 시각이 너무 오래되었습니다.",

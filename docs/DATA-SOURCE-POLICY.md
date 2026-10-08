@@ -169,3 +169,12 @@
 | 정적 데이터셋 | 버전별 영구 보관 (실제 영역은 삭제 금지) |
 | 요청 로그 / IP | rate limit 용도로 단기 보관 (P1에서 결정) |
 | mock 데이터 | 개발 중 언제든 초기화 |
+
+## 12. 테스트 fixture (Phase 3D)
+
+- `tests/fixtures/character-export/mock/`의 Character Export fixture는 **가짜 테스트 데이터**입니다.
+  - 실제 플레이어, 캐릭터, 아이템, 클라이언트 값이 아닙니다.
+- 표식은 언제나 `dataEnvironment = mock`, `dataSource = mock`, `verificationStatus = MOCK`입니다.
+- mock 배포의 mock 전용 경로(`processMockCharacterExport`)로만 저장합니다. 실제 DB는 쓰기 트리거와 CHECK로 거부합니다.
+- 실제 영역 제출 경로는 `collector.version`의 `mock-fixture` 표식이 있는 export를 거부합니다(`MOCK_FIXTURE_REJECTED`). 그래서 fixture가 커뮤니티 제출이나 검증 상태로 승격되지 않습니다.
+- fixture의 게임 값(지역·게임 규칙·품질 숫자 등)은 일부러 만든 가짜 숫자입니다. 실제 매핑 설정(`config/export-mapping.ts`)에 넣지 않습니다.

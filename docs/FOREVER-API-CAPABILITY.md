@@ -71,6 +71,18 @@ S4·S5·S6 원문을 직접 확인하려면 환경의 네트워크 설정에서 
    - `Enum.ForeverExperiencePreset` = `Classic 0`, `Modern 1` (S1)
    - `Enum.GameMode`의 값 목록은 공개 문서에 없습니다(`RUNTIME_REQUIRED`).
 7. **SavedVariables를 다시 읽지 못하는 버그가 보고되었습니다**(S2 README, 2026-09-18~24, 다른 사용자도 재현). 이후 빌드에서 고쳐졌는지는 확인되지 않았습니다.
+   - **2026-10-08 재점검 (Phase 3D)** — 과거 확인과 최근 공개 자료를 나눠 적습니다.
+
+     | 시점 | 출처 | 내용 | 판정 |
+     |---|---|---|---|
+     | 과거 (빌드 1.60.1.69893, 2026-09-17~) | [EU 포럼: "Addon SavedVariables never load on 1.60.1.69893"](https://eu.forums.blizzard.com/en/wow/t/addon-savedvariables-never-load-on-160169893/629799), S2 README(2026-09-24 갱신) | 로그아웃할 때 파일은 쓰지만, 다음 실행의 `ADDON_LOADED`에서 값이 비어 있음 | 여러 사용자 재현 (`COMMUNITY_CONFIRMED`) |
+     | 과거 (빌드 1.60.1.69913) | [EU 포럼 스레드](https://eu.forums.blizzard.com/en/wow/t/solvedforever-beta-160169913-savedvariables-fail-to-load-on-client-startupreload-%E2%80%94-all-addon-settings-reset-on-restart/629888) (제목에 [SOLVED] 표시) | `/reload`로는 유지, 클라이언트를 껐다 켜면 초기화 | 커뮤니티 보고 |
+     | 최근 | [nobewayo/ForeverSVFix](https://github.com/nobewayo/ForeverSVFix) README (저장소는 2026-09-25 보관 처리됨) | "It seems that Blizzard have fixed the issue."<br>고쳐진 빌드와 날짜는 적혀 있지 않음 | **커뮤니티 단일 출처 주장. Blizzard 공식 확인 없음** |
+     | 최근 | S2 README | 수정 기록 없음 ("Not every other row has been re-checked") | 갱신 안 됨 |
+
+   - **현재 판정: 확인 필요 (게임 실행 필요).** "고쳐졌다"로 바꾸지 않습니다.
+   - Collector 설계는 버그 여부와 관계없이 동작합니다. 한 세션의 export를 파일로 남기고, 누적은 서버가 합니다.
+   - 파일 **쓰기**는 과거 보고에서도 정상이었습니다.
    - 클라이언트가 종료할 때 파일은 쓰지만, 다음 실행 때 읽어 오지 않는다는 내용입니다.
    - 영향: 애드온이 세션을 넘어 기록을 누적한다고 가정하면 안 됩니다. 한 세션의 결과를 파일로 내보내고, 누적은 서버가 해야 합니다.
 8. **등록되지 않은 이벤트를 `RegisterEvent`하면 오류가 나고 파일 실행이 중단됩니다**(S2). 이벤트 등록은 반드시 `pcall`로 감쌉니다.
@@ -221,6 +233,23 @@ S4·S5·S6 원문을 직접 확인하려면 환경의 네트워크 설정에서 
 | 장비 슬롯 번호 | 런타임에 `GetInventorySlotInfo`로 결정 |
 | 아이템 링크 / item string 필드 구성 (마법부여·보석 위치) | 실행 필요 |
 | region 번호 ↔ 지역 대응, Forever 직업·종족 전체 목록 | 실행 또는 공식 자료 필요 |
-| SavedVariables 버그가 현재 빌드에서 고쳐졌는지 | 2026-09-25 이후 공개 확인 없음 |
+| SavedVariables 버그가 현재 빌드에서 고쳐졌는지 | 커뮤니티 도구 README 한 곳이 "고쳐진 것 같다"고 함(빌드·날짜 없음). 공식 확인 없음 (2026-10-08 재점검, §2-7) |
 | 길드 외부 ID | 해당 API를 찾지 못함 |
 | AHledger 데이터의 다운로드 형식·이용 조건 | 네트워크 차단으로 직접 확인 못 함 |
+
+## 8. 확인 상태 4분류 (2026-10-08, Phase 3D)
+
+| 분류 | 뜻 | 항목 |
+|---|---|---|
+| **확정** | 공식 자료 또는 여러 공개 자료로 확인 | interface 16001, Retail 계열 API, Classic 전역 함수 부재<br>realm 없음, 이름 + 성, 전체 이름이 region 안에서 고유 (Blizzard 공지)<br>공식 게임 규칙 4종과 하드코어 출시 후 제공 (`docs/RULESETS.md`)<br>장착 아이템 레벨 API 경로, Forever 캐릭터 창 슬롯 이름 20개<br>과거 빌드(69893 / 69913)의 SavedVariables 재로드 버그 보고 |
+| **확인 필요** | 공개 자료가 엇갈리거나 하나뿐 | SavedVariables 버그가 고쳐졌는지 (§2-7)<br>같은 전체 이름이 다른 규칙에 존재할 수 있는지<br>제3자 서비스 이용 조건 (`docs/DATA-SOURCE-POLICY.md` §0)<br>Blizzard 한국어 원문 표기 |
+| **게임 실행 필요** | 실제 클라이언트에서 값을 봐야 함 | `Enum.GameMode` / `Enum.ItemQuality` / `Enum.InventoryType` 값<br>region 번호, GUID 형식, 이름과 성 구분자, 숨긴 성의 반환값<br>장비 슬롯 번호, 아이템 링크 필드, SavedVariables 저장 형식(Lua 이스케이프)<br>직업·종족 목록과 클라이언트 한국어 명칭 |
+| **공식 API 필요** | 서버가 직접 수집하려면 Blizzard API가 있어야 함 | 전체 캐릭터 목록·전체 랭킹(모집단), 다른 플레이어 데이터<br>공식 캐릭터 ID, 길드 외부 ID<br>공식 아이템 카탈로그 (`docs/BLIZZARD-API-INTEGRATION-PLAN.md`) |
+
+게임 접속 없이 검증한 것(테스트 fixture, mock 경로):
+
+- 제출 흐름 전체(검증 → 정규화 → 식별 → Gear Profile → 중복 → 충돌 → 저장 → 랭킹)
+- 규칙별 식별, 이름 + 성 식별, mock 상태 유지
+- `tests/mock-export-flow.test.ts`, `tests/fixtures/character-export/mock/`
+
+위 검증은 **가짜 게임 값**으로 한 것입니다. 실제 값이 맞는지는 "게임 실행 필요" 항목으로 남습니다.

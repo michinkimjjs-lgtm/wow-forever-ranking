@@ -1,0 +1,207 @@
+{
+  "fixture": {
+    "id": "03-ruleset-pvp",
+    "description": "전쟁 규칙 캐릭터",
+    "dataEnvironment": "mock",
+    "dataSource": "mock",
+    "verificationStatus": "MOCK"
+  },
+  "export": {
+    "schema": "forever-rank/character-export",
+    "schemaVersion": 1,
+    "collector": {
+      "name": "ForeverRankCollector",
+      "version": "0.1.0-mock-fixture"
+    },
+    "observedAt": 1791438600,
+    "observedAtSource": "GetServerTime",
+    "trigger": "manual",
+    "client": {
+      "buildVersion": "0.0.0",
+      "buildNumber": "mock",
+      "interfaceVersion": 16001,
+      "regionId": 9901,
+      "locale": "koKR"
+    },
+    "gameMode": {
+      "activeGameMode": 9912
+    },
+    "character": {
+      "guid": "MOCK-FIXTURE-0003",
+      "name": "모의",
+      "level": 22,
+      "classFile": "MOCKWARRIOR",
+      "className": "테스트 직업",
+      "raceFile": "MockOrc",
+      "raceName": "테스트 종족",
+      "faction": "MockHorde",
+      "factionName": "테스트 진영",
+      "isInGuild": true,
+      "guildName": "테스트 길드",
+      "surname": "전쟁"
+    },
+    "gear": [
+      {
+        "slotName": "HeadSlot",
+        "slotId": 200,
+        "itemId": 90000,
+        "itemLink": "|cff0070dd|Hitem:90000::::|h[테스트 아이템 0]|h|r",
+        "itemLevel": 37,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "NeckSlot",
+        "slotId": 201,
+        "itemId": 90001,
+        "itemLink": "|cff0070dd|Hitem:90001::::|h[테스트 아이템 1]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "ShoulderSlot",
+        "slotId": 202,
+        "itemId": 90002,
+        "itemLink": "|cff0070dd|Hitem:90002::::|h[테스트 아이템 2]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "BackSlot",
+        "slotId": 203,
+        "itemId": 90003,
+        "itemLink": "|cff0070dd|Hitem:90003::::|h[테스트 아이템 3]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "ChestSlot",
+        "slotId": 204,
+        "itemId": 90004,
+        "itemLink": "|cff0070dd|Hitem:90004::::|h[테스트 아이템 4]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "WristSlot",
+        "slotId": 205,
+        "itemId": 90005,
+        "itemLink": "|cff0070dd|Hitem:90005::::|h[테스트 아이템 5]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "HandsSlot",
+        "slotId": 206,
+        "itemId": 90006,
+        "itemLink": "|cff0070dd|Hitem:90006::::|h[테스트 아이템 6]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "WaistSlot",
+        "slotId": 207,
+        "itemId": 90007,
+        "itemLink": "|cff0070dd|Hitem:90007::::|h[테스트 아이템 7]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "LegsSlot",
+        "slotId": 208,
+        "itemId": 90008,
+        "itemLink": "|cff0070dd|Hitem:90008::::|h[테스트 아이템 8]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "FeetSlot",
+        "slotId": 209,
+        "itemId": 90009,
+        "itemLink": "|cff0070dd|Hitem:90009::::|h[테스트 아이템 9]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "Finger0Slot",
+        "slotId": 210,
+        "itemId": 90010,
+        "itemLink": "|cff0070dd|Hitem:90010::::|h[테스트 아이템 10]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "Finger1Slot",
+        "slotId": 211,
+        "itemId": 90011,
+        "itemLink": "|cff0070dd|Hitem:90011::::|h[테스트 아이템 11]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "Trinket0Slot",
+        "slotId": 212,
+        "itemId": 90012,
+        "itemLink": "|cff0070dd|Hitem:90012::::|h[테스트 아이템 12]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "Trinket1Slot",
+        "slotId": 213,
+        "itemId": 90013,
+        "itemLink": "|cff0070dd|Hitem:90013::::|h[테스트 아이템 13]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "MainHandSlot",
+        "slotId": 214,
+        "itemId": 90014,
+        "itemLink": "|cff0070dd|Hitem:90014::::|h[테스트 아이템 14]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "SecondaryHandSlot",
+        "slotId": 215,
+        "itemId": 90015,
+        "itemLink": "|cff0070dd|Hitem:90015::::|h[테스트 아이템 15]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "RangedSlot",
+        "slotId": 216,
+        "itemId": 90016,
+        "itemLink": "|cff0070dd|Hitem:90016::::|h[테스트 아이템 16]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      }
+    ],
+    "levelEvents": [
+      {
+        "level": 22,
+        "observedAt": 1791435600,
+        "event": "PLAYER_LEVEL_UP"
+      }
+    ],
+    "unavailable": []
+  }
+}
