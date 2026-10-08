@@ -1,0 +1,99 @@
+{
+  "fixture": {
+    "id": "06-gear-insufficient",
+    "description": "장비 부족: 4개 + 정수가 아닌 아이템 레벨 1개 (coverage 미달)",
+    "dataEnvironment": "mock",
+    "dataSource": "mock",
+    "verificationStatus": "MOCK"
+  },
+  "export": {
+    "schema": "forever-rank/character-export",
+    "schemaVersion": 1,
+    "collector": {
+      "name": "ForeverRankCollector",
+      "version": "0.1.0-mock-fixture"
+    },
+    "observedAt": 1791438600,
+    "observedAtSource": "GetServerTime",
+    "trigger": "manual",
+    "client": {
+      "buildVersion": "0.0.0",
+      "buildNumber": "mock",
+      "interfaceVersion": 16001,
+      "regionId": 9901,
+      "locale": "koKR"
+    },
+    "gameMode": {
+      "activeGameMode": 9911
+    },
+    "character": {
+      "guid": "MOCK-FIXTURE-0006",
+      "name": "모의",
+      "level": 12,
+      "classFile": "MOCKWARRIOR",
+      "className": "테스트 직업",
+      "raceFile": "MockOrc",
+      "raceName": "테스트 종족",
+      "faction": "MockHorde",
+      "factionName": "테스트 진영",
+      "isInGuild": true,
+      "guildName": "테스트 길드",
+      "surname": "장비부족"
+    },
+    "gear": [
+      {
+        "slotName": "HeadSlot",
+        "slotId": 200,
+        "itemId": 90000,
+        "itemLink": "|cff0070dd|Hitem:90000::::|h[테스트 아이템 0]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "NeckSlot",
+        "slotId": 201,
+        "itemId": 90001,
+        "itemLink": "|cff0070dd|Hitem:90001::::|h[테스트 아이템 1]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "ChestSlot",
+        "slotId": 202,
+        "itemId": 90002,
+        "itemLink": "|cff0070dd|Hitem:90002::::|h[테스트 아이템 2]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "LegsSlot",
+        "slotId": 203,
+        "itemId": 90003,
+        "itemLink": "|cff0070dd|Hitem:90003::::|h[테스트 아이템 3]|h|r",
+        "itemLevel": 20,
+        "quality": 9903,
+        "inventoryType": 9901
+      },
+      {
+        "slotName": "FeetSlot",
+        "slotId": 209,
+        "itemId": 90009,
+        "itemLink": "|cff0070dd|Hitem:90009::::|h[테스트 아이템 9]|h|r",
+        "itemLevel": 20.5,
+        "quality": 9903,
+        "inventoryType": 9901
+      }
+    ],
+    "levelEvents": [
+      {
+        "level": 12,
+        "observedAt": 1791435600,
+        "event": "PLAYER_LEVEL_UP"
+      }
+    ],
+    "unavailable": []
+  }
+}

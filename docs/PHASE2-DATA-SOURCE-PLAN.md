@@ -50,7 +50,7 @@
 | 장비 슬롯 번호 | `GetInventorySlotInfo`가 실행 중에 결정 |
 | 아이템 링크의 마법부여·보석 필드 | 실행 필요 |
 | region 번호 ↔ 지역 | 실행 필요 |
-| SavedVariables 재로드 버그가 남아 있는지 | 실행 필요 |
+| SavedVariables 재로드 버그가 남아 있는지 | 실행 필요 (2026-10-08 재점검: 커뮤니티 도구 README 한 곳이 "고쳐진 것 같다"고 함, 공식 확인 없음 → 확인 필요 유지) |
 | 레벨 상승 시각 (`PLAYER_LEVEL_UP`) | 이벤트가 발생할 때 그 PC에서만 기록 가능 |
 
 이 값들은 **한 명의 테스트 플레이어가 한 번 실행**하면 대부분 확정할 수 있습니다. 확정 결과는 서버의 매핑 설정(`config/game-scopes`, `config/codes`, Gear Profile)에 반영합니다.
