@@ -19,4 +19,9 @@ export const home = {
   },
   levelUp: "{level}레벨 달성",
   levelShort: "레벨 {level}",
+  contributeCta: {
+    title: "내 캐릭터도 랭킹에 올리고 싶다면",
+    body: "Forever Rank Collector로 내 캐릭터 데이터를 파일로 저장해 제출할 수 있습니다. 검토 후 랭킹에 반영됩니다.",
+    button: "내 캐릭터 랭킹 등록",
+  },
 } as const;

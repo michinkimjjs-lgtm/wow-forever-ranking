@@ -22,6 +22,8 @@ import { calculateEquippedItemLevel, type EquippedItemLevelResult } from "@/lib/
 import { defaultVerificationStatus, ingestObservation } from "@/lib/ingestion/ingest";
 import { characterObservationSchema, type CharacterObservation } from "@/lib/ingestion/schema";
 import { characterExportV1Schema, type CharacterExportV1 } from "./export-schema";
+import { exportVersionIssue } from "./export-version";
+import { isMockFixtureExport } from "./fixture";
 import type { SubmissionIssue, SubmissionIssueCode } from "./issues";
 import { EXPORT_PARSER_VERSION, normalizeCharacterExport } from "./normalize";
 import { buildExportPreview, type ExportPreview } from "./preview";
@@ -52,6 +54,11 @@ export interface SubmissionContext {
   newId?: () => string;
   /** 제출 경로와 검토 방식. 생략하면 관리자 API(apply) */
   review?: SubmissionReviewOptions;
+  /**
+   * 테스트 fixture를 검증만 하도록 허용 (mock 배포의 검증 전용 제출). dryRun이고 DB가 없을 때만 쓸 수 있다.
+   * 결과의 검증 상태는 MOCK이고, 아무것도 저장하지 않는다.
+   */
+  allowMockFixture?: boolean;
 }
 
 export interface SubmissionReviewOptions {
@@ -103,7 +110,10 @@ export type SubmissionResult =
       ok: true;
       mode: "dry-run" | "stored" | "queued" | "duplicate";
       status: IngestionStatus | "VALID" | "QUEUED" | "DUPLICATE";
-      verificationStatus: "COMMUNITY_SUBMITTED";
+      /** 제출 데이터는 COMMUNITY_SUBMITTED. 테스트 fixture 검증(mock 배포)만 MOCK */
+      verificationStatus: "COMMUNITY_SUBMITTED" | "MOCK";
+      /** 테스트 fixture를 검증만 한 결과 */
+      testFixture: boolean;
       identity: { match: "EXTERNAL_ID" | "NATURAL_KEY" | "NEW" | "SKIPPED"; characterId: string | null };
       gear: SubmissionGearSummary | null;
       warnings: string[];
@@ -168,12 +178,16 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
   const review = ctx.review ?? ADMIN_API_REVIEW;
   const env = ctx.targetEnvironment;
 
-  // 1. validate
+  // 1. validate (지원하지 않는 Export 형식 버전은 형식 검증 전에 안내한다)
+  const versionIssue = exportVersionIssue(input);
+  if (versionIssue) return { ok: false, stage: "validate", issues: [versionIssue] };
   const parsed = characterExportV1Schema.safeParse(input);
   if (!parsed.success) return { ok: false, stage: "validate", issues: zodIssues(parsed.error) };
   const data = parsed.data;
   // 테스트 fixture(mock 전용 표식)는 실제 영역 제출로 받지 않는다. 커뮤니티 제출로 승격되지 않게 하기 위해서다.
-  if (isMockFixtureExport(data)) {
+  // mock 배포의 검증 전용 제출(dryRun, DB 없음)에서만 검증하고, 검증 상태는 MOCK으로 돌려준다.
+  const testFixture = isMockFixtureExport(data);
+  if (testFixture && !(ctx.allowMockFixture && ctx.dryRun && ctx.db === null)) {
     return { ok: false, stage: "validate", issues: [{ code: "MOCK_FIXTURE_REJECTED", path: "collector.version" }] };
   }
   const preview = buildExportPreview(data, ctx.slotProfile);
@@ -215,13 +229,15 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
   // 4. calculate gear (랭킹용 APPROVED 프로필이 없으면 슬롯 매핑 프로필로 미리보기만)
   const gear = observation ? gearSummary(observation, ctx) : null;
 
-  const verificationStatus = defaultVerificationStatus("addon");
-  if (verificationStatus !== "COMMUNITY_SUBMITTED") {
+  const submittedStatus = defaultVerificationStatus("addon");
+  if (submittedStatus !== "COMMUNITY_SUBMITTED") {
     throw new Error("제출 데이터의 검증 상태는 COMMUNITY_SUBMITTED여야 합니다.");
   }
+  const verificationStatus = testFixture ? ("MOCK" as const) : submittedStatus;
   const base = {
     ok: true as const,
     verificationStatus,
+    testFixture,
     identity,
     gear,
     warnings: normalized.ok ? normalized.warnings : [],
@@ -268,6 +284,7 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
     };
   }
   const db = ctx.db;
+  if (testFixture) throw new Error("테스트 fixture는 저장할 수 없습니다.");
 
   const record = {
     env,
@@ -346,13 +363,6 @@ export async function submitCharacterExport(input: unknown, ctx: SubmissionConte
   });
 }
 
-/** 테스트 fixture 표식 (tests/fixtures/character-export/mock/README.md) */
-export const MOCK_FIXTURE_COLLECTOR_MARK = "mock-fixture";
-
-export function isMockFixtureExport(data: Pick<CharacterExportV1, "collector">): boolean {
-  return data.collector.version.includes(MOCK_FIXTURE_COLLECTOR_MARK);
-}
-
 /** 수집 파이프라인 결과 → 제출 검토 상태 */
 export const REVIEW_STATUS_BY_INGESTION: Record<IngestionStatus, SubmissionReviewStatus> = {
   ACCEPTED: "ACCEPTED",
@@ -392,4 +402,5 @@ export function resolveSubmissionConfig(
   return { mapping, slotProfile: config.slotProfile(target, gameMode), rankingProfile: config.rankingProfile(target, gameMode) };
 }
 
+export { isMockFixtureExport, MOCK_FIXTURE_COLLECTOR_MARK } from "./fixture";
 export type { CharacterExportV1 };

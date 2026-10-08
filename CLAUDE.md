@@ -7,6 +7,7 @@
 > Phase 2D 문서: `docs/DATA-SOURCE-POLICY.md`, `docs/COMMUNITY-RANKING-PLAN.md`, `docs/DATA-COVERAGE-MODEL.md`
 > Phase 3A 문서: `docs/SUBMISSION-SYSTEM.md`, `docs/PRIVACY-DATA-POLICY.md`, `docs/ADMIN-REVIEW.md`
 > Phase 3C 문서: `docs/RULESETS.md` (공식 게임 규칙)
+> Phase 4A 문서: `docs/CONTRIBUTOR-GUIDE.md` (랭킹 등록 안내, Collector 배포·버전 관리)
 
 ## 1. 프로젝트 목적
 
@@ -759,6 +760,8 @@ API 경로는 영어로 유지해도 된다.
 - 공개 데이터 제출 API Rate Limit과 payload 크기 제한
 - 공개 제출: Origin + 화면 보안 토큰(CSRF), JSON 깊이·문자열 길이 제한, 개인정보 의심 값 거부, 명시적 동의 기록. IP 주소는 저장하지 않는다(`docs/SUBMISSION-SYSTEM.md`)
 - 제출 데이터는 관리자 검토 후 랭킹에 반영한다. 검토 상태(`reviewStatus`)와 검증 상태(`verificationStatus`)는 별개이며, 승인돼도 `COMMUNITY_SUBMITTED`다(`docs/ADMIN-REVIEW.md`)
+- Collector 다운로드 ZIP에는 Lua 애드온 파일과 안내 문서만 넣는다. 실행 파일(.exe)을 만들거나 넣지 않는다. Collector 버전과 Export 형식 버전은 따로 관리하고, 서버는 Export 형식 버전으로만 받을지 정한다(`docs/CONTRIBUTOR-GUIDE.md`)
+- 테스트 fixture(`mock-fixture` 표식)는 실제 영역에서 거부한다. mock 배포의 검증 전용 제출만 허용하며 결과는 `MOCK`이다
 - Battle.net 비밀번호 수집 금지
 - 불필요한 개인정보 수집 금지
 - 외부 ID 검증

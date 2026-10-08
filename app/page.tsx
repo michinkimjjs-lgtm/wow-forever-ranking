@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { DataFreshness } from "@/components/data-freshness";
 import { CharacterLink, ClassLabel, RelativeTime } from "@/components/game-labels";
@@ -10,6 +11,31 @@ import type { RankingResult, RankingRow, RankingType } from "@/lib/ranking/types
 import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
 import { loadHome } from "@/lib/server/services";
+import { pageMetadata } from "@/lib/seo";
+
+export function generateMetadata(): Metadata {
+  const seo = getMessages().seo.home;
+  return pageMetadata({ title: seo.title, description: seo.description, path: "/" });
+}
+
+/** 랭킹 등록 안내로 가는 카드 */
+function ContributeCta() {
+  const c = getMessages().home.contributeCta;
+  return (
+    <section className="flex flex-col gap-3 rounded-lg border border-accent/40 bg-accent/5 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold text-accent">{c.title}</h2>
+        <p className="text-sm text-muted">{c.body}</p>
+      </div>
+      <Link
+        href={routes.contribute()}
+        className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md bg-accent px-4 text-sm font-semibold text-accent-foreground hover:bg-accent-strong"
+      >
+        {c.button}
+      </Link>
+    </section>
+  );
+}
 
 function Kpi({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
@@ -80,6 +106,7 @@ export default async function HomePage() {
           <p className="text-sm text-muted">{m.home.subtitle}</p>
         </section>
         <SetupPending dataEnvironment={appEnv} />
+        <ContributeCta />
       </div>
     );
   }
@@ -97,6 +124,8 @@ export default async function HomePage() {
           <DataFreshness lastUpdatedAt={kpi.lastUpdatedAt} now={now} />
         </div>
       </section>
+
+      <ContributeCta />
 
       <section className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5">
         <Kpi label={m.home.kpi.topLevel} value={kpi.topLevel !== null ? String(kpi.topLevel) : none} />

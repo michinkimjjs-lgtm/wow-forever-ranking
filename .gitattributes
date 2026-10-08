@@ -1,0 +1,2 @@
+# Collector 애드온은 운영체제와 관계없이 LF로 받는다 (다운로드 ZIP의 SHA-256 고정)
+addon/** text eol=lf

@@ -9,3 +9,6 @@ next-env.d.ts
 .env.*.local
 npm-debug.log*
 .DS_Store
+
+# Collector 다운로드 파일 (npm run collector:build 로 생성)
+/public/downloads/

@@ -1,6 +1,7 @@
 --[[
   Forever Rank Collector — Core
-  - 공용 도구(안전한 API 호출, secret 값 처리, 시각), 저장소, 이벤트, 슬래시 명령(/frc)
+  - 버전, 공용 도구(안전한 API 호출, secret 값 처리, 시각), 이벤트, 슬래시 명령(/frc)
+  - 파일 구성: Core.lua → SavedVariables.lua(저장소) → Collector.lua(수집) → Export.lua(내보내기, JSON)
 
   원칙
   - 로그인한 자신의 캐릭터("player")만 읽는다.
@@ -12,8 +13,12 @@
 local ADDON_NAME, ns = ...
 
 ns.ADDON_NAME = ADDON_NAME
-ns.VERSION = "0.1.0"
-ns.FORMAT_VERSION = 1
+-- Collector 버전과 Export 형식(schema) 버전은 서로 다른 값이다.
+-- - VERSION: 애드온 배포 버전. ForeverRankCollector.toc의 ## Version, 사이트 설정(config/collector.ts)과 같아야 한다.
+-- - EXPORT_SCHEMA_VERSION: 내보내는 Character Export 형식 버전(docs/CHARACTER-EXPORT-V1.md).
+ns.VERSION = "1.0.0"
+ns.EXPORT_SCHEMA = "forever-rank/character-export"
+ns.EXPORT_SCHEMA_VERSION = 1
 
 local PREFIX = "|cffd4af37[Forever Rank Collector]|r "
 
@@ -127,21 +132,6 @@ function ns.Now()
   return nil, "none"
 end
 
--- 저장소 ---------------------------------------------------------------------
-
-function ns.GetDB()
-  if type(ForeverRankCollectorDB) ~= "table" or ForeverRankCollectorDB.formatVersion ~= ns.FORMAT_VERSION then
-    ForeverRankCollectorDB = { formatVersion = ns.FORMAT_VERSION, levelEvents = {} }
-  end
-  ForeverRankCollectorDB.levelEvents = ForeverRankCollectorDB.levelEvents or {}
-  ForeverRankCollectorDB.collectorVersion = ns.VERSION
-  return ForeverRankCollectorDB
-end
-
-function ns.ClearDB()
-  ForeverRankCollectorDB = { formatVersion = ns.FORMAT_VERSION, collectorVersion = ns.VERSION, levelEvents = {} }
-end
-
 -- 내보내기 예약 (같은 순간의 여러 이벤트를 한 번으로 묶는다) ------------------
 
 local scheduledTrigger
@@ -174,7 +164,7 @@ local function trim(text)
 end
 
 local function printHelp()
-  ns.Print("사용 방법")
+  ns.Print("사용 방법 (Collector " .. ns.VERSION .. " · Export 형식 " .. ns.EXPORT_SCHEMA_VERSION .. ")")
   ns.PrintLine("/frc export - 지금 상태로 내보내기 파일 내용을 갱신합니다.")
   ns.PrintLine("/frc status - 마지막 내보내기 요약을 보여 줍니다.")
   ns.PrintLine("/frc clear  - 저장된 내보내기 내용을 지웁니다.")

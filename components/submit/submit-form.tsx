@@ -6,6 +6,8 @@ import type { GearProfile } from "@/lib/config";
 import { formatKstDateTime, formatPercent } from "@/lib/format";
 import { getMessages, t } from "@/lib/i18n";
 import { characterExportV1Schema, type CharacterExportV1 } from "@/lib/submissions/export-schema";
+import { checkExportSchemaVersion } from "@/lib/submissions/export-version";
+import { isMockFixtureExport } from "@/lib/submissions/fixture";
 import { parseJsonWithLimits, type JsonLimits } from "@/lib/submissions/json-limits";
 import { buildExportPreview, extractExportJson, type ExportPreview } from "@/lib/submissions/preview";
 import { findSensitiveData } from "@/lib/submissions/sensitive";
@@ -22,6 +24,12 @@ export interface SubmitFormProps {
   submitEnabled: boolean;
   /** mock 배포: 저장하지 않고 검증만 */
   verifyOnly: boolean;
+  /** 테스트용 예시 파일(mock fixture)을 검증할 수 있는지. mock 배포에서만 true */
+  allowMockFixture: boolean;
+  /** 안내 문구용 최신 Collector 버전과 Export 형식 버전 */
+  collectorVersion: string;
+  exportSchemaVersion: number;
+  supportedExportSchemaVersions: readonly number[];
 }
 
 type ClientError = keyof ReturnType<typeof getMessages>["submit"]["errors"];
@@ -30,7 +38,8 @@ interface SubmitResponse {
   mode: "dry-run" | "stored" | "queued" | "duplicate";
   submissionId: string | null;
   reviewStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CONFLICT" | null;
-  verificationStatus: "COMMUNITY_SUBMITTED";
+  verificationStatus: "COMMUNITY_SUBMITTED" | "MOCK";
+  testFixture?: boolean;
   duplicate: boolean;
   blockedReason: string | null;
   changes: { field: string; before: string | number | null; after: string | number | null }[];
@@ -97,8 +106,17 @@ export function SubmitForm(props: SubmitFormProps) {
       const parsed = parseJsonWithLimits(extracted.json, props.limits);
       if (!parsed.ok) return fail(parsed.error === "INVALID_JSON" ? "INVALID_JSON" : "JSON_LIMIT");
       if (findSensitiveData(parsed.value).length > 0) return fail("SENSITIVE");
+      // 지원하지 않는 Export 형식 버전은 형식 오류 대신 버전 안내를 보여 준다.
+      const version = checkExportSchemaVersion(parsed.value, props.supportedExportSchemaVersions);
+      if (!version.ok) {
+        const template = version.reason === "TOO_NEW" ? s.errors.SCHEMA_TOO_NEW : s.errors.SCHEMA_OUTDATED;
+        return setFileError(
+          t(template, { version: version.version, collector: props.collectorVersion, current: props.exportSchemaVersion }),
+        );
+      }
       const checked = characterExportV1Schema.safeParse(parsed.value);
       if (!checked.success) return fail("SCHEMA");
+      if (isMockFixtureExport(checked.data) && !props.allowMockFixture) return fail("MOCK_FIXTURE");
       setData(checked.data);
       setPreview(buildExportPreview(checked.data, props.slotProfile));
     } catch {
@@ -285,6 +303,12 @@ export function SubmitForm(props: SubmitFormProps) {
                       ? s.result.accepted
                       : s.result.queued}
           </p>
+          {result.verificationStatus === "MOCK" ? (
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+              <Row label={s.result.verificationStatus} value={m.game.verificationStatuses.MOCK} />
+            </dl>
+          ) : null}
+          {result.verificationStatus === "MOCK" ? <p className="text-xs text-warning">{s.result.testFixture}</p> : null}
           {result.submissionId ? (
             <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
               <Row label={s.result.submissionId} value={result.submissionId} />

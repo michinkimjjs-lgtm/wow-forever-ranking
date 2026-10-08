@@ -11,6 +11,7 @@ export function SiteHeader() {
     { href: routes.characters(), label: m.nav.characters, match: "/characters" },
     { href: routes.guilds(), label: m.nav.guilds, match: "/guilds" },
     { href: routes.stats(), label: m.nav.stats, match: "/stats" },
+    { href: routes.contribute(), label: m.nav.contribute, match: "/contribute" },
   ];
   const upcoming = [m.nav.dungeons, m.nav.raids, m.nav.worldFirst];
 

@@ -127,6 +127,10 @@ describe("파일 선택 UI", () => {
         slotProfile={null}
         submitEnabled={false}
         verifyOnly
+        allowMockFixture={false}
+        collectorVersion="1.0.0"
+        exportSchemaVersion={1}
+        supportedExportSchemaVersions={[1]}
       />,
     );
     expect(out).toContain(`>${ko.submit.file.choose}<`);
@@ -146,6 +150,8 @@ const ALLOWED_ENGLISH = new Set([
   "WoW", "Forever", "Rank", "Armory", "Blizzard", "Entertainment", "API", "JSON", "KST", "World", "First",
   "Battle.net", "BattleTag", "GUID", "IP", "KB", "Character", "Export", "Collector", "ForeverRankCollector",
   "SavedVariables", "WTF", "Account", "lua", "json", "frc", "export", "reload",
+  // Phase 4A: Collector 배포·설치 안내 (형식 이름, 게임 폴더 이름, 애드온 명령)
+  "Lua", "ZIP", "zip", "SHA", "exe", "Interface", "AddOns", "status", "clear",
 ]);
 
 function englishWords(text: string): string[] {
