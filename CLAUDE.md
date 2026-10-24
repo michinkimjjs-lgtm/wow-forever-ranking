@@ -8,6 +8,7 @@
 > Phase 3A 문서: `docs/SUBMISSION-SYSTEM.md`, `docs/PRIVACY-DATA-POLICY.md`, `docs/ADMIN-REVIEW.md`
 > Phase 3C 문서: `docs/RULESETS.md` (공식 게임 규칙)
 > Phase 4A 문서: `docs/CONTRIBUTOR-GUIDE.md` (랭킹 등록 안내, Collector 배포·버전 관리)
+> 운영 배포: `docs/DEPLOYMENT.md` (Vercel Production 빌드의 운영 DB 자동 초기화)
 
 ## 1. 프로젝트 목적
 
@@ -260,6 +261,7 @@ DB CHECK 제약으로 강제한다.
 - mock 데이터는 **전용 DB**에만 저장한다.
 - 모든 DB에 `database_identity`(허용 dataEnvironment 목록)를 두고, 모든 게임 데이터 테이블에 쓰기 트리거를 건다. 허용되지 않은 영역의 행은 DB가 거부한다.
 - 앱은 시작할 때 `APP_DATA_ENVIRONMENT`와 `database_identity`가 맞는지 확인한다.
+- Vercel Production 빌드(`npm run build:vercel`)는 `DATABASE_URL_UNPOOLED`로 migration과 `database_identity = [live]`만 수행한다. Preview·로컬 빌드는 운영 DB에 접속하지 않는다. 다른 영역으로 표시된 DB는 덮어쓰지 않는다(`docs/DEPLOYMENT.md`).
 - Mock seed는 다음을 모두 만족할 때만 실행된다.
   - `APP_DATA_ENVIRONMENT=mock`
   - DB 식별 표식이 mock

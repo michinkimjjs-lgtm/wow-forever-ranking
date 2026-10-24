@@ -11,6 +11,7 @@
     "dev": "next dev",
     "prebuild": "tsx scripts/build-collector.ts",
     "build": "next build",
+    "build:vercel": "tsx scripts/production-db-init.ts && npm run build",
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
