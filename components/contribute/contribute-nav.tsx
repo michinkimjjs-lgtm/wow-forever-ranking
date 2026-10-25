@@ -93,8 +93,11 @@ export function ContributeStepper({
   );
 }
 
-/** 현재 랭킹 기준 안내: Forever Rank가 확인한 캐릭터 기준 */
-export function RankingBasisNotice() {
+/**
+ * 현재 랭킹 기준 안내: Forever Rank가 확인한 캐릭터 기준
+ * rankingReady: 제출 자료를 랭킹에 반영할 게임 설정·매핑이 있는지 (lib/submissions/availability.ts)
+ */
+export function RankingBasisNotice({ rankingReady }: { rankingReady: boolean }) {
   const m = getMessages().contribute.rankingBasis;
   return (
     <section aria-labelledby="ranking-basis-title" className="rounded-lg border border-accent/40 bg-accent/5 px-4 py-3">
@@ -102,7 +105,7 @@ export function RankingBasisNotice() {
         {m.title}
       </h2>
       <p className="mt-1 text-sm text-foreground">{m.body}</p>
-      <p className="mt-1 text-xs text-muted">{m.detail}</p>
+      <p className={cn("mt-1 text-xs", rankingReady ? "text-muted" : "text-warning")}>{rankingReady ? m.detail : m.detailNotReady}</p>
     </section>
   );
 }
@@ -129,9 +132,10 @@ export function CodeBlock({ children, label }: { children: string; label?: strin
   );
 }
 
-/** 애드온 없이 직접 등록 안내 (Collector는 선택 사항) */
-export function NoAddonEntry() {
+/** 애드온 없이 직접 등록 안내 (Collector는 선택 사항). 등록을 받지 않는 동안에는 표시하지 않는다 */
+export function NoAddonEntry({ open }: { open: boolean }) {
   const m = getMessages().register.entry;
+  if (!open) return null;
   return (
     <section aria-labelledby="no-addon-title" className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
       <div className="min-w-0">

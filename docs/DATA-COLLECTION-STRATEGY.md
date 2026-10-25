@@ -7,7 +7,7 @@
 | 경로 | 상태 | 찾을 수 있는 범위 | 검증 상태 |
 |---|---|---|---|
 | Collector 파일 제출 (`/submit`) | 운영 중 | 제출한 본인 캐릭터 | 커뮤니티 제출 |
-| **웹 직접 등록 (`/contribute/register`)** | **이번 단계 구현** | 등록한 본인 캐릭터 | 커뮤니티 제출 |
+| **웹 직접 등록 (`/contribute/register`)** | **구현, 현재 등록 차단** (§2.5) | 등록한 본인 캐릭터 | 커뮤니티 제출 |
 | Blizzard 공식 API | 준비만 (미공개) | 공개되면 capability별로 다름 | (공개 후 결정) |
 
 - 2026-10-25 기준 WoW: Forever용 Blizzard 웹 API는 공개되지 않았다. endpoint는 등록하지 않았고 capability는 모두 `UNKNOWN`이다.
@@ -18,8 +18,10 @@
 ### 2.1 흐름
 
 ```text
-/contribute/register 양식
-  → POST /api/v1/submissions/manual (Origin + CSRF + 요청 제한 + 크기·깊이 + 개인정보 검사 + 동의 3개)
+/contribute/register 양식 (§2.5 조건을 만족할 때만 표시)
+  → POST /api/v1/submissions/manual (Origin + CSRF + 요청 제한 + 크기·깊이)
+  → §2.5 등록 가능 조건 검사 (불충족이면 503, 본문 해석·DB 저장 없음)
+  → 개인정보 검사 + 동의 3개
   → manualCharacterSchema 검증 (브라우저·서버 같은 스키마)
   → normalizeManualCharacter (확인된 매핑이 없으면 MAPPING_PENDING)
   → 중복 / 반복 제출 제한 / 이전 제출과 충돌 비교
@@ -54,7 +56,7 @@
 - 게임 규칙 → gameMode: `config/game-scopes.ts`의 Ruleset 매핑(실제 영역은 아직 미설정)
 - 이름·성 구분자: `config/export-mapping.ts`의 `nameSeparator`(미확인)
 
-표가 비어 있는 동안 직접 등록은 모두 `MAPPING_PENDING`으로 보관되고 랭킹에 반영되지 않는다. 표를 채울 때는 공식 자료나 실제 제출로 확인한 근거를 이 문서에 적는다. 표가 채워지면 관리자가 같은 제출을 다시 승인할 수 있다(원본을 다시 정규화한다).
+표가 비어 있는 동안 직접 등록은 받지 않는다(§2.5). 표를 채울 때는 공식 자료나 실제 제출로 확인한 근거를 이 문서에 적는다. 표가 채워지면 등록을 다시 받을 수 있다.
 
 ### 2.4 DB 변경 (migration 0007)
 
@@ -67,6 +69,26 @@ ALTER TABLE "character_submissions" ADD CONSTRAINT "character_submissions_source
 - 같은 트랜잭션 안에서 실행된다(drizzle migrate). 실패하면 이전 상태로 돌아가고 빌드가 멈춘다(`docs/DEPLOYMENT.md`).
 - **적용 시점: 이 변경이 main에 병합되면 다음 Vercel Production 빌드가 운영 DB에 자동 적용한다.** 그래서 병합 전에 보고한다.
 - 되돌리기: 원래 제약(`data_source = 'addon'`)으로 되돌리는 migration은 `user_submission` 행이 없을 때만 가능하다.
+
+### 2.5 등록 가능 조건과 차단 (2026-10-25 결정)
+
+랭킹에 반영할 수 없는 자료는 받지 않는다. `lib/submissions/availability.ts`의 `evaluateManualRegistrationSetup`이 대상 영역(live 배포는 live, 그 밖에는 beta)에 대해 다음을 모두 확인한다.
+
+| 조건 | 설정 | 현재 |
+|---|---|---|
+| 게임 범위(region / gameMode) | `config/game-scopes.ts` | live·beta 없음 |
+| 이름과 성 구분자 | `config/export-mapping.ts` `nameSeparator` | 미확인 |
+| Battle.net 지역 → region 매핑 1개 이상 | `config/registration.ts` | 없음 |
+| 등록 가능 규칙 → gameMode 매핑 1개 이상 | `config/game-scopes.ts` | 없음 |
+| 직업 이름 → 직업 코드 매핑 | `config/registration.ts` | 없음 |
+
+- 하나라도 없으면: 화면은 입력 양식 없이 "현재 캐릭터 등록을 받지 않습니다"와 이유만 표시한다. API는 `503 REGISTRATION_UNAVAILABLE`로 거부하고(검증 요청 포함), DB에 연결하지 않는다.
+- 조건을 만족해도 `FEATURE_PUBLIC_SUBMISSIONS`가 꺼져 있으면 화면은 "등록 기능이 열려 있지 않음"만 표시하고 API는 404다.
+- 조건을 만족하면 매핑이 확인된 지역·규칙만 선택지로 보여 준다. 확인된 목록에 없는 직업 이름은 `MAPPING_PENDING`으로 보관한다.
+- `/contribute`, `/submit`의 "애드온 없이 등록하기" 링크는 등록을 받을 때만 보인다.
+- 값은 추측해서 채우지 않는다. 채울 때는 근거를 이 문서에 적는다.
+
+Collector 제출(`/submit`)은 동작을 바꾸지 않았다. 같은 판단(`evaluateCollectorRankingSetup`: 게임 범위, 이름 구분자, region·gameMode·직업 값 매핑)이 안 되면 "현재 제출 자료는 랭킹에 반영되지 않습니다" 안내만 표시한다. Collector 제출도 차단할지는 별도 결정 사항이다.
 
 ## 3. 공식 API 준비: 발견(discovery)과 중복 제거
 
@@ -141,6 +163,7 @@ ALTER TABLE "character_submissions" ADD CONSTRAINT "character_submissions_source
 | 직접 등록 스키마·선택지·매핑 비어 있음 | `tests/manual-registration.test.ts` | 구현 |
 | 직접 등록 HTTP 보안(Origin, CSRF, 동의 3개, 개인정보, mock dryRun) | 같은 파일 | 구현 |
 | 저장(검토 대기·매핑 대기), 중복, 반복 제한, 승인 후 반영, DB CHECK | 같은 파일 (PGlite + 실제 migration) | 구현 |
+| 등록 차단: 양식 미표시, 안내 문구, API 503·DB 미연결·미저장, 관련 화면 링크, Collector 화면 영향 | `tests/registration-closed.test.tsx`, `tests/manual-registration.test.ts` | 구현 |
 | 발견 중복 제거, 전체 목록 미보장 | `tests/data-collection.test.ts` | 구현 |
 | 30일 보존 판단, 상태 확인 판단, 갱신 계획 | 같은 파일 | 구현 |
 | capability `UNKNOWN`·endpoint 비어 있음 유지 | 같은 파일, `tests/provider-contract.test.ts` | 구현 |

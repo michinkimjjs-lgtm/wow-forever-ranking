@@ -46,7 +46,7 @@ export const seo = {
   },
   contributeRegister: {
     title: "애드온 없이 캐릭터 등록 | Forever Rank",
-    description: "Collector 애드온 없이 WoW 포에버 캐릭터 정보를 직접 입력해 Forever Rank 커뮤니티 랭킹 등록을 요청합니다. 관리자 검토 후 반영됩니다.",
+    description: "Collector 애드온 없이 WoW 포에버 캐릭터 정보를 직접 입력해 Forever Rank 커뮤니티 랭킹 등록을 요청하는 화면입니다. 현재 등록 가능 여부를 안내합니다.",
   },
   contributeDownload: {
     title: "Forever Rank Collector 다운로드 | Forever Rank",

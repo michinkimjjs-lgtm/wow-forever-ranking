@@ -22,6 +22,7 @@ import type { FixedWindowRateLimiter } from "./rate-limit";
 import { parseJsonWithLimits } from "./json-limits";
 import { isSameOriginRequest, temporaryClientKey, verifyCsrfToken } from "./security";
 import { findSensitiveData } from "./sensitive";
+import { evaluateManualRegistrationSetup, type SetupSources } from "./availability";
 import { submitManualRegistration } from "./manual";
 import { resolveSubmissionConfig, submitCharacterExport, type SubmissionResult } from "./submit";
 
@@ -38,6 +39,8 @@ export interface SubmissionHttpDeps {
     slotProfile: (env: "beta" | "live", gameMode: string) => GearProfile | null;
     rankingProfile: (env: "beta" | "live", gameMode: string) => GearProfile | null;
   };
+  /** 웹 직접 등록의 설정 출처 (테스트 주입용). 기본: config/registration.ts, config/game-scopes.ts */
+  manualRegistration?: Omit<SetupSources, "mapping">;
   /** 공개 제출 설정. 없으면 공개 제출을 받지 않는다(404). */
   publicSubmission?: {
     settings: { enabled: boolean; secret: string | null };
@@ -228,6 +231,13 @@ export async function handleManualRegistration(request: Request, deps: Submissio
   if (!guarded.ok) return guarded.response;
   const { pub, dryRun } = guarded;
   const { policy } = pub;
+  const target: "beta" | "live" = deps.appEnv === "live" ? "live" : "beta";
+
+  // 랭킹에 반영할 설정(게임 범위·지역·규칙·직업·이름 구분)이 없으면 등록을 받지 않는다.
+  // 검증(dryRun)도 받지 않고, 본문을 해석하거나 DB에 저장하지 않는다.
+  const setup = evaluateManualRegistrationSetup(target, { mapping: deps.config.mapping(target), ...deps.manualRegistration });
+  if (!setup.ready) return error("REGISTRATION_UNAVAILABLE", 503, { reasons: setup.gaps });
+
   const envelope = manualEnvelopeSchema.safeParse(guarded.value);
   if (!envelope.success) return error("INVALID_ENVELOPE", 400);
 
@@ -242,7 +252,6 @@ export async function handleManualRegistration(request: Request, deps: Submissio
   }
   if (deps.appEnv === "mock" && !dryRun) return error("MOCK_ENVIRONMENT", 409);
 
-  const target: "beta" | "live" = deps.appEnv === "live" ? "live" : "beta";
   const result = await submitManualRegistration(envelope.data.registration, {
     targetEnvironment: target,
     mapping: deps.config.mapping(target),
@@ -252,6 +261,8 @@ export async function handleManualRegistration(request: Request, deps: Submissio
     db: deps.appEnv === "mock" ? null : deps.db,
     consent: consent ? { consentVersion: consent.consentVersion, policyVersion: consent.policyVersion, consentedAt: deps.now } : null,
     frequency: { perCharacterMinIntervalMinutes: policy.perCharacterMinIntervalMinutes, maxOpenPerCharacter: policy.maxOpenPerCharacter },
+    registration: deps.manualRegistration?.registration,
+    gameModeForRuleset: deps.manualRegistration?.gameModeForRuleset,
   });
   if (!result.ok) {
     if (result.stage === "limit") return error(result.limit, 429);

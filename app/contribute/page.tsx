@@ -4,6 +4,8 @@ import { CONTRIBUTE_HREF, ContributeNav, ContributeStepper, NoAddonEntry, Rankin
 import { PageHeader } from "@/components/page-header";
 import { getMessages } from "@/lib/i18n";
 import { pageMetadata } from "@/lib/seo";
+import { getAppEnvironmentSafe } from "@/lib/server/context";
+import { currentCollectorRankingReady, currentManualRegistrationStatus } from "@/lib/submissions/availability";
 
 export function generateMetadata(): Metadata {
   const seo = getMessages().seo.contribute;
@@ -16,6 +18,7 @@ const STEP_LINKS = [CONTRIBUTE_HREF.download, CONTRIBUTE_HREF.install, CONTRIBUT
 export default function ContributePage() {
   const c = getMessages().contribute;
   const o = c.overview;
+  const appEnv = getAppEnvironmentSafe();
   return (
     <div className="flex flex-col gap-5">
       <PageHeader title={o.title}>
@@ -23,7 +26,7 @@ export default function ContributePage() {
         <p className="text-sm text-muted">{o.summary}</p>
       </PageHeader>
 
-      <RankingBasisNotice />
+      <RankingBasisNotice rankingReady={currentCollectorRankingReady(appEnv)} />
 
       <section aria-labelledby="steps-title" className="flex flex-col gap-3">
         <h2 id="steps-title" className="text-lg font-semibold text-foreground">
@@ -60,7 +63,7 @@ export default function ContributePage() {
 
       <ContributeNav current="overview" />
 
-      <NoAddonEntry />
+      <NoAddonEntry open={currentManualRegistrationStatus(appEnv).open} />
 
       <div className="grid gap-3 md:grid-cols-2">
         <section aria-labelledby="safety-title" className="rounded-lg border border-border bg-surface px-4 py-4">

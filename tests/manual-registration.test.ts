@@ -41,6 +41,8 @@ const TEST_REGISTRATION: RegistrationConfig = {
   classCodeByName: { beta: { 테스트직업: "warrior" }, live: {} },
 };
 const testGameMode = (_env: string, ruleset: string) => (ruleset === "normal" ? "test-mode" : null);
+/** 테스트에서만: 랭킹 반영 설정이 모두 갖춰진 상태 */
+const READY = { registration: TEST_REGISTRATION, gameModeForRuleset: testGameMode, hasGameScope: () => true };
 const forever = loadConfig().gearProfiles.find((p) => p.id === "forever-draft")!;
 
 function registration(overrides: Record<string, unknown> = {}) {
@@ -87,6 +89,8 @@ function deps(partial: Partial<SubmissionHttpDeps> = {}): SubmissionHttpDeps {
     ...partial,
   };
 }
+
+const readyDeps = (partial: Partial<SubmissionHttpDeps> = {}) => deps({ manualRegistration: READY, ...partial });
 
 function request(body: unknown, options: { dryRun?: boolean; origin?: string; csrf?: string | null; now?: Date } = {}) {
   const headers: Record<string, string> = { "content-type": "application/json", origin: options.origin ?? ORIGIN };
@@ -215,37 +219,44 @@ describe("직접 등록 HTTP (mock 배포, DB 없음)", () => {
   });
 
   it("세 가지 동의가 모두 있어야 저장 요청을 받는다", async () => {
-    const r1 = await handleManualRegistration(request({ registration: registration() }), deps());
+    const r1 = await handleManualRegistration(request({ registration: registration() }), readyDeps());
     expect([r1.status, (await read(r1)).error?.code]).toEqual([400, "CONSENT_REQUIRED"]);
     const partial = { ...CONSENT, agreements: { dataUsage: true, noPersonalData: true } };
-    const r2 = await handleManualRegistration(request({ registration: registration(), consent: partial }), deps());
+    const r2 = await handleManualRegistration(request({ registration: registration(), consent: partial }), readyDeps());
     expect(r2.status).toBe(400);
   });
 
   it("개인정보로 보이는 값은 422", async () => {
     const res = await handleManualRegistration(
       request({ registration: registration({ evidence: { note: "문의는 someone@example.test 로 주세요" } }), consent: CONSENT }, { dryRun: true }),
-      deps(),
+      readyDeps(),
     );
     expect([res.status, (await read(res)).error?.code]).toEqual([422, "SENSITIVE_DATA"]);
   });
 
-  it("mock 배포는 저장하지 않고 검증만 한다. 결과는 매핑 대기·커뮤니티 제출이다", async () => {
-    const stored = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), deps());
+  it("(설정이 갖춰진 경우) mock 배포는 저장하지 않고 검증만 한다. 결과는 커뮤니티 제출이다", async () => {
+    const stored = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), readyDeps());
     expect([stored.status, (await read(stored)).error?.code]).toEqual([409, "MOCK_ENVIRONMENT"]);
-    const dry = await handleManualRegistration(request({ registration: registration() }, { dryRun: true }), deps());
+    const dry = await handleManualRegistration(request({ registration: registration() }, { dryRun: true }), readyDeps());
     expect(dry.status).toBe(200);
     expect((await read(dry)).data).toMatchObject({
       mode: "dry-run",
       submissionId: null,
       dataSource: "user_submission",
       verificationStatus: "COMMUNITY_SUBMITTED",
-      blockedReason: "MAPPING_PENDING",
+      blockedReason: null,
     });
   });
 
+  it("실제 설정(매핑 비어 있음)에서는 검증 요청도 받지 않는다 (503)", async () => {
+    const res = await handleManualRegistration(request({ registration: registration() }, { dryRun: true }), deps());
+    const body = await read(res);
+    expect([res.status, body.error?.code]).toEqual([503, "REGISTRATION_UNAVAILABLE"]);
+    expect(body.data).toBeUndefined();
+  });
+
   it("형식 오류는 한국어 메시지와 함께 400", async () => {
-    const res = await handleManualRegistration(request({ registration: registration({ surname: "" }) }, { dryRun: true }), deps());
+    const res = await handleManualRegistration(request({ registration: registration({ surname: "" }) }, { dryRun: true }), readyDeps());
     const body = await read(res);
     expect([res.status, body.error?.code]).toEqual([400, "VALIDATION_FAILED"]);
     expect(body.error?.message).toMatch(/[가-힣]/);
@@ -263,11 +274,22 @@ describe("직접 등록 저장과 관리자 검토 (beta DB)", () => {
 
   const rowFor = async (id: string) => (await db.select().from(characterSubmissions).where(eq(characterSubmissions.id, id)))[0]!;
 
-  it("실제 설정으로 등록하면 검토 대기 + 매핑 대기로 저장되고 캐릭터는 만들지 않는다", async () => {
-    const res = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), deps({ appEnv: "beta", db }));
+  it("실제 설정(매핑 비어 있음)에서는 API를 직접 호출해도 DB에 저장하지 않는다", async () => {
+    for (const appEnv of ["beta", "live"] as const) {
+      for (const dryRun of [false, true]) {
+        const res = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }, { dryRun }), deps({ appEnv, db }));
+        expect([res.status, (await read(res)).error?.code]).toEqual([503, "REGISTRATION_UNAVAILABLE"]);
+      }
+    }
+    expect(await db.select().from(characterSubmissions)).toHaveLength(0);
+    expect(await db.select().from(characters)).toHaveLength(0);
+  });
+
+  it("설정이 갖춰지면 검토 대기로 저장되고 캐릭터는 만들지 않는다", async () => {
+    const res = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), readyDeps({ appEnv: "beta", db }));
     const body = await read(res);
     expect(res.status).toBe(200);
-    expect(body.data).toMatchObject({ mode: "queued", reviewStatus: "PENDING", blockedReason: "MAPPING_PENDING" });
+    expect(body.data).toMatchObject({ mode: "queued", reviewStatus: "PENDING", blockedReason: null });
     const row = await rowFor(body.data!.submissionId as string);
     expect(row).toMatchObject({
       dataEnvironment: "beta",
@@ -275,18 +297,26 @@ describe("직접 등록 저장과 관리자 검토 (beta DB)", () => {
       verificationStatus: "COMMUNITY_SUBMITTED",
       channel: "public",
       reviewStatus: "PENDING",
-      blockedReason: "MAPPING_PENDING",
+      blockedReason: null,
       characterId: null,
     });
     expect(await db.select().from(characters)).toHaveLength(0);
   });
 
+  it("확인된 목록에 없는 직업 이름은 매핑 대기로 보관한다", async () => {
+    const res = await handleManualRegistration(
+      request({ registration: registration({ name: "직업미상", className: "모르는직업" }), consent: CONSENT }),
+      readyDeps({ appEnv: "beta", db }),
+    );
+    expect((await read(res)).data).toMatchObject({ mode: "queued", reviewStatus: "PENDING", blockedReason: "MAPPING_PENDING" });
+  });
+
   it("같은 내용을 다시 보내면 중복으로 처리하고, 바로 다른 내용을 보내면 반복 제출 제한에 걸린다", async () => {
-    const again = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), deps({ appEnv: "beta", db }));
+    const again = await handleManualRegistration(request({ registration: registration(), consent: CONSENT }), readyDeps({ appEnv: "beta", db }));
     expect((await read(again)).data).toMatchObject({ mode: "duplicate", duplicate: true });
     const changed = await handleManualRegistration(
       request({ registration: registration({ level: 26 }), consent: CONSENT }, { now: minutesLater(1) }),
-      deps({ appEnv: "beta", db, now: minutesLater(1) }),
+      readyDeps({ appEnv: "beta", db, now: minutesLater(1) }),
     );
     expect([changed.status, (await read(changed)).error?.code]).toEqual([429, "TOO_FREQUENT"]);
   });
