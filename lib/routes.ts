@@ -21,6 +21,7 @@ export const routes = {
   contributeInstall: () => "/contribute/install",
   contributeHowToUse: () => "/contribute/how-to-use",
   contributeTestExport: () => "/contribute/test-export",
+  contributeRegister: () => "/contribute/register",
 };
 
 /** 현재 쿼리를 유지하면서 일부 값만 바꾼 URL */

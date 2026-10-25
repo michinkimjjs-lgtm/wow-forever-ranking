@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContributeNav } from "@/components/contribute/contribute-nav";
+import { ContributeNav, NoAddonEntry } from "@/components/contribute/contribute-nav";
 import { PageHeader } from "@/components/page-header";
 import { SubmitForm } from "@/components/submit/submit-form";
 import { collectorRelease } from "@/config/collector";
@@ -95,6 +95,8 @@ export default function SubmitPage() {
         exportSchemaVersion={collectorRelease.exportSchemaVersion}
         supportedExportSchemaVersions={collectorRelease.supportedExportSchemaVersions}
       />
+
+      <NoAddonEntry />
 
       <section aria-labelledby="howto-title" className="rounded-lg border border-border bg-surface px-4 py-4">
         <h2 id="howto-title" className="mb-2 text-base font-semibold text-foreground">

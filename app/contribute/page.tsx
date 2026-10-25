@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTRIBUTE_HREF, ContributeNav, ContributeStepper, RankingBasisNotice } from "@/components/contribute/contribute-nav";
+import { CONTRIBUTE_HREF, ContributeNav, ContributeStepper, NoAddonEntry, RankingBasisNotice } from "@/components/contribute/contribute-nav";
 import { PageHeader } from "@/components/page-header";
 import { getMessages } from "@/lib/i18n";
 import { pageMetadata } from "@/lib/seo";
@@ -59,6 +59,8 @@ export default function ContributePage() {
       </section>
 
       <ContributeNav current="overview" />
+
+      <NoAddonEntry />
 
       <div className="grid gap-3 md:grid-cols-2">
         <section aria-labelledby="safety-title" className="rounded-lg border border-border bg-surface px-4 py-4">

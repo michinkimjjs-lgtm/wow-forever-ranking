@@ -128,3 +128,24 @@ export function CodeBlock({ children, label }: { children: string; label?: strin
     </pre>
   );
 }
+
+/** 애드온 없이 직접 등록 안내 (Collector는 선택 사항) */
+export function NoAddonEntry() {
+  const m = getMessages().register.entry;
+  return (
+    <section aria-labelledby="no-addon-title" className="flex flex-col gap-2 rounded-lg border border-border bg-surface px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <h2 id="no-addon-title" className="text-sm font-semibold text-foreground">
+          {m.title}
+        </h2>
+        <p className="text-sm text-muted">{m.body}</p>
+      </div>
+      <Link
+        href={routes.contributeRegister()}
+        className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-md border border-accent/60 px-4 text-sm font-medium text-foreground hover:bg-surface-raised"
+      >
+        {m.link}
+      </Link>
+    </section>
+  );
+}

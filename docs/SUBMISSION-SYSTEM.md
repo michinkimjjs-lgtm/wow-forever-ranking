@@ -241,3 +241,13 @@ validate → normalize → identify → Gear Profile → duplicate check → con
 - 테스트용 예시 파일은 mock 배포의 `/contribute/test-export`에서 받을 수 있습니다. beta / live에서는 404입니다.
 - beta / live는 검증 전용 제출이어도 fixture를 `MOCK_FIXTURE_REJECTED`로 거부합니다.
 - fixture가 저장 단계에 오면 예외로 멈춥니다. 그래서 fixture는 `COMMUNITY_SUBMITTED` / `VERIFIED`가 되지 않습니다.
+
+## 11. 웹 직접 등록 (Phase 4B)
+
+애드온 없이 `/contribute/register` 양식으로 등록하는 경로. 상세: `docs/DATA-COLLECTION-STRATEGY.md` §2.
+
+- `POST /api/v1/submissions/manual`. 본문 `{ registration, consent }`, 동의는 `dataUsage` / `noPersonalData` / `accurateInformation` 세 개.
+- 보안 검사는 §5와 같은 `guardPublicRequest`를 쓴다(Origin, CSRF, 요청 제한, 크기·깊이). 개인정보 검사도 같다.
+- 같은 `character_submissions` 표에 `data_source = user_submission`, `channel = public`으로 저장한다(migration 0007).
+- 자동 반영 설정과 관계없이 항상 `PENDING`(충돌이면 `CONFLICT`). 매핑이 없으면 `blocked_reason = MAPPING_PENDING`.
+- 중복·반복 제출 제한·충돌 비교는 §6·§7과 같다. 매핑 전에는 신고한 지역·규칙·전체 이름으로 만든 식별 키(`reported:` 접두사)로 묶는다.

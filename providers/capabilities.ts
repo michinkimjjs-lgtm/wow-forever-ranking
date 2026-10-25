@@ -20,6 +20,15 @@ export const PROVIDER_CAPABILITY_IDS = [
   "achievement",
   "dungeon",
   "raid",
+  // 캐릭터 발견·상태 확인 (docs/DATA-COLLECTION-STRATEGY.md §3). 모두 Forever 적용 여부 미확인.
+  /** 길드 구성원 목록 (길드 단위 발견) */
+  "guild_roster",
+  /** 순위표 (상위 일부 캐릭터 발견) */
+  "leaderboard",
+  /** 이름으로 캐릭터 찾기 (전체 목록이 아닌 개별 조회) */
+  "character_search",
+  /** 캐릭터가 아직 존재하는지·같은 캐릭터인지 확인 (30일 보존 정책의 삭제 판단) */
+  "character_status",
 ] as const;
 export type ProviderCapabilityId = (typeof PROVIDER_CAPABILITY_IDS)[number];
 

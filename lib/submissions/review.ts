@@ -8,7 +8,7 @@
 import { and, count, desc, eq, gte, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import { characterSubmissions } from "@/db/schema";
 import type { AppDatabase } from "@/db/types";
-import type { DataEnvironment, SubmissionChannel, SubmissionReviewStatus } from "@/lib/domain/enums";
+import type { DataEnvironment, DataSource, SubmissionChannel, SubmissionReviewStatus } from "@/lib/domain/enums";
 import {
   compareSubmissions,
   identityKeyOf,
@@ -234,6 +234,8 @@ export function reviveObservation(value: unknown): CharacterObservation {
 export interface NewSubmission {
   env: RealEnvironment;
   channel: SubmissionChannel;
+  /** addon: Collector 파일 / user_submission: 웹 직접 등록. 생략하면 addon */
+  dataSource?: Extract<DataSource, "addon" | "user_submission">;
   reviewStatus: SubmissionReviewStatus;
   blockedReason: string | null;
   payload: unknown;
@@ -258,7 +260,7 @@ export async function insertSubmission(db: AppDatabase, input: NewSubmission): P
     .insert(characterSubmissions)
     .values({
       dataEnvironment: input.env,
-      dataSource: "addon",
+      dataSource: input.dataSource ?? "addon",
       verificationStatus: "COMMUNITY_SUBMITTED",
       reviewStatus: input.reviewStatus,
       channel: input.channel,
