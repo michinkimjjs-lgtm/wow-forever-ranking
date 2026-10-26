@@ -237,6 +237,26 @@ describe("기존 level_milestones 이관 (migration 0007)", () => {
     expect(await milestoneOf(db, ids.character, 11)).toMatchObject({ timingBasis: "SOURCE_REPORTED", reachedAt: REACHED11 });
   });
 
+  it("회귀: 이관 판정을 같은 ACCEPTED로 다시 확인할 때는 재판정 행을 추가하지 않고, 채택 기록은 이관 판정을 계속 가리킨다", async () => {
+    const [e11] = await evidenceOf(db, ids.character, 11);
+    const before = await latestAssessment(db, e11!.id);
+    expect(before.map((a) => [a.kind, a.status, a.reasons])).toEqual([["MIGRATED", "ACCEPTED", ["MIGRATED_FROM_LEVEL_MILESTONES"]]]);
+    // 직전 테스트에서 이미 한 번 관측됐다. 한 번 더 관측해도 판정 이력은 늘지 않는다.
+    await ingestObservation(
+      db,
+      beta,
+      addon({ name: "이관 캐릭터", level: 11, observedAt: new Date("2026-09-05T12:00:00Z"), identity: { externalId: null, region: "test-region", gameMode: "normal", characterName: "이관 캐릭터" } }),
+    );
+    expect(await latestAssessment(db, e11!.id)).toEqual(before);
+    expect((await milestoneOf(db, ids.character, 11))!).toMatchObject({
+      timingBasis: "SOURCE_REPORTED",
+      reachedAt: REACHED11,
+      evidenceId: e11!.id,
+      claimAssessmentId: before[0]!.id,
+      claimAssessmentStatus: "ACCEPTED",
+    });
+  });
+
   it("이관된 기록이라도 알려진 관측과 모순되면 다음 관측 때 충돌로 재판정되고 채택에서 빠진다", async () => {
     // 레벨 10을 T1(9/2)에 관측했는데 레벨 12를 9/1에 달성했다는 이관 기록
     await client.query(
@@ -255,6 +275,23 @@ describe("기존 level_milestones 이관 (migration 0007)", () => {
     expect(latest).toMatchObject({ kind: "REASSESSMENT", status: "CONFLICT" });
     expect((await milestoneOf(db, ids.character, 12))!.timingBasis).not.toBe("SOURCE_REPORTED");
     expect(await milestoneOf(db, ids.character, 11)).toMatchObject({ timingBasis: "SOURCE_REPORTED", reachedAt: REACHED11 });
+  });
+
+  it("회귀: 이관 판정(ACCEPTED)이 실제로 바뀌면 재판정 행을 기록하고 채택에서 뺀다", async () => {
+    const [e11] = await evidenceOf(db, ids.character, 11);
+    // 9/2 18시에는 아직 레벨 10이었다는 관측이 늦게 도착 → 9/2 12시 레벨 11 달성 이관 기록과 모순
+    await ingestObservation(
+      db,
+      beta,
+      addon({ name: "이관 캐릭터", level: 10, observedAt: new Date("2026-09-02T18:00:00Z"), identity: { externalId: null, region: "test-region", gameMode: "normal", characterName: "이관 캐릭터" } }),
+    );
+    const history = await latestAssessment(db, e11!.id);
+    expect(history.map((a) => [a.kind, a.status])).toEqual([
+      ["REASSESSMENT", "CONFLICT"],
+      ["MIGRATED", "ACCEPTED"],
+    ]);
+    expect(history[0]!.reasons).toEqual(["CLAIM_BEFORE_LOWER_LEVEL_FACT"]);
+    expect((await milestoneOf(db, ids.character, 11))!).toMatchObject({ timingBasis: "FIRST_OBSERVED", reachedAt: null, claimAssessmentId: null, claimAssessmentStatus: null });
   });
 });
 

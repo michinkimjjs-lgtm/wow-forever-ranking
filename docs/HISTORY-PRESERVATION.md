@@ -138,7 +138,25 @@ Forever Rank는 현재 순위뿐 아니라 최초 달성 같은 역사 기록을
 
 **운영 DB:** 2026-10-26 기준 운영 DB에는 실제 캐릭터 데이터가 없는 것으로 보고되었다(확인은 운영자 몫). 병합하면 Vercel Production 빌드가 두 migration을 자동 적용한다(`docs/DEPLOYMENT.md`).
 
-**PR #7과의 순서:** PR #8을 먼저 병합하고, PR #7은 main을 병합한 뒤 drizzle-kit으로 migration을 다시 생성한다(0009). 이름만 바꾸면 기록 시각이 더 이르기 때문에 drizzle이 건너뛴다.
+**PR #7과의 순서 (migration 번호 충돌 해결):** PR #7도 `0007_submissions_user_submission_source`를 추가하므로 번호가 겹친다. 아래 순서로 처리한다.
+
+1. PR #8(이 작업)을 먼저 병합한다.
+2. PR #7 작업 브랜치를 병합된 main 기준으로 갱신한다. 다른 사람이 쓰는 브랜치이므로 rebase·force push 대신 main을 병합(merge commit)한다.
+3. migration 기록 파일 충돌(`db/migrations/meta/_journal.json`, `db/migrations/meta/0007_snapshot.json`)은 main의 기록을 기준으로 해결한다(`git checkout --theirs` 등으로 main 쪽 선택).
+4. PR #7의 기존 `db/migrations/0007_submissions_user_submission_source.sql`을 제거한다.
+5. `npx drizzle-kit generate --name submissions_user_submission_source`를 실행해 새 migration(`0009_submissions_user_submission_source.sql`)과 기록 파일을 생성한다. `db/schema.ts`는 병합 결과(두 PR의 변경 모두 포함)를 그대로 쓴다.
+6. 원래 SQL 맨 위에 있던 설명 주석 두 줄을 새 파일 맨 위에 복원한다.
+   ```sql
+   -- 웹 직접 등록(user_submission)을 제출 검토 표에 보관할 수 있도록 출처 제약을 넓힌다.
+   -- 기존 행은 모두 addon이므로 바뀌지 않는다. 데이터 삭제·변경 없음 (docs/DATA-COLLECTION-STRATEGY.md §2).
+   ```
+7. 명세서 §30에서 번호가 겹치는 28번 이후 항목을 다시 정리한다. 이 작업의 28번(레벨 달성 시각 하한)은 그대로 두고, PR #7이 추가한 항목(Blizzard 보존 조건, 발견 API, Battle.net 지역 매핑)을 29~31번으로 옮긴다.
+8. 확인한다.
+   - 생성된 SQL이 원래 PR #7 SQL과 같은 두 문장(`character_submissions_source` 제약을 지우고 `data_source IN ('addon', 'user_submission')`으로 다시 추가)인지
+   - `_journal.json`이 0007 → 0008 → 0009 순서이고, 0009의 기록 시각(`when`)이 0008보다 늦은지
+   - `npx drizzle-kit check`, 타입 검사, 린트, 전체 테스트(특히 `tests/production-db-init.test.ts`의 migration 수 검사)가 통과하는지
+
+파일 이름만 0009로 바꾸면 안 된다. 원래 기록 시각이 0008보다 이르기 때문에, drizzle이 이미 0008까지 적용된 운영 DB에서 이 migration을 건너뛴다. 그러면 Production 빌드가 migration 수 검사에서 멈춘다(2026-10-26 재현 확인). 반대로 PR #7을 먼저 병합하면 이 작업의 손으로 작성한 이관·트리거 SQL을 다시 생성해야 하므로 권장하지 않는다.
 
 ## 8. 범위 밖 (후속 작업)
 

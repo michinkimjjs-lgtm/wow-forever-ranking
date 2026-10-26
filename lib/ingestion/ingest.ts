@@ -732,6 +732,9 @@ const CLAIM_WARNINGS: Record<"REJECTED" | "CONFLICT" | "NEEDS_REVIEW", string> =
   NEEDS_REVIEW: "레벨 달성 시각을 뒷받침하는 이전 관측이 없어 바로 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
 };
 
+/** 이관 판정의 이유 코드 (migration 0007) */
+const MIGRATED_ASSESSMENT_REASON = "MIGRATED_FROM_LEVEL_MILESTONES";
+
 type EvidenceRow = typeof levelMilestoneEvidence.$inferSelect;
 
 /** 근거 행의 출처와 관측 당시 맥락 */
@@ -933,7 +936,13 @@ async function recordLevelEvidence(
     const previous = latest.get(evidenceId);
     const unchanged =
       previous && previous.status === assessment.status && JSON.stringify(previous.reasons) === JSON.stringify(assessment.reasons);
-    if (unchanged) continue;
+    // 이관 판정(이유: 이관 표시뿐)을 같은 ACCEPTED로 다시 확인한 것은 판정 변경이 아니다.
+    const migratedConfirmed =
+      previous?.status === "ACCEPTED" &&
+      JSON.stringify(previous.reasons) === JSON.stringify([MIGRATED_ASSESSMENT_REASON]) &&
+      assessment.status === "ACCEPTED" &&
+      assessment.reasons.length === 0;
+    if (unchanged || migratedConfirmed) continue;
     const id = ctx.newId();
     await tx.insert(levelMilestoneClaimAssessments).values({
       id,
