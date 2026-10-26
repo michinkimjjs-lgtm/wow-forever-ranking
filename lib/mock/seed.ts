@@ -16,6 +16,7 @@ import {
   guilds,
   ingestionRecords,
   items,
+  levelMilestoneEvidence,
   levelMilestones,
 } from "@/db/schema";
 import { readDatabaseIdentity } from "@/db/identity";
@@ -56,7 +57,9 @@ export async function assertMockSeedAllowed(
 /** mock 영역 데이터만 지운다. (외래 키 순서대로) */
 export async function resetMockData(db: AppDatabase): Promise<void> {
   await db.transaction(async (tx) => {
+    // 삭제 순서: 채택 결과 → 근거 → 스냅샷 (FK). 실제 영역은 DB 트리거가 삭제를 거부한다(migration 0008).
     await tx.delete(levelMilestones).where(eq(levelMilestones.dataEnvironment, "mock"));
+    await tx.delete(levelMilestoneEvidence).where(eq(levelMilestoneEvidence.dataEnvironment, "mock"));
     await tx.delete(characterSnapshots).where(eq(characterSnapshots.dataEnvironment, "mock"));
     await tx.delete(characterItems).where(eq(characterItems.dataEnvironment, "mock"));
     await tx.delete(characterExternalRefs).where(eq(characterExternalRefs.dataEnvironment, "mock"));

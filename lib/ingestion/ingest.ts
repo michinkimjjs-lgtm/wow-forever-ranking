@@ -4,7 +4,7 @@
  * 원본 저장 → 입력 검증(금지 필드 제거) → dataEnvironment 부여(서버 설정) → 캐릭터 식별(§7.3)
  * → 현재 상태 / 장비 / milestone / 스냅샷 갱신 (Gear Profile 적용)
  */
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt, ne, sql } from "drizzle-orm";
 import {
   characterExternalRefs,
   characterItems,
@@ -14,6 +14,7 @@ import {
   guilds,
   ingestionRecords,
   items,
+  levelMilestoneEvidence,
   levelMilestones,
 } from "@/db/schema";
 import type { AppDatabase } from "@/db/types";
@@ -25,11 +26,13 @@ import {
   type DataSource,
   type IngestionStatus,
   type MilestoneTimingBasis,
+  type ReachedAtClaimStatus,
   type VerificationStatus,
 } from "@/lib/domain/enums";
 import { normalizeName, toSlug } from "@/lib/domain/names";
 import { calculateEquippedItemLevel, type EquippedItemLevelResult } from "@/lib/gear/calculate";
 import { sha256, stableStringify } from "@/lib/util/stable-json";
+import { assessReachedAtClaim, chooseAdoptedEvidence, type ClaimFacts, type ClaimReason } from "./milestone-evidence";
 import {
   characterObservationSchema,
   FORBIDDEN_RANK_FIELDS,
@@ -80,25 +83,6 @@ export function defaultVerificationStatus(source: DataSource): VerificationStatu
   }
 }
 
-const BASIS_PRIORITY: Record<MilestoneTimingBasis, number> = {
-  SOURCE_REPORTED: 3,
-  FIRST_OBSERVED: 2,
-  INFERRED: 1,
-};
-
-interface MilestoneCandidate {
-  level: number;
-  timingBasis: MilestoneTimingBasis;
-  reachedAt: Date | null;
-  firstObservedAt: Date;
-  previousObservedAt: Date | null;
-}
-
-function effectiveTime(c: { timingBasis: MilestoneTimingBasis; reachedAt: Date | null; firstObservedAt: Date }) {
-  return c.timingBasis === "SOURCE_REPORTED" && c.reachedAt ? c.reachedAt : c.firstObservedAt;
-}
-
-/** payload에서 금지 필드를 제거하고 경고를 만든다. */
 function sanitizePayload(raw: unknown, dataEnvironment: DataEnvironment): {
   payload: Record<string, unknown>;
   warnings: string[];
@@ -216,11 +200,8 @@ async function applyObservation(
   const slug = toSlug(characterName);
   const observedAt = obs.observedAt;
 
-  let levelReachedAt = obs.levelReachedAt ?? null;
-  if (levelReachedAt && levelReachedAt > observedAt) {
-    ctx.warnings.push("레벨 달성 시각이 관측 시각보다 늦어 사용하지 않았습니다.");
-    levelReachedAt = null;
-  }
+  // 달성 시각 주장은 받은 그대로 근거로 남기고, 채택 여부는 근거 판정(milestone-evidence.ts)이 정한다.
+  const claimedReachedAt = obs.levelReachedAt ?? null;
 
   // --- 길드 ---------------------------------------------------------------
   let guildId: string | null | undefined = undefined;
@@ -309,6 +290,12 @@ async function applyObservation(
 
   if (character && inOrder && obs.level < character.level) {
     return conflict(`레벨이 ${character.level}에서 ${obs.level}로 낮아진 관측입니다. 캐릭터 식별을 확인해야 합니다.`);
+  }
+  if (character && !inOrder && obs.level > character.level) {
+    // 늦게 도착한 옛 관측인데 이후 관측보다 레벨이 높다: 달성 순서와 모순되므로 기록하지 않고 검토로 넘긴다.
+    return conflict(
+      `늦게 도착한 관측의 레벨(${obs.level})이 이후 관측의 레벨(${character.level})보다 높습니다. 달성 순서와 맞지 않아 기록하지 않았습니다.`,
+    );
   }
 
   if (character && externalId && !foundByNaturalKey && character.nameNormalized !== nameNormalized && inOrder) {
@@ -440,29 +427,59 @@ async function applyObservation(
     inOrder,
   });
 
-  // --- 레벨 달성 기록 (명세서 §8.3) -------------------------------------------
-  const candidates: MilestoneCandidate[] = [];
-  const observedBasis: MilestoneTimingBasis = levelReachedAt ? "SOURCE_REPORTED" : "FIRST_OBSERVED";
-  if (inOrder && previousLevel !== null && obs.level > previousLevel) {
+  // --- 레벨 달성 근거와 현재 채택 기록 (명세서 §8.3, §8.5) ---------------------------
+  // 근거(level_milestone_evidence)는 관측마다 추가만 한다. 현재 채택 기록(level_milestones)은 근거 전체에서 다시 고른다.
+  const evidenceBase: EvidenceBase = {
+    characterId,
+    obs,
+    verificationStatus,
+    snapshotId,
+    context: {
+      characterName,
+      region,
+      gameMode,
+      classCode: obs.classCode ?? null,
+      raceCode: obs.raceCode ?? null,
+      factionCode: obs.factionCode ?? null,
+      // 관측에 길드 정보가 없으면 알 수 없으므로 null (현재 캐릭터 값을 빌려 쓰지 않는다)
+      guildId: guildId ?? null,
+    },
+  };
+  const rising = inOrder && previousLevel !== null && obs.level > previousLevel;
+  const levels: number[] = [];
+  if (rising) {
     for (let level = previousLevel + 1; level < obs.level; level += 1) {
-      candidates.push({
+      await insertEvidence(tx, ctx, evidenceBase, {
         level,
         timingBasis: "INFERRED",
-        reachedAt: null,
-        firstObservedAt: observedAt,
+        claimedReachedAt: null,
+        claimStatus: "NONE",
+        claimReasons: [],
         previousObservedAt: previousSeenAt,
       });
+      levels.push(level);
     }
   }
-  candidates.push({
+  let claimStatus: ReachedAtClaimStatus = "NONE";
+  let claimReasons: ClaimReason[] = [];
+  if (claimedReachedAt) {
+    const facts = await loadClaimFacts(tx, characterId, obs.level, { previousLevel, previousSeenAt });
+    const assessment = assessReachedAtClaim({ claim: claimedReachedAt, observedAt, verificationStatus, facts });
+    claimStatus = assessment.status;
+    claimReasons = assessment.reasons;
+    if (assessment.status !== "ACCEPTED") ctx.warnings.push(CLAIM_WARNINGS[assessment.status]);
+  }
+  await insertEvidence(tx, ctx, evidenceBase, {
     level: obs.level,
-    timingBasis: observedBasis,
-    reachedAt: levelReachedAt,
-    firstObservedAt: observedAt,
-    previousObservedAt: inOrder && previousLevel !== null && obs.level > previousLevel ? previousSeenAt : null,
+    timingBasis: claimStatus === "ACCEPTED" ? "SOURCE_REPORTED" : "FIRST_OBSERVED",
+    claimedReachedAt,
+    claimStatus,
+    claimReasons,
+    previousObservedAt: rising ? previousSeenAt : null,
   });
-  for (const candidate of candidates) {
-    await upsertMilestone(tx, ctx, { characterId, candidate, obs, verificationStatus, snapshotId });
+  levels.push(obs.level);
+  for (const level of levels) {
+    await adoptMilestone(tx, ctx, characterId, level);
   }
 
   // characters의 현재 레벨 도달 시각은 milestone에서 파생한 캐시 값이다.
@@ -719,72 +736,170 @@ async function saveSnapshot(
   return id;
 }
 
-/**
- * milestone 갱신 규칙 (명세서 §8.3)
- * - 근거 우선순위: SOURCE_REPORTED > FIRST_OBSERVED > INFERRED
- * - 근거 수준이 같으면 더 이른 시각을 채택
- * - first_observed_at은 항상 더 이른 값을 유지
- */
-async function upsertMilestone(
+const CLAIM_WARNINGS: Record<Exclude<ReachedAtClaimStatus, "NONE" | "ACCEPTED">, string> = {
+  REJECTED: "레벨 달성 시각이 관측 시각보다 늦어 사용하지 않았습니다.",
+  CONFLICT: "레벨 달성 시각이 이미 확인된 레벨 순서와 맞지 않아 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
+  NEEDS_REVIEW: "레벨 달성 시각을 뒷받침하는 이전 관측이 없어 바로 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
+};
+
+interface EvidenceBase {
+  characterId: string;
+  obs: CharacterObservation;
+  verificationStatus: VerificationStatus;
+  snapshotId: string | null;
+  context: {
+    characterName: string;
+    region: string;
+    gameMode: string;
+    classCode: string | null;
+    raceCode: string | null;
+    factionCode: string | null;
+    guildId: string | null;
+  };
+}
+
+/** 근거 한 행을 추가한다. 근거는 수정·삭제하지 않는다(DB 트리거, migration 0008). */
+async function insertEvidence(
   tx: AppDatabase,
   ctx: ApplyContext,
-  input: {
-    characterId: string;
-    candidate: MilestoneCandidate;
-    obs: CharacterObservation;
-    verificationStatus: VerificationStatus;
-    snapshotId: string | null;
+  base: EvidenceBase,
+  claim: {
+    level: number;
+    timingBasis: MilestoneTimingBasis;
+    claimedReachedAt: Date | null;
+    claimStatus: ReachedAtClaimStatus;
+    claimReasons: ClaimReason[];
+    previousObservedAt: Date | null;
   },
 ): Promise<void> {
-  const { candidate, obs, characterId } = input;
+  const { obs } = base;
+  await tx.insert(levelMilestoneEvidence).values({
+    id: ctx.newId(),
+    characterId: base.characterId,
+    dataEnvironment: ctx.env,
+    level: claim.level,
+    timingBasis: claim.timingBasis,
+    claimedReachedAt: claim.claimedReachedAt,
+    claimStatus: claim.claimStatus,
+    claimReasons: claim.claimReasons,
+    observedAt: obs.observedAt,
+    previousObservedAt: claim.previousObservedAt,
+    receivedAt: ctx.receivedAt,
+    dataSource: obs.dataSource,
+    verificationStatus: base.verificationStatus,
+    sourceBuild: obs.sourceBuild ?? null,
+    snapshotId: base.snapshotId,
+    ingestionRecordId: ctx.recordId,
+    ...base.context,
+    origin: "INGESTED",
+    createdAt: ctx.receivedAt,
+  });
+}
+
+const minDate = (...values: (Date | null | undefined)[]) => {
+  const list = values.filter((v): v is Date => v instanceof Date);
+  return list.length > 0 ? new Date(Math.min(...list.map((d) => d.getTime()))) : null;
+};
+const maxDate = (...values: (Date | null | undefined)[]) => {
+  const list = values.filter((v): v is Date => v instanceof Date);
+  return list.length > 0 ? new Date(Math.max(...list.map((d) => d.getTime()))) : null;
+};
+
+/**
+ * 달성 시각 주장을 판정하는 데 쓰는 사실 (이 캐릭터의 저장된 관측·근거에서만 가져온다)
+ * - 낮은 레벨 관측: 스냅샷, 수집 근거 중 정확한 레벨을 본 행(INFERRED·이관 행 제외), 직전 캐릭터 상태
+ * - 높은 레벨 사실: 스냅샷, 모든 근거의 관측 시각(그 시각에는 이미 그 레벨 이상), 채택 가능한 달성 시각, 직전 캐릭터 상태
+ */
+async function loadClaimFacts(
+  tx: AppDatabase,
+  characterId: string,
+  level: number,
+  previous: { previousLevel: number | null; previousSeenAt: Date | null },
+): Promise<ClaimFacts> {
+  const snap = characterSnapshots;
+  const ev = levelMilestoneEvidence;
+  const [lowerSnap] = await tx
+    .select({ min: sql`min(${snap.observedAt})`.mapWith(snap.observedAt), max: sql`max(${snap.observedAt})`.mapWith(snap.observedAt) })
+    .from(snap)
+    .where(and(eq(snap.characterId, characterId), lt(snap.level, level)));
+  const [lowerEv] = await tx
+    .select({ min: sql`min(${ev.observedAt})`.mapWith(ev.observedAt), max: sql`max(${ev.observedAt})`.mapWith(ev.observedAt) })
+    .from(ev)
+    .where(and(eq(ev.characterId, characterId), lt(ev.level, level), eq(ev.origin, "INGESTED"), ne(ev.timingBasis, "INFERRED")));
+  const [lowerReached] = await tx
+    .select({ max: sql`max(${ev.claimedReachedAt})`.mapWith(ev.claimedReachedAt) })
+    .from(ev)
+    .where(and(eq(ev.characterId, characterId), lt(ev.level, level), eq(ev.claimStatus, "ACCEPTED")));
+  const [higherSnap] = await tx
+    .select({ min: sql`min(${snap.observedAt})`.mapWith(snap.observedAt) })
+    .from(snap)
+    .where(and(eq(snap.characterId, characterId), gt(snap.level, level)));
+  const [higherEv] = await tx
+    .select({ min: sql`min(${ev.observedAt})`.mapWith(ev.observedAt) })
+    .from(ev)
+    .where(and(eq(ev.characterId, characterId), gt(ev.level, level)));
+  const [higherReached] = await tx
+    .select({ min: sql`min(${ev.claimedReachedAt})`.mapWith(ev.claimedReachedAt) })
+    .from(ev)
+    .where(and(eq(ev.characterId, characterId), gt(ev.level, level), eq(ev.claimStatus, "ACCEPTED")));
+
+  const prevLower = previous.previousLevel !== null && previous.previousLevel < level ? previous.previousSeenAt : null;
+  const prevHigher = previous.previousLevel !== null && previous.previousLevel > level ? previous.previousSeenAt : null;
+  return {
+    lowerSightingMin: minDate(lowerSnap?.min, lowerEv?.min, prevLower),
+    lowerSightingMax: maxDate(lowerSnap?.max, lowerEv?.max, prevLower),
+    lowerReachedMax: maxDate(lowerReached?.max),
+    higherFactMin: minDate(higherSnap?.min, higherEv?.min, higherReached?.min, prevHigher),
+  };
+}
+
+/**
+ * 현재 채택 기록(level_milestones)을 근거 전체에서 다시 고른다 (명세서 §8.3, §8.5).
+ * 채택 결과만 갱신하고, 근거 행은 바꾸지 않는다. 바뀐 내용이 없으면 쓰지 않는다.
+ */
+async function adoptMilestone(tx: AppDatabase, ctx: ApplyContext, characterId: string, level: number): Promise<void> {
+  const rows = await tx
+    .select()
+    .from(levelMilestoneEvidence)
+    .where(and(eq(levelMilestoneEvidence.characterId, characterId), eq(levelMilestoneEvidence.level, level)))
+    .orderBy(asc(levelMilestoneEvidence.createdAt));
+  const adopted = chooseAdoptedEvidence(rows);
+  if (!adopted) return;
+  const chosen = rows.find((r) => r.id === adopted.evidence.id)!;
+  const values = {
+    timingBasis: adopted.timingBasis,
+    reachedAt: adopted.reachedAt,
+    firstObservedAt: adopted.firstObservedAt,
+    previousObservedAt: adopted.previousObservedAt,
+    dataSource: chosen.dataSource,
+    verificationStatus: chosen.verificationStatus,
+    sourceBuild: chosen.sourceBuild,
+    snapshotId: chosen.snapshotId,
+    ingestionRecordId: chosen.ingestionRecordId,
+    evidenceId: chosen.id,
+  };
   const [existing] = await tx
     .select()
     .from(levelMilestones)
-    .where(and(eq(levelMilestones.characterId, characterId), eq(levelMilestones.level, candidate.level)))
+    .where(and(eq(levelMilestones.characterId, characterId), eq(levelMilestones.level, level)))
     .limit(1);
-
-  const source = {
-    dataSource: obs.dataSource,
-    verificationStatus: input.verificationStatus,
-    sourceBuild: obs.sourceBuild ?? null,
-    snapshotId: input.snapshotId,
-    ingestionRecordId: ctx.recordId,
-  };
-
   if (!existing) {
     await tx.insert(levelMilestones).values({
       id: ctx.newId(),
       characterId,
       dataEnvironment: ctx.env,
-      level: candidate.level,
-      timingBasis: candidate.timingBasis,
-      reachedAt: candidate.reachedAt,
-      firstObservedAt: candidate.firstObservedAt,
-      previousObservedAt: candidate.previousObservedAt,
+      level,
+      ...values,
       createdAt: ctx.receivedAt,
       updatedAt: ctx.receivedAt,
-      ...source,
     });
     return;
   }
-
-  const candidateWins =
-    BASIS_PRIORITY[candidate.timingBasis] > BASIS_PRIORITY[existing.timingBasis] ||
-    (candidate.timingBasis === existing.timingBasis && effectiveTime(candidate) < effectiveTime(existing));
-  const earlierObservation = candidate.firstObservedAt < existing.firstObservedAt;
-  if (!candidateWins && !earlierObservation) return;
-
-  const timingBasis = candidateWins ? candidate.timingBasis : existing.timingBasis;
-  const reachedAt = candidateWins ? candidate.reachedAt : existing.reachedAt;
+  const same = (a: unknown, b: unknown) => (a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b);
+  const changed = (Object.keys(values) as (keyof typeof values)[]).some((k) => !same(values[k], existing[k]));
+  if (!changed) return;
   await tx
     .update(levelMilestones)
-    .set({
-      timingBasis,
-      reachedAt: timingBasis === "SOURCE_REPORTED" ? reachedAt : null,
-      firstObservedAt: earlierObservation ? candidate.firstObservedAt : existing.firstObservedAt,
-      previousObservedAt: earlierObservation ? candidate.previousObservedAt : existing.previousObservedAt,
-      updatedAt: ctx.receivedAt,
-      ...(candidateWins ? source : {}),
-    })
+    .set({ ...values, updatedAt: ctx.receivedAt })
     .where(eq(levelMilestones.id, existing.id));
 }

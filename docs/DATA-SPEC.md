@@ -24,7 +24,8 @@
 | `items` | 아이템 기본 정보 | `(data_environment, external_item_id)` |
 | `character_items` | **현재 장착** 장비만 | `(character_id, slot_code)` |
 | `character_snapshots` | 관측 시점별 상태 이력 (정규화 데이터, content_hash) | — |
-| `level_milestones` | 캐릭터·레벨별 달성 기록 | `(character_id, level)` |
+| `level_milestones` | 캐릭터·레벨별 현재 채택 달성 기록 (`evidence_id`) | `(character_id, level)` |
+| `level_milestone_evidence` | 레벨 달성 근거 (관측마다 추가만, 수정·삭제 금지) | — |
 | `static_datasets` | 정적 게임 데이터셋 메타 (kind, source, sourceVersion, sourceBuild, interfaceVersion, datasetVersion, observedAt, 이용 조건, checksum). 수정 금지 | `(data_environment, kind, source, dataset_version)` |
 | `static_data_records` | 데이터셋 레코드 (jsonb). 수정 금지 | `(dataset_id, record_key)` |
 | `character_submissions` | 캐릭터 제출과 검토 상태(PENDING / ACCEPTED / REJECTED / CONFLICT), 요약, 비교, 동의 기록. 실제 영역 전용 | `(data_environment, payload_hash)` |
@@ -60,6 +61,7 @@ verification_status = MOCK
 예외 처리:
 
 - 레벨이 낮아진 관측, 같은 이름에 다른 외부 ID → `IDENTITY_CONFLICT`. 현재 상태에 반영하지 않는다.
+- 늦게 도착한 옛 관측의 레벨이 이후 관측보다 높음(달성 순서 모순) → `IDENTITY_CONFLICT`. 근거도 milestone도 만들지 않는다.
 - 외부 ID가 같고 이름이 다르면 이름 변경으로 본다. 단, 새 슬러그를 다른 캐릭터가 쓰고 있으면 충돌로 처리한다.
 - 늦게 도착한 오래된 관측은 현재 상태를 덮어쓰지 않는다. 스냅샷, milestone, `first_seen_at` 보정에만 쓴다.
 - Realm은 필수값으로 가정하지 않았다(컬럼 없음).
@@ -74,11 +76,14 @@ verification_status = MOCK
 | `previous_observed_at` | 직전(더 낮은 레벨) 관측 시각 |
 | `effective_reached_at` | 생성 컬럼. `SOURCE_REPORTED`면 `reached_at`, 아니면 `first_observed_at` |
 
-갱신 규칙:
+갱신 규칙 (명세서 §8.3, §8.5, `docs/HISTORY-PRESERVATION.md`):
 
-- 근거 우선순위는 `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`다.
-- 근거 수준이 같으면 이른 시각을 채택한다.
-- `first_observed_at`은 항상 더 이른 값을 유지한다.
+- 관측마다 `level_milestone_evidence`에 근거를 추가하고, milestone은 같은 캐릭터·레벨의 근거 전체에서 다시 고른다. `evidence_id`가 채택한 근거다.
+- 신뢰 수준(검증 상태)이 가장 높은 근거만 후보로 한다. 낮은 신뢰의 근거는 날짜가 이르더라도 채택되지 않는다.
+- 같은 신뢰 수준 안에서 근거 우선순위는 `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`, 같으면 이른 시각.
+- `first_observed_at`은 같은 신뢰 수준 근거 중 가장 이른 관측 시각이다.
+- 달성 시각 주장은 `ACCEPTED`일 때만 `SOURCE_REPORTED`가 된다. 미래(`REJECTED`), 순서 모순(`CONFLICT`), 뒷받침 없음(`NEEDS_REVIEW`)은 근거로 보관만 한다.
+- milestone·근거·스냅샷은 실제 영역에서 삭제할 수 없고, 캐릭터 삭제로 연쇄 삭제되지 않는다(migration 0008).
 - `characters.current_level_reached_at`과 `current_level_timing_basis`는 현재 레벨 milestone에서 파생한 캐시 값이다.
 
 ## 5. 스냅샷 정책 (명세서 §13)

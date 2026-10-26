@@ -27,8 +27,10 @@ import {
 import {
   DATA_ENVIRONMENTS,
   DATA_SOURCES,
+  EVIDENCE_ORIGINS,
   INGESTION_STATUSES,
   MILESTONE_TIMING_BASES,
+  REACHED_AT_CLAIM_STATUSES,
   STATIC_DATA_KINDS,
   SUBMISSION_CHANNELS,
   SUBMISSION_REVIEW_STATUSES,
@@ -41,6 +43,8 @@ export const dataSourceEnum = pgEnum("data_source", DATA_SOURCES);
 export const verificationStatusEnum = pgEnum("verification_status", VERIFICATION_STATUSES);
 export const milestoneTimingBasisEnum = pgEnum("milestone_timing_basis", MILESTONE_TIMING_BASES);
 export const ingestionStatusEnum = pgEnum("ingestion_status", INGESTION_STATUSES);
+export const reachedAtClaimStatusEnum = pgEnum("reached_at_claim_status", REACHED_AT_CLAIM_STATUSES);
+export const evidenceOriginEnum = pgEnum("evidence_origin", EVIDENCE_ORIGINS);
 export const submissionReviewStatusEnum = pgEnum("submission_review_status", SUBMISSION_REVIEW_STATUSES);
 export const submissionChannelEnum = pgEnum("submission_channel", SUBMISSION_CHANNELS);
 export const staticDataKindEnum = pgEnum("static_data_kind", STATIC_DATA_KINDS);
@@ -349,7 +353,7 @@ export const characterSnapshots = pgTable(
       name: "character_snapshots_character_fk",
       columns: [t.characterId, t.dataEnvironment],
       foreignColumns: [characters.id, characters.dataEnvironment],
-    }).onDelete("cascade"),
+    }).onDelete("restrict"), // 역사 기록: 캐릭터 삭제로 연쇄 삭제하지 않는다 (migration 0008)
     foreignKey({
       name: "character_snapshots_ingestion_fk",
       columns: [t.ingestionRecordId, t.dataEnvironment],
@@ -360,7 +364,90 @@ export const characterSnapshots = pgTable(
 );
 
 // ---------------------------------------------------------------------------
+// level_milestone_evidence (명세서 §8.5, docs/HISTORY-PRESERVATION.md)
+//
+// 레벨 달성 근거를 관측 단위로 쌓는다. 한 번 저장한 행은 수정할 수 없고, 실제 영역에서는 삭제할 수 없다
+// (migration 0008 트리거). level_milestones는 이 근거 중 현재 채택한 하나를 가리키는 결과다.
+// - 맥락(직업·진영·길드 등)은 그 관측에 실제로 있던 값만 저장한다. 없으면 null.
+// - origin = MIGRATED: 기존 level_milestones에서 이관한 행. 서버 수신 시각을 모르면 null.
+// ---------------------------------------------------------------------------
+export const levelMilestoneEvidence = pgTable(
+  "level_milestone_evidence",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    characterId: uuid("character_id").notNull(),
+    dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
+    level: integer("level").notNull(),
+    /** 이 근거가 뒷받침하는 시간 근거 유형. 달성 시각 주장이 ACCEPTED일 때만 SOURCE_REPORTED */
+    timingBasis: milestoneTimingBasisEnum("timing_basis").notNull(),
+    /** 공급원이 보낸 달성 시각 주장 (판정과 관계없이 받은 값 그대로) */
+    claimedReachedAt: tz("claimed_reached_at"),
+    claimStatus: reachedAtClaimStatusEnum("claim_status").notNull(),
+    /** 판정 이유 코드 목록 (예: CLAIM_AFTER_OBSERVATION) */
+    claimReasons: jsonb("claim_reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** 이 레벨(또는 INFERRED면 더 높은 레벨)을 관측한 시각 */
+    observedAt: tz("observed_at").notNull(),
+    /** 레벨 상승을 확인한 직전 관측 시각 (있을 때만) */
+    previousObservedAt: tz("previous_observed_at"),
+    /** 서버가 원본을 받은 시각. 이관 행은 모를 수 있음 */
+    receivedAt: tz("received_at"),
+    dataSource: dataSourceEnum("data_source").notNull(),
+    verificationStatus: verificationStatusEnum("verification_status").notNull(),
+    sourceBuild: text("source_build"),
+    snapshotId: uuid("snapshot_id"),
+    ingestionRecordId: uuid("ingestion_record_id"),
+    // --- 관측 당시 맥락 (최초 기록 계산용) ---
+    characterName: text("character_name"),
+    region: text("region").notNull(),
+    gameMode: text("game_mode").notNull(),
+    classCode: text("class_code"),
+    raceCode: text("race_code"),
+    factionCode: text("faction_code"),
+    guildId: uuid("guild_id"),
+    origin: evidenceOriginEnum("origin").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    mockTripleCheck("level_milestone_evidence_mock_triple"),
+    check("level_milestone_evidence_level_positive", sql`level >= 1`),
+    check(
+      "level_milestone_evidence_claim_presence",
+      sql`(claim_status = 'NONE') = (claimed_reached_at IS NULL)`,
+    ),
+    check(
+      "level_milestone_evidence_source_reported",
+      sql`(timing_basis = 'SOURCE_REPORTED') = (claim_status = 'ACCEPTED')`,
+    ),
+    check("level_milestone_evidence_received_at", sql`origin = 'MIGRATED' OR received_at IS NOT NULL`),
+    unique("level_milestone_evidence_id_env").on(t.id, t.dataEnvironment),
+    foreignKey({
+      name: "level_milestone_evidence_character_fk",
+      columns: [t.characterId, t.dataEnvironment],
+      foreignColumns: [characters.id, characters.dataEnvironment],
+    }).onDelete("restrict"),
+    foreignKey({
+      name: "level_milestone_evidence_snapshot_fk",
+      columns: [t.snapshotId, t.dataEnvironment],
+      foreignColumns: [characterSnapshots.id, characterSnapshots.dataEnvironment],
+    }),
+    foreignKey({
+      name: "level_milestone_evidence_ingestion_fk",
+      columns: [t.ingestionRecordId, t.dataEnvironment],
+      foreignColumns: [ingestionRecords.id, ingestionRecords.dataEnvironment],
+    }),
+    foreignKey({
+      name: "level_milestone_evidence_guild_fk",
+      columns: [t.guildId, t.dataEnvironment],
+      foreignColumns: [guilds.id, guilds.dataEnvironment],
+    }),
+    index("level_milestone_evidence_character_level_idx").on(t.characterId, t.level, t.observedAt),
+    index("level_milestone_evidence_env_level_idx").on(t.dataEnvironment, t.level, t.observedAt),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // level_milestones (명세서 §8.2, §14.12)
+// 현재 채택한 달성 기록. evidence_id가 채택한 근거(level_milestone_evidence)를 가리킨다.
 // ---------------------------------------------------------------------------
 export const levelMilestones = pgTable(
   "level_milestones",
@@ -383,6 +470,8 @@ export const levelMilestones = pgTable(
     sourceBuild: text("source_build"),
     snapshotId: uuid("snapshot_id"),
     ingestionRecordId: uuid("ingestion_record_id"),
+    /** 현재 채택한 근거 (level_milestone_evidence) */
+    evidenceId: uuid("evidence_id"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -396,7 +485,7 @@ export const levelMilestones = pgTable(
       name: "level_milestones_character_fk",
       columns: [t.characterId, t.dataEnvironment],
       foreignColumns: [characters.id, characters.dataEnvironment],
-    }).onDelete("cascade"),
+    }).onDelete("restrict"), // 역사 기록: 캐릭터 삭제로 연쇄 삭제하지 않는다 (migration 0008)
     foreignKey({
       name: "level_milestones_snapshot_fk",
       columns: [t.snapshotId, t.dataEnvironment],
@@ -406,6 +495,11 @@ export const levelMilestones = pgTable(
       name: "level_milestones_ingestion_fk",
       columns: [t.ingestionRecordId, t.dataEnvironment],
       foreignColumns: [ingestionRecords.id, ingestionRecords.dataEnvironment],
+    }),
+    foreignKey({
+      name: "level_milestones_evidence_fk",
+      columns: [t.evidenceId, t.dataEnvironment],
+      foreignColumns: [levelMilestoneEvidence.id, levelMilestoneEvidence.dataEnvironment],
     }),
     uniqueIndex("level_milestones_character_level_uq").on(t.characterId, t.level),
     index("level_milestones_env_level_idx").on(t.dataEnvironment, t.level, t.effectiveReachedAt),

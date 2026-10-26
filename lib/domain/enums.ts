@@ -28,6 +28,21 @@ export const VERIFIED_ONLY_STATUSES = ["VERIFIED", "LOG_VERIFIED"] as const sati
 export const MILESTONE_TIMING_BASES = ["SOURCE_REPORTED", "FIRST_OBSERVED", "INFERRED"] as const;
 export type MilestoneTimingBasis = (typeof MILESTONE_TIMING_BASES)[number];
 
+/**
+ * 레벨 달성 시각 주장(공급원이 보낸 levelReachedAt)의 판정 (명세서 §8.5, docs/HISTORY-PRESERVATION.md)
+ * - NONE: 주장 없음 (관측 사실만 있음)
+ * - ACCEPTED: 채택 가능
+ * - NEEDS_REVIEW: 모순은 없지만 뒷받침하는 관측이 없음 (예: 사이트가 처음 관측하기 전의 달성 주장). 자동 채택하지 않음
+ * - CONFLICT: 이미 확인된 관측·달성 순서와 모순됨. 자동 채택하지 않음
+ * - REJECTED: 그 자체로 성립하지 않음 (예: 관측 시각보다 늦은 달성 시각)
+ */
+export const REACHED_AT_CLAIM_STATUSES = ["NONE", "ACCEPTED", "NEEDS_REVIEW", "CONFLICT", "REJECTED"] as const;
+export type ReachedAtClaimStatus = (typeof REACHED_AT_CLAIM_STATUSES)[number];
+
+/** 근거 행의 출처: 수집 파이프라인이 만든 행 / 기존 level_milestones에서 이관한 행 */
+export const EVIDENCE_ORIGINS = ["INGESTED", "MIGRATED"] as const;
+export type EvidenceOrigin = (typeof EVIDENCE_ORIGINS)[number];
+
 export const INGESTION_STATUSES = ["ACCEPTED", "REJECTED", "IDENTITY_CONFLICT"] as const;
 export type IngestionStatus = (typeof INGESTION_STATUSES)[number];
 

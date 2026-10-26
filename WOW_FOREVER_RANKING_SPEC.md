@@ -414,17 +414,37 @@ dataEnvironment = mock
 - 레벨 L에서 L+n으로 올라간 것이 관측되면 다음과 같이 기록한다.
   - L+1 ~ L+n-1: `INFERRED`
   - L+n: `FIRST_OBSERVED` 또는 `SOURCE_REPORTED`
-- 같은 캐릭터·레벨에 더 좋은 근거가 들어오면 기록을 갱신한다.
-  - 근거 우선순위: `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`
+- 관측마다 근거를 `level_milestone_evidence`에 추가한다(§8.5). 근거는 수정·삭제하지 않는다.
+- `level_milestones`는 현재 채택한 기록이다. 같은 캐릭터·레벨의 근거 전체에서 다시 고르며, `evidence_id`가 채택한 근거를 가리킨다.
+  - 신뢰 수준(검증 상태, §11 공급원 우선순위)이 가장 높은 근거만 후보로 한다. 낮은 신뢰의 근거는 더 이른 시각을 주장해도 높은 신뢰의 기록을 대체하지 않는다.
+  - 같은 신뢰 수준 안에서 근거 우선순위: `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`
   - 근거 수준이 같으면 더 이른 시각을 채택한다.
-- milestone은 삭제하지 않는다.
-- `characters`의 현재 레벨 도달 시각은 milestone에서 파생한 캐시 값이다. 원본은 항상 `level_milestones`다.
+  - `first_observed_at`은 같은 신뢰 수준 근거 중 가장 이른 관측 시각이다.
+- milestone은 삭제하지 않는다(실제 영역 DB 트리거). 캐릭터 삭제로 연쇄 삭제되지 않는다(FK `ON DELETE RESTRICT`).
+- `characters`의 현재 레벨 도달 시각은 milestone에서 파생한 캐시 값이다. 원본은 `level_milestones`, 그 근거는 `level_milestone_evidence`다.
 
 ## 8.4 활용과 제한
 
 - "최초 10/20/30/…레벨" 기록과 레벨 성장 그래프는 `level_milestones`로 계산한다.
 - `SOURCE_REPORTED`와 `FIRST_OBSERVED`/`INFERRED`는 정확도가 다르다. 화면에 근거를 함께 표시한다.
 - "World First" 같은 공식 최초 기록 칭호는 검증 상태가 `VERIFIED` 또는 `LOG_VERIFIED`인 기록에만 부여한다(§23).
+
+## 8.5 레벨 달성 근거와 달성 시각 판정
+
+상세: `docs/HISTORY-PRESERVATION.md`
+
+- 근거 행(`level_milestone_evidence`)에는 레벨, 시간 근거, 받은 달성 시각 주장, 판정, 관측 시각, 서버 수신 시각, 출처, 검증 상태, 빌드, 스냅샷·원본 연결, 관측 당시 맥락(이름·지역·게임 규칙·직업·종족·진영·길드)을 저장한다. 관측에 없던 값은 null로 둔다.
+- 공급원이 보낸 달성 시각은 받은 그대로 보관하고 다음과 같이 판정한다. `ACCEPTED`일 때만 `SOURCE_REPORTED` 근거가 된다.
+
+| 판정 | 조건 | 채택 |
+|---|---|---|
+| `REJECTED` | 달성 시각이 그 관측 시각보다 늦음 | 안 함 (관측 사실은 `FIRST_OBSERVED`로 남음) |
+| `CONFLICT` | 더 낮은 레벨로 관측(또는 달성)된 시각보다 이르거나, 더 높은 레벨을 관측(또는 달성)한 시각보다 늦음 | 안 함 |
+| `NEEDS_REVIEW` | 커뮤니티 제출·미검증 출처인데 그 시각 이전에 더 낮은 레벨로 관측한 기록이 없음 | 안 함 (거부하지 않고 검토 대기) |
+| `ACCEPTED` | 위에 해당하지 않음. `VERIFIED`·`LOG_VERIFIED`(그리고 mock 영역의 `MOCK`)는 뒷받침 관측이 없어도 됨 | 함 |
+
+- 사이트가 처음 관측하기 전에 달성했다는 주장은 거부하지 않는다. 확인된 하한(게임 시작일 등)이 없으므로 날짜를 고정하지 않고 `NEEDS_REVIEW`로 보관한다.
+- 늦게 도착한 옛 관측의 레벨이 이후 관측보다 높으면(달성 순서 모순) 식별 충돌로 기록하고 반영하지 않는다(레벨 감소 관측과 같은 처리).
 
 ---
 
@@ -913,11 +933,28 @@ INDEX (character_id, observed_at DESC)
 
 ## 14.12 level_milestones
 
-§8.2 참고.
+§8.2 참고. `evidence_id`: 현재 채택한 근거(`level_milestone_evidence`).
 
 ```text
 UNIQUE (character_id, level)
 INDEX  (data_environment, level, effective_reached_at)
+FK (character_id, data_environment) → characters ON DELETE RESTRICT
+삭제 금지 (실제 영역, 트리거). 갱신은 채택 결과가 바뀔 때만
+```
+
+## 14.12a level_milestone_evidence
+
+§8.5 참고. 추가만 한다(수정 금지, 실제 영역 삭제 금지, TRUNCATE 금지).
+
+```text
+origin           INGESTED | MIGRATED (기존 level_milestones에서 이관)
+claim_status     NONE | ACCEPTED | NEEDS_REVIEW | CONFLICT | REJECTED
+claim_reasons    판정 이유 코드 목록
+CHECK (claim_status = NONE) ⇔ (claimed_reached_at IS NULL)
+CHECK (timing_basis = SOURCE_REPORTED) ⇔ (claim_status = ACCEPTED)
+CHECK origin = MIGRATED OR received_at IS NOT NULL
+FK (character_id, data_environment) → characters ON DELETE RESTRICT
+INDEX (character_id, level, observed_at), (data_environment, level, observed_at)
 ```
 
 ## 14.13 향후 테이블
@@ -1458,6 +1495,7 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 25 | `Enum.GameMode` 숫자와 공식 Ruleset(일반 / 전쟁 / 롤플레잉 / 하드코어)의 대응. Ruleset 이름·공개 상태는 공식 자료로 확인됨 | `config/rulesets.ts`, `config/export-mapping.ts` (`docs/RULESETS.md`) |
 | 26 | 같은 전체 이름이 다른 Ruleset에 있을 수 있는지, 숨긴 성이 export에 담기는지 | 캐릭터 식별 (`docs/RULESETS.md` §3) |
 | 27 | Collector 애드온의 실제 게임 실행: 인터페이스 번호(`## Interface`), 애드온 목록·"오래된 애드온" 표시, `/frc export` 동작, `/reload`·로그아웃 때 SavedVariables 저장 위치와 파일 이름 | Collector 배포·설치 안내 (`docs/CONTRIBUTOR-GUIDE.md` §10) |
+| 28 | 레벨 달성 시각의 신뢰할 수 있는 하한(게임 서비스 시작일 등). 확인 전에는 사이트 첫 관측보다 이른 커뮤니티 주장을 검토 대기로 둔다 | `assessReachedAtClaim` (§8.5, `docs/HISTORY-PRESERVATION.md`) |
 
 ---
 
