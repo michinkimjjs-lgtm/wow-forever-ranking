@@ -1,5 +1,5 @@
 {
-  "id": "043c9a3e-dfa9-4aa2-96be-596b211114fe",
+  "id": "8acdf2eb-36ce-4af2-b8f6-0c21bf2ea898",
   "prevId": "73164c57-b2f1-4bb4-b065-da7cd8e79324",
   "version": "7",
   "dialect": "postgresql",
@@ -1845,6 +1845,180 @@
       },
       "isRLSEnabled": false
     },
+    "public.level_milestone_claim_assessments": {
+      "name": "level_milestone_claim_assessments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "seq": {
+          "name": "seq",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "identity": {
+            "type": "always",
+            "name": "level_milestone_claim_assessments_seq_seq",
+            "schema": "public",
+            "increment": "1",
+            "startWith": "1",
+            "minValue": "1",
+            "maxValue": "9223372036854775807",
+            "cache": "1",
+            "cycle": false
+          }
+        },
+        "evidence_id": {
+          "name": "evidence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "character_id": {
+          "name": "character_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "data_environment": {
+          "name": "data_environment",
+          "type": "data_environment",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "reached_at_claim_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reasons": {
+          "name": "reasons",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "kind": {
+          "name": "kind",
+          "type": "claim_assessment_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assessed_at": {
+          "name": "assessed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ingestion_record_id": {
+          "name": "ingestion_record_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "level_milestone_claim_assessments_evidence_idx": {
+          "name": "level_milestone_claim_assessments_evidence_idx",
+          "columns": [
+            {
+              "expression": "evidence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "seq",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "level_milestone_claim_assessments_evidence_fk": {
+          "name": "level_milestone_claim_assessments_evidence_fk",
+          "tableFrom": "level_milestone_claim_assessments",
+          "tableTo": "level_milestone_evidence",
+          "columnsFrom": [
+            "evidence_id",
+            "character_id",
+            "level",
+            "data_environment"
+          ],
+          "columnsTo": [
+            "id",
+            "character_id",
+            "level",
+            "data_environment"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "level_milestone_claim_assessments_ingestion_fk": {
+          "name": "level_milestone_claim_assessments_ingestion_fk",
+          "tableFrom": "level_milestone_claim_assessments",
+          "tableTo": "ingestion_records",
+          "columnsFrom": [
+            "ingestion_record_id",
+            "data_environment"
+          ],
+          "columnsTo": [
+            "id",
+            "data_environment"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "level_milestone_claim_assessments_ref": {
+          "name": "level_milestone_claim_assessments_ref",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "evidence_id",
+            "status"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "level_milestone_claim_assessments_status": {
+          "name": "level_milestone_claim_assessments_status",
+          "value": "status <> 'NONE'"
+        }
+      },
+      "isRLSEnabled": false
+    },
     "public.level_milestone_evidence": {
       "name": "level_milestone_evidence",
       "schema": "",
@@ -1875,8 +2049,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "timing_basis": {
-          "name": "timing_basis",
+        "observation_basis": {
+          "name": "observation_basis",
           "type": "milestone_timing_basis",
           "typeSchema": "public",
           "primaryKey": false,
@@ -1888,19 +2062,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "claim_status": {
-          "name": "claim_status",
+        "receipt_claim_status": {
+          "name": "receipt_claim_status",
           "type": "reached_at_claim_status",
           "typeSchema": "public",
           "primaryKey": false,
           "notNull": true
         },
-        "claim_reasons": {
-          "name": "claim_reasons",
+        "receipt_claim_reasons": {
+          "name": "receipt_claim_reasons",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
           "default": "'[]'::jsonb"
+        },
+        "legacy_timing_basis": {
+          "name": "legacy_timing_basis",
+          "type": "milestone_timing_basis",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
         },
         "observed_at": {
           "name": "observed_at",
@@ -2010,6 +2191,28 @@
         }
       },
       "indexes": {
+        "level_milestone_evidence_migrated_uq": {
+          "name": "level_milestone_evidence_migrated_uq",
+          "columns": [
+            {
+              "expression": "character_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "level",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "origin = 'MIGRATED'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "level_milestone_evidence_character_level_idx": {
           "name": "level_milestone_evidence_character_level_idx",
           "columns": [
@@ -2136,6 +2339,16 @@
             "id",
             "data_environment"
           ]
+        },
+        "level_milestone_evidence_id_scope": {
+          "name": "level_milestone_evidence_id_scope",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "character_id",
+            "level",
+            "data_environment"
+          ]
         }
       },
       "policies": {},
@@ -2148,13 +2361,21 @@
           "name": "level_milestone_evidence_level_positive",
           "value": "level >= 1"
         },
+        "level_milestone_evidence_observation_basis": {
+          "name": "level_milestone_evidence_observation_basis",
+          "value": "observation_basis <> 'SOURCE_REPORTED'"
+        },
         "level_milestone_evidence_claim_presence": {
           "name": "level_milestone_evidence_claim_presence",
-          "value": "(claim_status = 'NONE') = (claimed_reached_at IS NULL)"
+          "value": "(receipt_claim_status = 'NONE') = (claimed_reached_at IS NULL)"
         },
-        "level_milestone_evidence_source_reported": {
-          "name": "level_milestone_evidence_source_reported",
-          "value": "(timing_basis = 'SOURCE_REPORTED') = (claim_status = 'ACCEPTED')"
+        "level_milestone_evidence_inferred_no_claim": {
+          "name": "level_milestone_evidence_inferred_no_claim",
+          "value": "observation_basis <> 'INFERRED' OR claimed_reached_at IS NULL OR origin = 'MIGRATED'"
+        },
+        "level_milestone_evidence_legacy": {
+          "name": "level_milestone_evidence_legacy",
+          "value": "(origin = 'MIGRATED') = (legacy_timing_basis IS NOT NULL)"
         },
         "level_milestone_evidence_received_at": {
           "name": "level_milestone_evidence_received_at",
@@ -2263,6 +2484,19 @@
         "evidence_id": {
           "name": "evidence_id",
           "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claim_assessment_id": {
+          "name": "claim_assessment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "claim_assessment_status": {
+          "name": "claim_assessment_status",
+          "type": "reached_at_claim_status",
+          "typeSchema": "public",
           "primaryKey": false,
           "notNull": false
         },
@@ -2383,11 +2617,32 @@
           "tableTo": "level_milestone_evidence",
           "columnsFrom": [
             "evidence_id",
+            "character_id",
+            "level",
             "data_environment"
           ],
           "columnsTo": [
             "id",
+            "character_id",
+            "level",
             "data_environment"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "level_milestones_claim_assessment_fk": {
+          "name": "level_milestones_claim_assessment_fk",
+          "tableFrom": "level_milestones",
+          "tableTo": "level_milestone_claim_assessments",
+          "columnsFrom": [
+            "claim_assessment_id",
+            "evidence_id",
+            "claim_assessment_status"
+          ],
+          "columnsTo": [
+            "id",
+            "evidence_id",
+            "status"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -2404,6 +2659,10 @@
         "level_milestones_reached_at_basis": {
           "name": "level_milestones_reached_at_basis",
           "value": "(timing_basis = 'SOURCE_REPORTED') = (reached_at IS NOT NULL)"
+        },
+        "level_milestones_claim_assessment": {
+          "name": "level_milestones_claim_assessment",
+          "value": "((claim_assessment_id IS NULL) = (claim_assessment_status IS NULL)) AND ((timing_basis = 'SOURCE_REPORTED') = (claim_assessment_id IS NOT NULL)) AND (claim_assessment_status IS NULL OR claim_assessment_status = 'ACCEPTED') AND (claim_assessment_id IS NULL OR evidence_id IS NOT NULL)"
         }
       },
       "isRLSEnabled": false
@@ -2731,6 +2990,15 @@
     }
   },
   "enums": {
+    "public.claim_assessment_kind": {
+      "name": "claim_assessment_kind",
+      "schema": "public",
+      "values": [
+        "RECEIPT",
+        "REASSESSMENT",
+        "MIGRATED"
+      ]
+    },
     "public.data_environment": {
       "name": "data_environment",
       "schema": "public",

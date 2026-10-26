@@ -10,6 +10,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   check,
   foreignKey,
   index,
@@ -25,6 +26,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import {
+  CLAIM_ASSESSMENT_KINDS,
   DATA_ENVIRONMENTS,
   DATA_SOURCES,
   EVIDENCE_ORIGINS,
@@ -45,6 +47,7 @@ export const milestoneTimingBasisEnum = pgEnum("milestone_timing_basis", MILESTO
 export const ingestionStatusEnum = pgEnum("ingestion_status", INGESTION_STATUSES);
 export const reachedAtClaimStatusEnum = pgEnum("reached_at_claim_status", REACHED_AT_CLAIM_STATUSES);
 export const evidenceOriginEnum = pgEnum("evidence_origin", EVIDENCE_ORIGINS);
+export const claimAssessmentKindEnum = pgEnum("claim_assessment_kind", CLAIM_ASSESSMENT_KINDS);
 export const submissionReviewStatusEnum = pgEnum("submission_review_status", SUBMISSION_REVIEW_STATUSES);
 export const submissionChannelEnum = pgEnum("submission_channel", SUBMISSION_CHANNELS);
 export const staticDataKindEnum = pgEnum("static_data_kind", STATIC_DATA_KINDS);
@@ -368,8 +371,11 @@ export const characterSnapshots = pgTable(
 //
 // 레벨 달성 근거를 관측 단위로 쌓는다. 한 번 저장한 행은 수정할 수 없고, 실제 영역에서는 삭제할 수 없다
 // (migration 0008 트리거). level_milestones는 이 근거 중 현재 채택한 하나를 가리키는 결과다.
+// - observation_basis: 달성 시각 주장 없이 관측 자체가 뒷받침하는 근거(FIRST_OBSERVED / INFERRED).
+//   주장이 인정되어 SOURCE_REPORTED가 되는지는 판정 기록(level_milestone_claim_assessments)이 정한다.
+// - receipt_claim_*: 받은 시점의 판정. 이후 재판정은 판정 기록에 추가한다(이 행은 바꾸지 않음).
 // - 맥락(직업·진영·길드 등)은 그 관측에 실제로 있던 값만 저장한다. 없으면 null.
-// - origin = MIGRATED: 기존 level_milestones에서 이관한 행. 서버 수신 시각을 모르면 null.
+// - origin = MIGRATED: 기존 level_milestones에서 이관한 행. legacy_timing_basis에 원래 값을 그대로 보존한다.
 // ---------------------------------------------------------------------------
 export const levelMilestoneEvidence = pgTable(
   "level_milestone_evidence",
@@ -378,16 +384,19 @@ export const levelMilestoneEvidence = pgTable(
     characterId: uuid("character_id").notNull(),
     dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
     level: integer("level").notNull(),
-    /** 이 근거가 뒷받침하는 시간 근거 유형. 달성 시각 주장이 ACCEPTED일 때만 SOURCE_REPORTED */
-    timingBasis: milestoneTimingBasisEnum("timing_basis").notNull(),
+    /** 관측 자체가 뒷받침하는 근거: FIRST_OBSERVED(이 레벨을 직접 관측) / INFERRED(더 높은 레벨 관측에서 추론) */
+    observationBasis: milestoneTimingBasisEnum("observation_basis").notNull(),
     /** 공급원이 보낸 달성 시각 주장 (판정과 관계없이 받은 값 그대로) */
     claimedReachedAt: tz("claimed_reached_at"),
-    claimStatus: reachedAtClaimStatusEnum("claim_status").notNull(),
-    /** 판정 이유 코드 목록 (예: CLAIM_AFTER_OBSERVATION) */
-    claimReasons: jsonb("claim_reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-    /** 이 레벨(또는 INFERRED면 더 높은 레벨)을 관측한 시각 */
+    /** 받은 시점의 주장 판정 */
+    receiptClaimStatus: reachedAtClaimStatusEnum("receipt_claim_status").notNull(),
+    /** 받은 시점의 판정 이유 코드 목록 (예: CLAIM_AFTER_OBSERVATION) */
+    receiptClaimReasons: jsonb("receipt_claim_reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    /** 이관 행의 원래 level_milestones.timing_basis (이관 행만) */
+    legacyTimingBasis: milestoneTimingBasisEnum("legacy_timing_basis"),
+    /** 이 레벨(INFERRED면 더 높은 레벨)을 관측한 시각 */
     observedAt: tz("observed_at").notNull(),
-    /** 레벨 상승을 확인한 직전 관측 시각 (있을 때만) */
+    /** 레벨 상승을 확인한 직전(더 낮은 레벨) 관측 시각 (있을 때만) */
     previousObservedAt: tz("previous_observed_at"),
     /** 서버가 원본을 받은 시각. 이관 행은 모를 수 있음 */
     receivedAt: tz("received_at"),
@@ -410,16 +419,20 @@ export const levelMilestoneEvidence = pgTable(
   (t) => [
     mockTripleCheck("level_milestone_evidence_mock_triple"),
     check("level_milestone_evidence_level_positive", sql`level >= 1`),
+    check("level_milestone_evidence_observation_basis", sql`observation_basis <> 'SOURCE_REPORTED'`),
     check(
       "level_milestone_evidence_claim_presence",
-      sql`(claim_status = 'NONE') = (claimed_reached_at IS NULL)`,
+      sql`(receipt_claim_status = 'NONE') = (claimed_reached_at IS NULL)`,
     ),
     check(
-      "level_milestone_evidence_source_reported",
-      sql`(timing_basis = 'SOURCE_REPORTED') = (claim_status = 'ACCEPTED')`,
+      "level_milestone_evidence_inferred_no_claim",
+      sql`observation_basis <> 'INFERRED' OR claimed_reached_at IS NULL OR origin = 'MIGRATED'`,
     ),
+    check("level_milestone_evidence_legacy", sql`(origin = 'MIGRATED') = (legacy_timing_basis IS NOT NULL)`),
     check("level_milestone_evidence_received_at", sql`origin = 'MIGRATED' OR received_at IS NOT NULL`),
     unique("level_milestone_evidence_id_env").on(t.id, t.dataEnvironment),
+    // 채택 기록·판정 기록이 같은 캐릭터·레벨·영역의 근거만 가리키도록 하는 복합 키
+    unique("level_milestone_evidence_id_scope").on(t.id, t.characterId, t.level, t.dataEnvironment),
     foreignKey({
       name: "level_milestone_evidence_character_fk",
       columns: [t.characterId, t.dataEnvironment],
@@ -440,14 +453,68 @@ export const levelMilestoneEvidence = pgTable(
       columns: [t.guildId, t.dataEnvironment],
       foreignColumns: [guilds.id, guilds.dataEnvironment],
     }),
+    // 한 캐릭터·레벨의 이관 근거는 하나뿐 (기존 milestone 1행 → 근거 1행)
+    uniqueIndex("level_milestone_evidence_migrated_uq")
+      .on(t.characterId, t.level)
+      .where(sql`origin = 'MIGRATED'`),
     index("level_milestone_evidence_character_level_idx").on(t.characterId, t.level, t.observedAt),
     index("level_milestone_evidence_env_level_idx").on(t.dataEnvironment, t.level, t.observedAt),
   ],
 );
 
 // ---------------------------------------------------------------------------
+// level_milestone_claim_assessments (명세서 §8.5, docs/HISTORY-PRESERVATION.md §3)
+//
+// 달성 시각 주장의 판정 이력. 추가만 한다(수정 금지, 실제 영역 삭제 금지 — migration 0008).
+// 근거를 받을 때(RECEIPT), 새 사실로 판정이 바뀔 때(REASSESSMENT), 이관할 때(MIGRATED) 한 행씩 쌓인다.
+// 같은 근거의 가장 최근 행(seq가 가장 큰 행)이 현재 판정이다.
+// ---------------------------------------------------------------------------
+export const levelMilestoneClaimAssessments = pgTable(
+  "level_milestone_claim_assessments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 같은 근거 안의 순서 (가장 큰 값이 현재 판정) */
+    seq: bigint("seq", { mode: "number" }).generatedAlwaysAsIdentity().notNull(),
+    evidenceId: uuid("evidence_id").notNull(),
+    characterId: uuid("character_id").notNull(),
+    level: integer("level").notNull(),
+    dataEnvironment: dataEnvironmentEnum("data_environment").notNull(),
+    status: reachedAtClaimStatusEnum("status").notNull(),
+    reasons: jsonb("reasons").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+    kind: claimAssessmentKindEnum("kind").notNull(),
+    assessedAt: tz("assessed_at").notNull(),
+    /** 판정을 일으킨 수집 원본 (이관 판정은 null) */
+    ingestionRecordId: uuid("ingestion_record_id"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    check("level_milestone_claim_assessments_status", sql`status <> 'NONE'`),
+    unique("level_milestone_claim_assessments_ref").on(t.id, t.evidenceId, t.status),
+    foreignKey({
+      name: "level_milestone_claim_assessments_evidence_fk",
+      columns: [t.evidenceId, t.characterId, t.level, t.dataEnvironment],
+      foreignColumns: [
+        levelMilestoneEvidence.id,
+        levelMilestoneEvidence.characterId,
+        levelMilestoneEvidence.level,
+        levelMilestoneEvidence.dataEnvironment,
+      ],
+    }),
+    foreignKey({
+      name: "level_milestone_claim_assessments_ingestion_fk",
+      columns: [t.ingestionRecordId, t.dataEnvironment],
+      foreignColumns: [ingestionRecords.id, ingestionRecords.dataEnvironment],
+    }),
+    index("level_milestone_claim_assessments_evidence_idx").on(t.evidenceId, t.seq),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // level_milestones (명세서 §8.2, §14.12)
-// 현재 채택한 달성 기록. evidence_id가 채택한 근거(level_milestone_evidence)를 가리킨다.
+// 현재 채택한 달성 기록.
+// - evidence_id: 채택한 근거. 같은 캐릭터·레벨·영역의 근거만 가리킬 수 있다(복합 FK).
+// - claim_assessment_id / claim_assessment_status: SOURCE_REPORTED일 때 근거로 삼은 판정(ACCEPTED).
+//   같은 근거의 ACCEPTED 판정만 가리킬 수 있다(복합 FK + CHECK).
 // ---------------------------------------------------------------------------
 export const levelMilestones = pgTable(
   "level_milestones",
@@ -472,6 +539,9 @@ export const levelMilestones = pgTable(
     ingestionRecordId: uuid("ingestion_record_id"),
     /** 현재 채택한 근거 (level_milestone_evidence) */
     evidenceId: uuid("evidence_id"),
+    /** SOURCE_REPORTED일 때 근거로 삼은 주장 판정 */
+    claimAssessmentId: uuid("claim_assessment_id"),
+    claimAssessmentStatus: reachedAtClaimStatusEnum("claim_assessment_status"),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
@@ -480,6 +550,11 @@ export const levelMilestones = pgTable(
     check(
       "level_milestones_reached_at_basis",
       sql`(timing_basis = 'SOURCE_REPORTED') = (reached_at IS NOT NULL)`,
+    ),
+    // 0007 이관 이후에 추가한다 (migration 안에서 이관 다음으로 옮김)
+    check(
+      "level_milestones_claim_assessment",
+      sql`((claim_assessment_id IS NULL) = (claim_assessment_status IS NULL)) AND ((timing_basis = 'SOURCE_REPORTED') = (claim_assessment_id IS NOT NULL)) AND (claim_assessment_status IS NULL OR claim_assessment_status = 'ACCEPTED') AND (claim_assessment_id IS NULL OR evidence_id IS NOT NULL)`,
     ),
     foreignKey({
       name: "level_milestones_character_fk",
@@ -498,8 +573,22 @@ export const levelMilestones = pgTable(
     }),
     foreignKey({
       name: "level_milestones_evidence_fk",
-      columns: [t.evidenceId, t.dataEnvironment],
-      foreignColumns: [levelMilestoneEvidence.id, levelMilestoneEvidence.dataEnvironment],
+      columns: [t.evidenceId, t.characterId, t.level, t.dataEnvironment],
+      foreignColumns: [
+        levelMilestoneEvidence.id,
+        levelMilestoneEvidence.characterId,
+        levelMilestoneEvidence.level,
+        levelMilestoneEvidence.dataEnvironment,
+      ],
+    }),
+    foreignKey({
+      name: "level_milestones_claim_assessment_fk",
+      columns: [t.claimAssessmentId, t.evidenceId, t.claimAssessmentStatus],
+      foreignColumns: [
+        levelMilestoneClaimAssessments.id,
+        levelMilestoneClaimAssessments.evidenceId,
+        levelMilestoneClaimAssessments.status,
+      ],
     }),
     uniqueIndex("level_milestones_character_level_uq").on(t.characterId, t.level),
     index("level_milestones_env_level_idx").on(t.dataEnvironment, t.level, t.effectiveReachedAt),

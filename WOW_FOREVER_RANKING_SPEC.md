@@ -414,12 +414,12 @@ dataEnvironment = mock
 - 레벨 L에서 L+n으로 올라간 것이 관측되면 다음과 같이 기록한다.
   - L+1 ~ L+n-1: `INFERRED`
   - L+n: `FIRST_OBSERVED` 또는 `SOURCE_REPORTED`
-- 관측마다 근거를 `level_milestone_evidence`에 추가한다(§8.5). 근거는 수정·삭제하지 않는다.
-- `level_milestones`는 현재 채택한 기록이다. 같은 캐릭터·레벨의 근거 전체에서 다시 고르며, `evidence_id`가 채택한 근거를 가리킨다.
+- 관측마다 근거를 `level_milestone_evidence`에 추가한다(§8.5). 근거와 판정 이력은 수정·삭제하지 않는다.
+- `level_milestones`는 현재 채택한 기록이다. 같은 캐릭터·레벨의 근거와 현재 판정에서 다시 고르며(도착 순서와 무관), `evidence_id`가 채택한 근거를 가리킨다.
   - 신뢰 수준(검증 상태, §11 공급원 우선순위)이 가장 높은 근거만 후보로 한다. 낮은 신뢰의 근거는 더 이른 시각을 주장해도 높은 신뢰의 기록을 대체하지 않는다.
   - 같은 신뢰 수준 안에서 근거 우선순위: `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`
-  - 근거 수준이 같으면 더 이른 시각을 채택한다.
-  - `first_observed_at`은 같은 신뢰 수준 근거 중 가장 이른 관측 시각이다.
+  - 근거 수준이 같으면 더 이른 시각을 채택한다. 저장 순서는 쓰지 않는다.
+  - `first_observed_at`은 같은 신뢰 수준 근거 중 가장 이른 관측 시각, `previous_observed_at`은 그 이전에 더 낮은 레벨로 관측된 가장 늦은 시각이다.
 - milestone은 삭제하지 않는다(실제 영역 DB 트리거). 캐릭터 삭제로 연쇄 삭제되지 않는다(FK `ON DELETE RESTRICT`).
 - `characters`의 현재 레벨 도달 시각은 milestone에서 파생한 캐시 값이다. 원본은 `level_milestones`, 그 근거는 `level_milestone_evidence`다.
 
@@ -433,18 +433,19 @@ dataEnvironment = mock
 
 상세: `docs/HISTORY-PRESERVATION.md`
 
-- 근거 행(`level_milestone_evidence`)에는 레벨, 시간 근거, 받은 달성 시각 주장, 판정, 관측 시각, 서버 수신 시각, 출처, 검증 상태, 빌드, 스냅샷·원본 연결, 관측 당시 맥락(이름·지역·게임 규칙·직업·종족·진영·길드)을 저장한다. 관측에 없던 값은 null로 둔다.
-- 공급원이 보낸 달성 시각은 받은 그대로 보관하고 다음과 같이 판정한다. `ACCEPTED`일 때만 `SOURCE_REPORTED` 근거가 된다.
+- 근거 행(`level_milestone_evidence`)에는 레벨, 관측 근거(`FIRST_OBSERVED`/`INFERRED`), 받은 달성 시각 주장과 받은 시점의 판정, 관측 시각, 서버 수신 시각, 출처, 검증 상태, 빌드, 스냅샷·원본 연결, 관측 당시 맥락(이름·지역·게임 규칙·직업·종족·진영·길드)을 저장한다. 관측에 없던 값은 null로 둔다. 근거 행은 수정·삭제하지 않는다.
+- 판정은 관측마다 그 캐릭터의 모든 주장을 지금까지 알려진 사실 전체로 다시 계산한다(도착 순서와 무관). 판정이 생기거나 바뀌면 `level_milestone_claim_assessments`에 행을 추가한다(`RECEIPT` / `REASSESSMENT` / `MIGRATED`). 현재 판정이 `ACCEPTED`인 주장만 `SOURCE_REPORTED` 근거가 된다.
 
 | 판정 | 조건 | 채택 |
 |---|---|---|
-| `REJECTED` | 달성 시각이 그 관측 시각보다 늦음 | 안 함 (관측 사실은 `FIRST_OBSERVED`로 남음) |
-| `CONFLICT` | 더 낮은 레벨로 관측(또는 달성)된 시각보다 이르거나, 더 높은 레벨을 관측(또는 달성)한 시각보다 늦음 | 안 함 |
-| `NEEDS_REVIEW` | 커뮤니티 제출·미검증 출처인데 그 시각 이전에 더 낮은 레벨로 관측한 기록이 없음 | 안 함 (거부하지 않고 검토 대기) |
+| `REJECTED` | 달성 시각이 그 관측 시각보다 늦음 | 안 함 (관측 근거로만 쓰임) |
+| `CONFLICT` | 같거나 높은 신뢰의 더 낮은 레벨 관측보다 이르거나, 더 높은 레벨 관측보다 늦거나, 인정된 다른 주장(같거나 높은 신뢰)과 달성 순서가 모순 | 안 함 |
+| `NEEDS_REVIEW` | 커뮤니티 제출·미검증 출처인데 그 시각 이전에 더 낮은 레벨로 관측한 기록이 없음 | 안 함 (거부하지 않고 검토 대기. 나중에 뒷받침되면 재판정) |
 | `ACCEPTED` | 위에 해당하지 않음. `VERIFIED`·`LOG_VERIFIED`(그리고 mock 영역의 `MOCK`)는 뒷받침 관측이 없어도 됨 | 함 |
 
 - 사이트가 처음 관측하기 전에 달성했다는 주장은 거부하지 않는다. 확인된 하한(게임 시작일 등)이 없으므로 날짜를 고정하지 않고 `NEEDS_REVIEW`로 보관한다.
-- 늦게 도착한 옛 관측의 레벨이 이후 관측보다 높으면(달성 순서 모순) 식별 충돌로 기록하고 반영하지 않는다(레벨 감소 관측과 같은 처리).
+- 새 관측이 기존 관측과 달성 순서가 모순되면(더 이른 시각에 더 높은 레벨 / 더 늦은 시각에 더 낮은 레벨) 식별 충돌로 기록하고 반영하지 않는다.
+- 채택 기록(`level_milestones`)은 같은 캐릭터·레벨·영역의 근거만, `SOURCE_REPORTED`면 같은 근거의 `ACCEPTED` 판정만 가리킨다(DB 복합 FK + CHECK).
 
 ---
 
@@ -933,12 +934,15 @@ INDEX (character_id, observed_at DESC)
 
 ## 14.12 level_milestones
 
-§8.2 참고. `evidence_id`: 현재 채택한 근거(`level_milestone_evidence`).
+§8.2 참고. `evidence_id`: 현재 채택한 근거. `claim_assessment_id`/`claim_assessment_status`: `SOURCE_REPORTED`일 때 근거로 삼은 `ACCEPTED` 판정.
 
 ```text
 UNIQUE (character_id, level)
 INDEX  (data_environment, level, effective_reached_at)
 FK (character_id, data_environment) → characters ON DELETE RESTRICT
+FK (evidence_id, character_id, level, data_environment) → level_milestone_evidence
+FK (claim_assessment_id, evidence_id, claim_assessment_status) → level_milestone_claim_assessments
+CHECK (timing_basis = SOURCE_REPORTED) ⇔ (claim_assessment_id IS NOT NULL), 연결된 판정은 ACCEPTED
 삭제 금지 (실제 영역, 트리거). 갱신은 채택 결과가 바뀔 때만
 ```
 
@@ -947,14 +951,29 @@ FK (character_id, data_environment) → characters ON DELETE RESTRICT
 §8.5 참고. 추가만 한다(수정 금지, 실제 영역 삭제 금지, TRUNCATE 금지).
 
 ```text
-origin           INGESTED | MIGRATED (기존 level_milestones에서 이관)
-claim_status     NONE | ACCEPTED | NEEDS_REVIEW | CONFLICT | REJECTED
-claim_reasons    판정 이유 코드 목록
-CHECK (claim_status = NONE) ⇔ (claimed_reached_at IS NULL)
-CHECK (timing_basis = SOURCE_REPORTED) ⇔ (claim_status = ACCEPTED)
+origin                 INGESTED | MIGRATED (기존 level_milestones에서 이관)
+observation_basis      FIRST_OBSERVED | INFERRED (SOURCE_REPORTED 금지)
+receipt_claim_status   NONE | ACCEPTED | NEEDS_REVIEW | CONFLICT | REJECTED (받은 시점)
+receipt_claim_reasons  판정 이유 코드 목록
+legacy_timing_basis    이관 행의 원래 timing_basis (이관 행만)
+CHECK (receipt_claim_status = NONE) ⇔ (claimed_reached_at IS NULL)
 CHECK origin = MIGRATED OR received_at IS NOT NULL
+UNIQUE (id, character_id, level, data_environment)
+UNIQUE (character_id, level) WHERE origin = MIGRATED
 FK (character_id, data_environment) → characters ON DELETE RESTRICT
 INDEX (character_id, level, observed_at), (data_environment, level, observed_at)
+```
+
+## 14.12b level_milestone_claim_assessments
+
+달성 시각 주장 판정 이력. 추가만 한다(수정 금지, 실제 영역 삭제 금지, TRUNCATE 금지).
+
+```text
+seq        자동 증가. 근거별로 가장 큰 값이 현재 판정
+status     ACCEPTED | NEEDS_REVIEW | CONFLICT | REJECTED
+kind       RECEIPT | REASSESSMENT | MIGRATED
+FK (evidence_id, character_id, level, data_environment) → level_milestone_evidence
+UNIQUE (id, evidence_id, status)
 ```
 
 ## 14.13 향후 테이블

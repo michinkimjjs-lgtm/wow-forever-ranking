@@ -30,6 +30,7 @@ export type MilestoneTimingBasis = (typeof MILESTONE_TIMING_BASES)[number];
 
 /**
  * 레벨 달성 시각 주장(공급원이 보낸 levelReachedAt)의 판정 (명세서 §8.5, docs/HISTORY-PRESERVATION.md)
+ * 받은 시점의 판정은 근거 행에, 이후 재판정은 level_milestone_claim_assessments에 추가로 남긴다.
  * - NONE: 주장 없음 (관측 사실만 있음)
  * - ACCEPTED: 채택 가능
  * - NEEDS_REVIEW: 모순은 없지만 뒷받침하는 관측이 없음 (예: 사이트가 처음 관측하기 전의 달성 주장). 자동 채택하지 않음
@@ -42,6 +43,15 @@ export type ReachedAtClaimStatus = (typeof REACHED_AT_CLAIM_STATUSES)[number];
 /** 근거 행의 출처: 수집 파이프라인이 만든 행 / 기존 level_milestones에서 이관한 행 */
 export const EVIDENCE_ORIGINS = ["INGESTED", "MIGRATED"] as const;
 export type EvidenceOrigin = (typeof EVIDENCE_ORIGINS)[number];
+
+/**
+ * 달성 시각 주장 판정 기록의 종류 (level_milestone_claim_assessments)
+ * - RECEIPT: 근거를 받은 시점의 판정
+ * - REASSESSMENT: 새 관측으로 알려진 사실이 늘어 판정이 바뀐 경우
+ * - MIGRATED: 기존 level_milestones의 SOURCE_REPORTED 판단을 이관한 것
+ */
+export const CLAIM_ASSESSMENT_KINDS = ["RECEIPT", "REASSESSMENT", "MIGRATED"] as const;
+export type ClaimAssessmentKind = (typeof CLAIM_ASSESSMENT_KINDS)[number];
 
 export const INGESTION_STATUSES = ["ACCEPTED", "REJECTED", "IDENTITY_CONFLICT"] as const;
 export type IngestionStatus = (typeof INGESTION_STATUSES)[number];

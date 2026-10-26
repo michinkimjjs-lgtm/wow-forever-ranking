@@ -231,7 +231,7 @@ describe("제출 저장 (beta DB)", () => {
       currentLevelTimingBasis: "FIRST_OBSERVED",
     });
     const [evidence] = await db.select().from(levelMilestoneEvidence).where(eq(levelMilestoneEvidence.level, 20));
-    expect(evidence).toMatchObject({ claimStatus: "NEEDS_REVIEW", timingBasis: "FIRST_OBSERVED", origin: "INGESTED" });
+    expect(evidence).toMatchObject({ receiptClaimStatus: "NEEDS_REVIEW", observationBasis: "FIRST_OBSERVED", origin: "INGESTED" });
     expect(evidence!.claimedReachedAt).not.toBeNull();
     // beta에는 APPROVED 프로필이 없으므로 평균 장비 레벨을 저장하지 않는다 (랭킹에 쓰지 않음)
     expect(row!.averageItemLevel).toBeNull();

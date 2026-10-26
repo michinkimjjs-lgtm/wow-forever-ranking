@@ -4,7 +4,7 @@
  * 원본 저장 → 입력 검증(금지 필드 제거) → dataEnvironment 부여(서버 설정) → 캐릭터 식별(§7.3)
  * → 현재 상태 / 장비 / milestone / 스냅샷 갱신 (Gear Profile 적용)
  */
-import { and, asc, desc, eq, gt, lt, ne, sql } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import {
   characterExternalRefs,
   characterItems,
@@ -14,6 +14,7 @@ import {
   guilds,
   ingestionRecords,
   items,
+  levelMilestoneClaimAssessments,
   levelMilestoneEvidence,
   levelMilestones,
 } from "@/db/schema";
@@ -25,14 +26,23 @@ import {
   type DataEnvironment,
   type DataSource,
   type IngestionStatus,
-  type MilestoneTimingBasis,
-  type ReachedAtClaimStatus,
   type VerificationStatus,
 } from "@/lib/domain/enums";
 import { normalizeName, toSlug } from "@/lib/domain/names";
 import { calculateEquippedItemLevel, type EquippedItemLevelResult } from "@/lib/gear/calculate";
 import { sha256, stableStringify } from "@/lib/util/stable-json";
-import { assessReachedAtClaim, chooseAdoptedEvidence, type ClaimFacts, type ClaimReason } from "./milestone-evidence";
+import {
+  chooseAdoptedEvidence,
+  contradictsSightings,
+  evaluateClaims,
+  inferGapEvidence,
+  previousSightingBefore,
+  sightingsFromEvidence,
+  TRUST_RANK,
+  type ClaimAssessment,
+  type EvidenceFact,
+  type SightingFact,
+} from "./milestone-evidence";
 import {
   characterObservationSchema,
   FORBIDDEN_RANK_FIELDS,
@@ -297,6 +307,18 @@ async function applyObservation(
       `늦게 도착한 관측의 레벨(${obs.level})이 이후 관측의 레벨(${character.level})보다 높습니다. 달성 순서와 맞지 않아 기록하지 않았습니다.`,
     );
   }
+  // 이 캐릭터의 저장된 근거·스냅샷 (달성 순서 검사와 근거 판정에 쓴다)
+  const history = character ? await loadLevelHistory(tx, character.id) : null;
+  const priorSightings: SightingFact[] = history
+    ? [
+        ...sightingsFromEvidence(history.facts),
+        ...history.snapshotSightings,
+        { level: character!.level, observedAt: character!.lastSeenAt, verificationStatus: character!.verificationStatus },
+      ]
+    : [];
+  if (character && contradictsSightings(obs.level, observedAt, priorSightings)) {
+    return conflict(`레벨 ${obs.level} 관측이 다른 시각의 관측과 달성 순서가 맞지 않습니다. 기록하지 않고 검토가 필요합니다.`);
+  }
 
   if (character && externalId && !foundByNaturalKey && character.nameNormalized !== nameNormalized && inOrder) {
     // 외부 ID로 찾았는데 이름이 바뀜 → 이름 변경
@@ -428,12 +450,16 @@ async function applyObservation(
   });
 
   // --- 레벨 달성 근거와 현재 채택 기록 (명세서 §8.3, §8.5) ---------------------------
-  // 근거(level_milestone_evidence)는 관측마다 추가만 한다. 현재 채택 기록(level_milestones)은 근거 전체에서 다시 고른다.
-  const evidenceBase: EvidenceBase = {
+  // 근거는 추가만 한다. 판정과 채택은 지금까지 알려진 사실 전체로 다시 계산한다(도착 순서와 무관).
+  await recordLevelEvidence(tx, ctx, {
     characterId,
     obs,
     verificationStatus,
     snapshotId,
+    claimedReachedAt,
+    previousObservedAt: inOrder && previousLevel !== null && obs.level > previousLevel ? previousSeenAt : null,
+    history: history ?? emptyHistory(),
+    priorSightings,
     context: {
       characterName,
       region,
@@ -444,43 +470,7 @@ async function applyObservation(
       // 관측에 길드 정보가 없으면 알 수 없으므로 null (현재 캐릭터 값을 빌려 쓰지 않는다)
       guildId: guildId ?? null,
     },
-  };
-  const rising = inOrder && previousLevel !== null && obs.level > previousLevel;
-  const levels: number[] = [];
-  if (rising) {
-    for (let level = previousLevel + 1; level < obs.level; level += 1) {
-      await insertEvidence(tx, ctx, evidenceBase, {
-        level,
-        timingBasis: "INFERRED",
-        claimedReachedAt: null,
-        claimStatus: "NONE",
-        claimReasons: [],
-        previousObservedAt: previousSeenAt,
-      });
-      levels.push(level);
-    }
-  }
-  let claimStatus: ReachedAtClaimStatus = "NONE";
-  let claimReasons: ClaimReason[] = [];
-  if (claimedReachedAt) {
-    const facts = await loadClaimFacts(tx, characterId, obs.level, { previousLevel, previousSeenAt });
-    const assessment = assessReachedAtClaim({ claim: claimedReachedAt, observedAt, verificationStatus, facts });
-    claimStatus = assessment.status;
-    claimReasons = assessment.reasons;
-    if (assessment.status !== "ACCEPTED") ctx.warnings.push(CLAIM_WARNINGS[assessment.status]);
-  }
-  await insertEvidence(tx, ctx, evidenceBase, {
-    level: obs.level,
-    timingBasis: claimStatus === "ACCEPTED" ? "SOURCE_REPORTED" : "FIRST_OBSERVED",
-    claimedReachedAt,
-    claimStatus,
-    claimReasons,
-    previousObservedAt: rising ? previousSeenAt : null,
   });
-  levels.push(obs.level);
-  for (const level of levels) {
-    await adoptMilestone(tx, ctx, characterId, level);
-  }
 
   // characters의 현재 레벨 도달 시각은 milestone에서 파생한 캐시 값이다.
   const [current] = await tx
@@ -736,170 +726,280 @@ async function saveSnapshot(
   return id;
 }
 
-const CLAIM_WARNINGS: Record<Exclude<ReachedAtClaimStatus, "NONE" | "ACCEPTED">, string> = {
+const CLAIM_WARNINGS: Record<"REJECTED" | "CONFLICT" | "NEEDS_REVIEW", string> = {
   REJECTED: "레벨 달성 시각이 관측 시각보다 늦어 사용하지 않았습니다.",
   CONFLICT: "레벨 달성 시각이 이미 확인된 레벨 순서와 맞지 않아 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
   NEEDS_REVIEW: "레벨 달성 시각을 뒷받침하는 이전 관측이 없어 바로 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
 };
 
-interface EvidenceBase {
-  characterId: string;
-  obs: CharacterObservation;
+type EvidenceRow = typeof levelMilestoneEvidence.$inferSelect;
+
+/** 근거 행의 출처와 관측 당시 맥락 */
+interface EvidenceSource {
+  dataSource: DataSource;
   verificationStatus: VerificationStatus;
+  sourceBuild: string | null;
   snapshotId: string | null;
-  context: {
-    characterName: string;
-    region: string;
-    gameMode: string;
-    classCode: string | null;
-    raceCode: string | null;
-    factionCode: string | null;
-    guildId: string | null;
+  ingestionRecordId: string | null;
+  receivedAt: Date;
+  characterName: string | null;
+  region: string;
+  gameMode: string;
+  classCode: string | null;
+  raceCode: string | null;
+  factionCode: string | null;
+  guildId: string | null;
+}
+
+interface LevelHistory {
+  rows: EvidenceRow[];
+  facts: EvidenceFact[];
+  /** 근거별 가장 최근 판정 */
+  latest: Map<string, { id: string; status: string; reasons: string[] }>;
+  snapshotSightings: SightingFact[];
+  milestones: Map<number, typeof levelMilestones.$inferSelect>;
+}
+
+const emptyHistory = (): LevelHistory => ({ rows: [], facts: [], latest: new Map(), snapshotSightings: [], milestones: new Map() });
+
+function toFact(r: EvidenceRow): EvidenceFact {
+  return {
+    id: r.id,
+    level: r.level,
+    observationBasis: r.observationBasis as EvidenceFact["observationBasis"],
+    claimedReachedAt: r.claimedReachedAt,
+    observedAt: r.observedAt,
+    previousObservedAt: r.previousObservedAt,
+    verificationStatus: r.verificationStatus,
+    origin: r.origin,
+    dataSource: r.dataSource,
+    sourceBuild: r.sourceBuild,
   };
 }
 
-/** 근거 한 행을 추가한다. 근거는 수정·삭제하지 않는다(DB 트리거, migration 0008). */
-async function insertEvidence(
+async function loadLevelHistory(tx: AppDatabase, characterId: string): Promise<LevelHistory> {
+  const rows = await tx.select().from(levelMilestoneEvidence).where(eq(levelMilestoneEvidence.characterId, characterId));
+  const a = levelMilestoneClaimAssessments;
+  const latestRows = await tx
+    .selectDistinctOn([a.evidenceId], { evidenceId: a.evidenceId, id: a.id, status: a.status, reasons: a.reasons })
+    .from(a)
+    .where(eq(a.characterId, characterId))
+    .orderBy(a.evidenceId, desc(a.seq));
+  const snapshots = await tx
+    .select({ level: characterSnapshots.level, observedAt: characterSnapshots.observedAt, verificationStatus: characterSnapshots.verificationStatus })
+    .from(characterSnapshots)
+    .where(eq(characterSnapshots.characterId, characterId));
+  const milestones = await tx.select().from(levelMilestones).where(eq(levelMilestones.characterId, characterId));
+  return {
+    rows,
+    facts: rows.map(toFact),
+    latest: new Map(latestRows.map((r) => [r.evidenceId, { id: r.id, status: r.status, reasons: r.reasons }])),
+    snapshotSightings: snapshots,
+    milestones: new Map(milestones.map((m) => [m.level, m])),
+  };
+}
+
+/**
+ * 관측 하나의 근거를 기록하고 판정·채택을 다시 계산한다 (명세서 §8.3, §8.5).
+ * 1. 이 관측의 근거 행 + 늦게 알게 된 건너뛴 레벨의 추론 근거 행을 추가한다 (근거 행은 수정·삭제하지 않음)
+ * 2. 이 캐릭터의 모든 달성 시각 주장을 현재 알려진 사실로 다시 판정한다.
+ *    새 주장은 RECEIPT, 판정이 바뀐 기존 주장은 REASSESSMENT로 판정 기록에 추가한다.
+ * 3. 근거가 있는 모든 레벨의 현재 채택 기록을 다시 고른다. 바뀐 내용이 없으면 쓰지 않는다.
+ */
+async function recordLevelEvidence(
   tx: AppDatabase,
   ctx: ApplyContext,
-  base: EvidenceBase,
-  claim: {
-    level: number;
-    timingBasis: MilestoneTimingBasis;
+  input: {
+    characterId: string;
+    obs: CharacterObservation;
+    verificationStatus: VerificationStatus;
+    snapshotId: string | null;
     claimedReachedAt: Date | null;
-    claimStatus: ReachedAtClaimStatus;
-    claimReasons: ClaimReason[];
     previousObservedAt: Date | null;
+    history: LevelHistory;
+    priorSightings: SightingFact[];
+    context: {
+      characterName: string;
+      region: string;
+      gameMode: string;
+      classCode: string | null;
+      raceCode: string | null;
+      factionCode: string | null;
+      guildId: string | null;
+    };
   },
 ): Promise<void> {
-  const { obs } = base;
-  await tx.insert(levelMilestoneEvidence).values({
-    id: ctx.newId(),
-    characterId: base.characterId,
-    dataEnvironment: ctx.env,
-    level: claim.level,
-    timingBasis: claim.timingBasis,
-    claimedReachedAt: claim.claimedReachedAt,
-    claimStatus: claim.claimStatus,
-    claimReasons: claim.claimReasons,
-    observedAt: obs.observedAt,
-    previousObservedAt: claim.previousObservedAt,
-    receivedAt: ctx.receivedAt,
+  const { obs, history } = input;
+  const provenance: EvidenceSource = {
     dataSource: obs.dataSource,
-    verificationStatus: base.verificationStatus,
+    verificationStatus: input.verificationStatus,
     sourceBuild: obs.sourceBuild ?? null,
-    snapshotId: base.snapshotId,
+    snapshotId: input.snapshotId,
     ingestionRecordId: ctx.recordId,
-    ...base.context,
+    receivedAt: ctx.receivedAt,
+    ...input.context,
+  };
+  const current: EvidenceFact = {
+    id: ctx.newId(),
+    level: obs.level,
+    observationBasis: "FIRST_OBSERVED",
+    claimedReachedAt: input.claimedReachedAt,
+    observedAt: obs.observedAt,
+    previousObservedAt: input.previousObservedAt,
+    verificationStatus: input.verificationStatus,
     origin: "INGESTED",
-    createdAt: ctx.receivedAt,
-  });
-}
-
-const minDate = (...values: (Date | null | undefined)[]) => {
-  const list = values.filter((v): v is Date => v instanceof Date);
-  return list.length > 0 ? new Date(Math.min(...list.map((d) => d.getTime()))) : null;
-};
-const maxDate = (...values: (Date | null | undefined)[]) => {
-  const list = values.filter((v): v is Date => v instanceof Date);
-  return list.length > 0 ? new Date(Math.max(...list.map((d) => d.getTime()))) : null;
-};
-
-/**
- * 달성 시각 주장을 판정하는 데 쓰는 사실 (이 캐릭터의 저장된 관측·근거에서만 가져온다)
- * - 낮은 레벨 관측: 스냅샷, 수집 근거 중 정확한 레벨을 본 행(INFERRED·이관 행 제외), 직전 캐릭터 상태
- * - 높은 레벨 사실: 스냅샷, 모든 근거의 관측 시각(그 시각에는 이미 그 레벨 이상), 채택 가능한 달성 시각, 직전 캐릭터 상태
- */
-async function loadClaimFacts(
-  tx: AppDatabase,
-  characterId: string,
-  level: number,
-  previous: { previousLevel: number | null; previousSeenAt: Date | null },
-): Promise<ClaimFacts> {
-  const snap = characterSnapshots;
-  const ev = levelMilestoneEvidence;
-  const [lowerSnap] = await tx
-    .select({ min: sql`min(${snap.observedAt})`.mapWith(snap.observedAt), max: sql`max(${snap.observedAt})`.mapWith(snap.observedAt) })
-    .from(snap)
-    .where(and(eq(snap.characterId, characterId), lt(snap.level, level)));
-  const [lowerEv] = await tx
-    .select({ min: sql`min(${ev.observedAt})`.mapWith(ev.observedAt), max: sql`max(${ev.observedAt})`.mapWith(ev.observedAt) })
-    .from(ev)
-    .where(and(eq(ev.characterId, characterId), lt(ev.level, level), eq(ev.origin, "INGESTED"), ne(ev.timingBasis, "INFERRED")));
-  const [lowerReached] = await tx
-    .select({ max: sql`max(${ev.claimedReachedAt})`.mapWith(ev.claimedReachedAt) })
-    .from(ev)
-    .where(and(eq(ev.characterId, characterId), lt(ev.level, level), eq(ev.claimStatus, "ACCEPTED")));
-  const [higherSnap] = await tx
-    .select({ min: sql`min(${snap.observedAt})`.mapWith(snap.observedAt) })
-    .from(snap)
-    .where(and(eq(snap.characterId, characterId), gt(snap.level, level)));
-  const [higherEv] = await tx
-    .select({ min: sql`min(${ev.observedAt})`.mapWith(ev.observedAt) })
-    .from(ev)
-    .where(and(eq(ev.characterId, characterId), gt(ev.level, level)));
-  const [higherReached] = await tx
-    .select({ min: sql`min(${ev.claimedReachedAt})`.mapWith(ev.claimedReachedAt) })
-    .from(ev)
-    .where(and(eq(ev.characterId, characterId), gt(ev.level, level), eq(ev.claimStatus, "ACCEPTED")));
-
-  const prevLower = previous.previousLevel !== null && previous.previousLevel < level ? previous.previousSeenAt : null;
-  const prevHigher = previous.previousLevel !== null && previous.previousLevel > level ? previous.previousSeenAt : null;
-  return {
-    lowerSightingMin: minDate(lowerSnap?.min, lowerEv?.min, prevLower),
-    lowerSightingMax: maxDate(lowerSnap?.max, lowerEv?.max, prevLower),
-    lowerReachedMax: maxDate(lowerReached?.max),
-    higherFactMin: minDate(higherSnap?.min, higherEv?.min, higherReached?.min, prevHigher),
+    dataSource: obs.dataSource,
+    sourceBuild: obs.sourceBuild ?? null,
   };
-}
 
-/**
- * 현재 채택 기록(level_milestones)을 근거 전체에서 다시 고른다 (명세서 §8.3, §8.5).
- * 채택 결과만 갱신하고, 근거 행은 바꾸지 않는다. 바뀐 내용이 없으면 쓰지 않는다.
- */
-async function adoptMilestone(tx: AppDatabase, ctx: ApplyContext, characterId: string, level: number): Promise<void> {
-  const rows = await tx
-    .select()
-    .from(levelMilestoneEvidence)
-    .where(and(eq(levelMilestoneEvidence.characterId, characterId), eq(levelMilestoneEvidence.level, level)))
-    .orderBy(asc(levelMilestoneEvidence.createdAt));
-  const adopted = chooseAdoptedEvidence(rows);
-  if (!adopted) return;
-  const chosen = rows.find((r) => r.id === adopted.evidence.id)!;
-  const values = {
-    timingBasis: adopted.timingBasis,
-    reachedAt: adopted.reachedAt,
-    firstObservedAt: adopted.firstObservedAt,
-    previousObservedAt: adopted.previousObservedAt,
-    dataSource: chosen.dataSource,
-    verificationStatus: chosen.verificationStatus,
-    sourceBuild: chosen.sourceBuild,
-    snapshotId: chosen.snapshotId,
-    ingestionRecordId: chosen.ingestionRecordId,
-    evidenceId: chosen.id,
-  };
-  const [existing] = await tx
-    .select()
-    .from(levelMilestones)
-    .where(and(eq(levelMilestones.characterId, characterId), eq(levelMilestones.level, level)))
-    .limit(1);
-  if (!existing) {
-    await tx.insert(levelMilestones).values({
+  // 건너뛴 레벨: 새 관측의 시간상 앞·뒤 관측과 비교 (추론 근거의 출처는 더 높은 레벨 관측)
+  const rowById = new Map(history.rows.map((r) => [r.id, r]));
+  const gaps = inferGapEvidence(
+    { level: current.level, observedAt: current.observedAt, evidenceId: current.id },
+    [
+      ...history.facts
+        .filter((f) => f.origin === "INGESTED" && f.observationBasis === "FIRST_OBSERVED")
+        .map((f) => ({ level: f.level, observedAt: f.observedAt, evidenceId: f.id as string | null })),
+      ...input.priorSightings.map((s) => ({ level: s.level, observedAt: s.observedAt, evidenceId: null })),
+    ],
+    history.facts,
+  );
+  const inferred = gaps.map((g) => {
+    const upper = g.upperEvidenceId === current.id ? null : rowById.get(g.upperEvidenceId)!;
+    const fact: EvidenceFact = {
       id: ctx.newId(),
-      characterId,
+      level: g.level,
+      observationBasis: "INFERRED",
+      claimedReachedAt: null,
+      observedAt: g.observedAt,
+      previousObservedAt: g.previousObservedAt,
+      verificationStatus: upper ? upper.verificationStatus : current.verificationStatus,
+      origin: "INGESTED",
+      dataSource: upper ? upper.dataSource : current.dataSource,
+      sourceBuild: upper ? upper.sourceBuild : current.sourceBuild,
+    };
+    const source = upper
+      ? {
+          dataSource: upper.dataSource,
+          verificationStatus: upper.verificationStatus,
+          sourceBuild: upper.sourceBuild,
+          snapshotId: upper.snapshotId,
+          ingestionRecordId: upper.ingestionRecordId,
+          receivedAt: upper.receivedAt ?? ctx.receivedAt,
+          characterName: upper.characterName,
+          region: upper.region,
+          gameMode: upper.gameMode,
+          classCode: upper.classCode,
+          raceCode: upper.raceCode,
+          factionCode: upper.factionCode,
+          guildId: upper.guildId,
+        }
+      : provenance;
+    return { fact, source };
+  });
+
+  const facts = [...history.facts, current, ...inferred.map((i) => i.fact)];
+  const extraSightings = [...history.snapshotSightings, ...input.priorSightings.slice(-1)];
+  const assessments = evaluateClaims(facts, extraSightings);
+
+  // 1. 근거 행 추가 (받은 시점의 판정 포함)
+  const receipt = current.claimedReachedAt ? assessments.get(current.id)! : null;
+  if (receipt && receipt.status !== "ACCEPTED") ctx.warnings.push(CLAIM_WARNINGS[receipt.status as keyof typeof CLAIM_WARNINGS]);
+  const insertRow = async (fact: EvidenceFact, source: EvidenceSource, claim: ClaimAssessment | null) => {
+    await tx.insert(levelMilestoneEvidence).values({
+      id: fact.id,
+      characterId: input.characterId,
       dataEnvironment: ctx.env,
-      level,
-      ...values,
+      level: fact.level,
+      observationBasis: fact.observationBasis,
+      claimedReachedAt: fact.claimedReachedAt,
+      receiptClaimStatus: claim ? claim.status : "NONE",
+      receiptClaimReasons: claim ? claim.reasons : [],
+      legacyTimingBasis: null,
+      observedAt: fact.observedAt,
+      previousObservedAt: fact.previousObservedAt,
+      origin: "INGESTED",
       createdAt: ctx.receivedAt,
-      updatedAt: ctx.receivedAt,
+      ...source,
     });
-    return;
+  };
+  await insertRow(current, provenance, receipt);
+  for (const { fact, source } of inferred) await insertRow(fact, source, null);
+
+  // 2. 판정 기록 추가 (새 주장 / 판정이 바뀐 주장)
+  const latest = new Map(history.latest);
+  const levelOf = new Map(facts.map((f) => [f.id, f.level]));
+  for (const [evidenceId, assessment] of assessments) {
+    const previous = latest.get(evidenceId);
+    const unchanged =
+      previous && previous.status === assessment.status && JSON.stringify(previous.reasons) === JSON.stringify(assessment.reasons);
+    if (unchanged) continue;
+    const id = ctx.newId();
+    await tx.insert(levelMilestoneClaimAssessments).values({
+      id,
+      evidenceId,
+      characterId: input.characterId,
+      level: levelOf.get(evidenceId)!,
+      dataEnvironment: ctx.env,
+      status: assessment.status,
+      reasons: assessment.reasons,
+      kind: evidenceId === current.id ? "RECEIPT" : "REASSESSMENT",
+      assessedAt: ctx.receivedAt,
+      ingestionRecordId: ctx.recordId,
+      createdAt: ctx.receivedAt,
+    });
+    latest.set(evidenceId, { id, status: assessment.status, reasons: assessment.reasons });
   }
-  const same = (a: unknown, b: unknown) => (a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b);
-  const changed = (Object.keys(values) as (keyof typeof values)[]).some((k) => !same(values[k], existing[k]));
-  if (!changed) return;
-  await tx
-    .update(levelMilestones)
-    .set({ ...values, updatedAt: ctx.receivedAt })
-    .where(eq(levelMilestones.id, existing.id));
+
+  // 3. 현재 채택 기록 다시 고르기
+  const sources = new Map<string, { snapshotId: string | null; ingestionRecordId: string | null }>([
+    ...history.rows.map((r) => [r.id, { snapshotId: r.snapshotId, ingestionRecordId: r.ingestionRecordId }] as const),
+    [current.id, { snapshotId: provenance.snapshotId, ingestionRecordId: provenance.ingestionRecordId }],
+    ...inferred.map((i) => [i.fact.id, { snapshotId: i.source.snapshotId, ingestionRecordId: i.source.ingestionRecordId }] as const),
+  ]);
+  const allSightings = [...sightingsFromEvidence(facts), ...extraSightings];
+  const levels = [...new Set(facts.map((f) => f.level))];
+  for (const level of levels) {
+    const adopted = chooseAdoptedEvidence(
+      facts.filter((f) => f.level === level),
+      assessments,
+    );
+    if (!adopted) continue;
+    const chosen = adopted.evidence;
+    const accepted = adopted.timingBasis === "SOURCE_REPORTED" ? latest.get(chosen.id)! : null;
+    const values = {
+      timingBasis: adopted.timingBasis,
+      reachedAt: adopted.reachedAt,
+      firstObservedAt: adopted.firstObservedAt,
+      previousObservedAt: previousSightingBefore(level, adopted.firstObservedAt, TRUST_RANK[chosen.verificationStatus], allSightings),
+      dataSource: chosen.dataSource,
+      verificationStatus: chosen.verificationStatus,
+      sourceBuild: chosen.sourceBuild,
+      snapshotId: sources.get(chosen.id)!.snapshotId,
+      ingestionRecordId: sources.get(chosen.id)!.ingestionRecordId,
+      evidenceId: chosen.id,
+      claimAssessmentId: accepted ? accepted.id : null,
+      claimAssessmentStatus: accepted ? ("ACCEPTED" as const) : null,
+    };
+    const existing = history.milestones.get(level);
+    if (!existing) {
+      await tx.insert(levelMilestones).values({
+        id: ctx.newId(),
+        characterId: input.characterId,
+        dataEnvironment: ctx.env,
+        level,
+        ...values,
+        createdAt: ctx.receivedAt,
+        updatedAt: ctx.receivedAt,
+      });
+      continue;
+    }
+    const same = (a: unknown, b: unknown) => (a instanceof Date && b instanceof Date ? a.getTime() === b.getTime() : a === b);
+    const changed = (Object.keys(values) as (keyof typeof values)[]).some((k) => !same(values[k], existing[k]));
+    if (!changed) continue;
+    await tx
+      .update(levelMilestones)
+      .set({ ...values, updatedAt: ctx.receivedAt })
+      .where(eq(levelMilestones.id, existing.id));
+  }
 }
