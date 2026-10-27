@@ -29,7 +29,7 @@
 
 ```text
 1. level DESC
-2. 현재 레벨 milestone의 effective_reached_at ASC (NULL은 마지막)
+2. 현재 레벨 milestone의 effective_reached_at ASC (NULL은 마지막). milestone은 근거 중 신뢰 수준이 가장 높은 것에서 고르며, 검토 대기·충돌인 달성 시각 주장은 쓰지 않는다(명세서 §8.5)
 3. first_seen_at ASC
 4. character_name ASC (COLLATE "C", 유니코드 코드포인트 순 = 한글 가나다 순)
 5. id ASC
