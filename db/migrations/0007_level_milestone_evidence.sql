@@ -14,6 +14,15 @@
 --    - region / game_mode는 캐릭터 식별 값이므로 characters에서 가져온다. 서버 수신 시각은 원본이 연결된 경우만.
 --    - 기존 행은 삭제·변경하지 않는다(연결 컬럼만 채운다). updated_at도 바꾸지 않는다.
 -- 4) 이관 뒤에 채택 기록의 판정 CHECK를 추가한다 (이관 전에는 기존 SOURCE_REPORTED 행이 판정 연결을 갖지 않으므로).
+-- 5) 구버전 앱 호환 (migration 적용 뒤 이전 배포가 계속 실행되거나 이전 배포로 되돌린 기간)
+--    구버전 앱은 근거·판정을 모른 채 level_milestones에 직접 쓴다. 근거 기반 기록기(새 앱)는 트랜잭션마다
+--    forever_rank.level_milestone_writer = 'evidence'를 선언하고, 선언하지 않은 쓰기를 구버전 쓰기로 본다.
+--    - 새 레벨 INSERT: 쓰려던 관측을 근거 행(origin INGESTED, 이유 RECORDED_BY_LEGACY_WRITER)으로 남기고 그 근거를 채택한다.
+--      달성 시각 주장은 판정하지 않았으므로 근거에 NEEDS_REVIEW로 보관하고 SOURCE_REPORTED로 채택하지 않는다
+--      (판정 기록은 만들지 않는다. 새 앱이 다음 관측 때 모든 주장을 다시 판정해 판정 기록을 추가한다).
+--    - 기존 채택 기록 UPDATE: 채택 결과는 근거 기반 기록기만 바꾼다. 구버전 쓰기는 적용하지 않는다
+--      (관측 자체는 스냅샷과 수집 원본에 남는다).
+--    - mock 채택 기록 DELETE(구버전 mock 초기화): 같은 캐릭터·레벨의 mock 판정 기록과 근거도 지운다. 실제 영역 삭제는 0008이 막는다.
 CREATE TYPE "public"."claim_assessment_kind" AS ENUM('RECEIPT', 'REASSESSMENT', 'MIGRATED');--> statement-breakpoint
 CREATE TYPE "public"."evidence_origin" AS ENUM('INGESTED', 'MIGRATED');--> statement-breakpoint
 CREATE TYPE "public"."reached_at_claim_status" AS ENUM('NONE', 'ACCEPTED', 'NEEDS_REVIEW', 'CONFLICT', 'REJECTED');--> statement-breakpoint
@@ -139,3 +148,76 @@ WHERE a."evidence_id" = m."evidence_id" AND a."kind" = 'MIGRATED' AND m."timing_
   AND m."claim_assessment_id" IS NULL;
 --> statement-breakpoint
 ALTER TABLE "level_milestones" ADD CONSTRAINT "level_milestones_claim_assessment" CHECK (((claim_assessment_id IS NULL) = (claim_assessment_status IS NULL)) AND ((timing_basis = 'SOURCE_REPORTED') = (claim_assessment_id IS NOT NULL)) AND (claim_assessment_status IS NULL OR claim_assessment_status = 'ACCEPTED') AND (claim_assessment_id IS NULL OR evidence_id IS NOT NULL));
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION level_milestones_legacy_write() RETURNS trigger AS $$
+DECLARE
+  claim timestamptz;
+  basis milestone_timing_basis;
+  adopted uuid;
+BEGIN
+  IF coalesce(current_setting('forever_rank.level_milestone_writer', true), '') = 'evidence' THEN
+    RETURN NEW;
+  END IF;
+  IF (TG_OP = 'INSERT' AND (NEW.evidence_id IS NOT NULL OR NEW.claim_assessment_id IS NOT NULL
+      OR NEW.claim_assessment_status IS NOT NULL))
+    OR (TG_OP = 'UPDATE' AND (NEW.evidence_id IS DISTINCT FROM OLD.evidence_id
+      OR NEW.claim_assessment_id IS DISTINCT FROM OLD.claim_assessment_id
+      OR NEW.claim_assessment_status IS DISTINCT FROM OLD.claim_assessment_status)) THEN
+    RAISE EXCEPTION '레벨 달성 기록의 근거·판정 연결은 근거 기반 기록기만 바꿀 수 있습니다.'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  IF TG_OP = 'UPDATE' THEN
+    RETURN NULL;
+  END IF;
+  claim := CASE WHEN NEW.timing_basis = 'SOURCE_REPORTED' THEN NEW.reached_at END;
+  basis := CASE WHEN NEW.timing_basis = 'SOURCE_REPORTED' THEN 'FIRST_OBSERVED' ELSE NEW.timing_basis END;
+  INSERT INTO level_milestone_evidence (
+    character_id, data_environment, level, observation_basis, claimed_reached_at, receipt_claim_status,
+    receipt_claim_reasons, observed_at, previous_observed_at, received_at, data_source, verification_status,
+    source_build, snapshot_id, ingestion_record_id, character_name, region, game_mode, class_code, race_code,
+    faction_code, guild_id, origin, created_at
+  )
+  SELECT
+    NEW.character_id, NEW.data_environment, NEW.level, basis, claim,
+    (CASE WHEN claim IS NULL THEN 'NONE' ELSE 'NEEDS_REVIEW' END)::reached_at_claim_status,
+    '["RECORDED_BY_LEGACY_WRITER"]'::jsonb,
+    NEW.first_observed_at, NEW.previous_observed_at, coalesce(r.received_at, NEW.created_at),
+    NEW.data_source, NEW.verification_status, NEW.source_build, NEW.snapshot_id, NEW.ingestion_record_id,
+    CASE WHEN s.observed_at = NEW.first_observed_at THEN s.normalized_data->>'characterName' END,
+    c.region, c.game_mode,
+    CASE WHEN s.observed_at = NEW.first_observed_at THEN s.normalized_data->>'classCode' END,
+    CASE WHEN s.observed_at = NEW.first_observed_at THEN s.normalized_data->>'raceCode' END,
+    CASE WHEN s.observed_at = NEW.first_observed_at THEN s.normalized_data->>'factionCode' END,
+    CASE WHEN s.observed_at = NEW.first_observed_at THEN s.guild_id END,
+    'INGESTED', NEW.created_at
+  FROM characters c
+  LEFT JOIN character_snapshots s ON s.id = NEW.snapshot_id AND s.data_environment = NEW.data_environment
+  LEFT JOIN ingestion_records r ON r.id = NEW.ingestion_record_id AND r.data_environment = NEW.data_environment
+  WHERE c.id = NEW.character_id AND c.data_environment = NEW.data_environment
+  RETURNING id INTO adopted;
+  NEW.evidence_id := adopted;
+  NEW.timing_basis := basis;
+  NEW.reached_at := NULL;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE OR REPLACE FUNCTION level_milestones_legacy_mock_delete() RETURNS trigger AS $$
+BEGIN
+  IF coalesce(current_setting('forever_rank.level_milestone_writer', true), '') = 'evidence'
+    OR OLD.data_environment <> 'mock' THEN
+    RETURN OLD;
+  END IF;
+  DELETE FROM level_milestone_claim_assessments
+    WHERE character_id = OLD.character_id AND level = OLD.level AND data_environment = 'mock';
+  DELETE FROM level_milestone_evidence
+    WHERE character_id = OLD.character_id AND level = OLD.level AND data_environment = 'mock';
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+--> statement-breakpoint
+CREATE TRIGGER level_milestones_legacy_write BEFORE INSERT OR UPDATE ON level_milestones
+  FOR EACH ROW EXECUTE FUNCTION level_milestones_legacy_write();
+--> statement-breakpoint
+CREATE TRIGGER level_milestones_legacy_mock_delete AFTER DELETE ON level_milestones
+  FOR EACH ROW EXECUTE FUNCTION level_milestones_legacy_mock_delete();

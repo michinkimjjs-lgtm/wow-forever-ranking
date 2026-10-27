@@ -4,7 +4,7 @@
  * 원본 저장 → 입력 검증(금지 필드 제거) → dataEnvironment 부여(서버 설정) → 캐릭터 식별(§7.3)
  * → 현재 상태 / 장비 / milestone / 스냅샷 갱신 (Gear Profile 적용)
  */
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import {
   characterExternalRefs,
   characterItems,
@@ -732,6 +732,14 @@ const CLAIM_WARNINGS: Record<"REJECTED" | "CONFLICT" | "NEEDS_REVIEW", string> =
   NEEDS_REVIEW: "레벨 달성 시각을 뒷받침하는 이전 관측이 없어 바로 채택하지 않았습니다. 근거는 검토용으로 보관했습니다.",
 };
 
+/**
+ * 이 트랜잭션의 level_milestones 쓰기가 근거 기반 기록기(이 앱)의 쓰기임을 DB에 알린다 (migration 0007 §5).
+ * 선언하지 않은 쓰기는 구버전 앱의 쓰기로 보고, DB가 근거로 남기거나(새 레벨) 적용하지 않는다(기존 채택 기록).
+ */
+export async function declareEvidenceMilestoneWriter(tx: AppDatabase): Promise<void> {
+  await tx.execute(sql`select set_config('forever_rank.level_milestone_writer', 'evidence', true)`);
+}
+
 /** 이관 판정의 이유 코드 (migration 0007) */
 const MIGRATED_ASSESSMENT_REASON = "MIGRATED_FROM_LEVEL_MILESTONES";
 
@@ -961,6 +969,7 @@ async function recordLevelEvidence(
   }
 
   // 3. 현재 채택 기록 다시 고르기
+  await declareEvidenceMilestoneWriter(tx);
   const sources = new Map<string, { snapshotId: string | null; ingestionRecordId: string | null }>([
     ...history.rows.map((r) => [r.id, { snapshotId: r.snapshotId, ingestionRecordId: r.ingestionRecordId }] as const),
     [current.id, { snapshotId: provenance.snapshotId, ingestionRecordId: provenance.ingestionRecordId }],

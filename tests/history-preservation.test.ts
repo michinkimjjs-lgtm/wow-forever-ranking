@@ -188,7 +188,14 @@ describe("기존 level_milestones 이관 (migration 0007)", () => {
 
   it("DB가 다른 캐릭터·다른 레벨의 근거 연결, 이관 근거 중복, 다른 근거의 판정 연결을 거부한다", async () => {
     const [e9, e10, e11] = await evidenceOf(db, ids.character);
-    const q = (text: string, params: unknown[]) => client.query(text, params).then(() => "allowed", () => "rejected");
+    // 근거 기반 기록기로 선언한 쓰기에 DB 제약이 적용되는지 확인한다 (선언하지 않은 쓰기는 구버전 호환 검사에서 따로 확인)
+    const q = (text: string, params: unknown[]) =>
+      client
+        .transaction(async (t) => {
+          await t.query(`select set_config('forever_rank.level_milestone_writer', 'evidence', true)`);
+          await t.query(text, params);
+        })
+        .then(() => "allowed", () => "rejected");
     // 다른 레벨의 근거
     expect(await q(`update level_milestones set evidence_id = $1 where id = $2`, [e9!.id, ids.m10])).toBe("rejected");
     // 같은 근거를 두 채택 기록이 공유 (m9의 근거를 m10이 가리킴) = 다른 레벨 연결과 같으므로 거부
@@ -647,6 +654,10 @@ describe("빈 DB에 전체 migration 적용", () => {
     expect(constraints).toHaveLength(5);
     const index = (await c.query(`select 1 from pg_indexes where indexname = 'level_milestone_evidence_migrated_uq'`)).rows;
     expect(index).toHaveLength(1);
+    const triggers = (await c.query<{ tgname: string }>(
+      `select tgname from pg_trigger where tgname in ('level_milestones_legacy_write', 'level_milestones_legacy_mock_delete') order by 1`,
+    )).rows.map((r) => r.tgname);
+    expect(triggers).toEqual(["level_milestones_legacy_mock_delete", "level_milestones_legacy_write"]);
     await c.close();
   });
 });
