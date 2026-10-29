@@ -9,6 +9,7 @@
 > Phase 3C 문서: `docs/RULESETS.md` (공식 게임 규칙)
 > Phase 4A 문서: `docs/CONTRIBUTOR-GUIDE.md` (랭킹 등록 안내, Collector 배포·버전 관리)
 > Phase 4B 문서: `docs/DATA-COLLECTION-STRATEGY.md` (애드온 없는 웹 직접 등록, 공식 API 발견·30일 보존 준비)
+> 역사 기록 보존: `docs/HISTORY-PRESERVATION.md` (레벨 달성 근거, 삭제 방지)
 > 운영 배포: `docs/DEPLOYMENT.md` (Vercel Production 빌드의 운영 DB 자동 초기화)
 
 ## 1. 프로젝트 목적
@@ -356,6 +357,15 @@ URL:
 - `data_source`, `verification_status`, `source_build`
 
 근거 우선순위는 `SOURCE_REPORTED` > `FIRST_OBSERVED` > `INFERRED`다. milestone은 삭제하지 않는다.
+
+### 레벨 달성 근거 (`level_milestone_evidence`, 명세서 §8.5)
+
+- 관측마다 근거를 추가만 한다. 근거와 스냅샷은 수정할 수 없고, 실제 영역에서는 삭제할 수 없다(DB 트리거).
+- `level_milestones`는 근거 중 현재 채택한 결과다(`evidence_id`, 같은 캐릭터·레벨만 — DB 복합 FK). 신뢰 수준(검증 상태)이 가장 높은 근거만 후보로 하며, 날짜가 이르다는 이유만으로 낮은 신뢰의 근거를 채택하지 않는다.
+- 달성 시각 주장은 판정한다: 관측보다 늦음 `REJECTED`, 순서 모순 `CONFLICT`, 뒷받침 관측 없는 커뮤니티 주장 `NEEDS_REVIEW`. 현재 판정이 `ACCEPTED`인 주장만 `SOURCE_REPORTED`가 된다. 확인된 하한이 없으므로 날짜를 임의로 고정하지 않는다.
+- 판정과 채택은 관측마다 알려진 사실 전체로 다시 계산한다(도착 순서와 무관). 받은 시점의 판정은 근거 행에, 바뀐 판정은 `level_milestone_claim_assessments`에 추가한다. 근거 행을 고치지 않는다.
+- `level_milestones`에 쓰는 코드는 트랜잭션마다 `declareEvidenceMilestoneWriter`로 근거 기반 기록기임을 선언한다. 선언하지 않은 쓰기는 구버전 앱의 쓰기로 보고 DB 트리거가 판정하지 않은 근거로 남기거나 적용하지 않는다(전환·롤백 기간 호환, `docs/HISTORY-PRESERVATION.md` §7.1).
+- 캐릭터 삭제로 스냅샷·milestone·근거가 연쇄 삭제되지 않는다(FK RESTRICT). 삭제 요청은 역사 기록을 지우지 않고 표시 숨김·비공개로 처리한다(`docs/HISTORY-PRESERVATION.md`).
 
 `level_milestones`는 향후 다음 기록에 활용한다.
 

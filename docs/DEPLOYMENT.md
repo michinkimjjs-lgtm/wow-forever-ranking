@@ -48,6 +48,9 @@ Production 순서:
   - 새 배포는 만들어지지 않고, 기존 Production 배포는 그대로 유지됩니다.
   - migration은 빌드 단계에서 실행되므로, 실행 중인 사이트를 직접 바꾸지 않습니다.
 - 다시 배포해도 안전합니다. migration은 적용되지 않은 것만, 식별 표식은 그대로 둡니다.
+- migration이 적용된 뒤 빌드가 실패하거나 이전 배포로 되돌리면, **이전 배포가 새 스키마에서 실행됩니다.** down migration은 없습니다.
+  - 그래서 migration은 이전 배포의 쓰기가 실패하지 않도록 작성합니다.
+  - 예: 레벨 달성 기록의 구버전 쓰기 호환(`docs/HISTORY-PRESERVATION.md` §7.1)
 
 ## 3. Vercel 환경변수 (Production)
 

@@ -58,7 +58,7 @@
 
 표가 비어 있는 동안 직접 등록은 받지 않는다(§2.5). 표를 채울 때는 공식 자료나 실제 제출로 확인한 근거를 이 문서에 적는다. 표가 채워지면 등록을 다시 받을 수 있다.
 
-### 2.4 DB 변경 (migration 0007)
+### 2.4 DB 변경 (migration 0009)
 
 ```sql
 ALTER TABLE "character_submissions" DROP CONSTRAINT "character_submissions_source";
@@ -130,7 +130,7 @@ Collector 제출(`/submit`)은 동작을 바꾸지 않았다. 같은 판단(`eva
 - Blizzard에서 받은 플레이어 데이터는 최소 30일마다 다시 받아야 하며, 그러지 못하면 지운다(사용자가 비공개·삭제를 요청했을 수 있음). 근거: https://us.forums.blizzard.com/en/blizzard/t/data-protection-notice-and-faq/609
 - 호출 한도: 시간당 36,000회, 초당 100회. 근거: https://community.developer.battle.net/documentation/guides/getting-started
 - 우리 설정: 21일부터 다시 받기 시작(`refreshAfterDays`), 한도의 60%를 정기 갱신에 사용(`refreshShare`).
-- 리테일 기준이다. Forever API가 공개되면 같은 조건인지 다시 확인한다(명세서 §30-28).
+- 리테일 기준이다. Forever API가 공개되면 같은 조건인지 다시 확인한다(명세서 §30-29).
 
 ### 4.2 판단 함수 (실행 없음)
 

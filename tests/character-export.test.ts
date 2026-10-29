@@ -4,7 +4,7 @@
  */
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { characterItems, characters, ingestionRecords } from "@/db/schema";
+import { characterItems, characters, ingestionRecords, levelMilestoneEvidence } from "@/db/schema";
 import type { AppDatabase } from "@/db/types";
 import { getExportMapping, loadConfig, type ExportMapping, type GearProfile } from "@/lib/config";
 import { characterExportV1Schema } from "@/lib/submissions/export-schema";
@@ -226,8 +226,13 @@ describe("제출 저장 (beta DB)", () => {
       verificationStatus: "COMMUNITY_SUBMITTED",
       characterName: "테스트 캐릭터",
       level: 20,
-      currentLevelTimingBasis: "SOURCE_REPORTED",
+      // 처음 제출된 캐릭터의 달성 시각 주장은 뒷받침하는 이전 관측이 없어 바로 채택하지 않는다 (명세서 §8.4).
+      // 채택 기록은 최초 관측 시각 기준이고, 주장은 근거 테이블에 검토 대기로 보관된다.
+      currentLevelTimingBasis: "FIRST_OBSERVED",
     });
+    const [evidence] = await db.select().from(levelMilestoneEvidence).where(eq(levelMilestoneEvidence.level, 20));
+    expect(evidence).toMatchObject({ receiptClaimStatus: "NEEDS_REVIEW", observationBasis: "FIRST_OBSERVED", origin: "INGESTED" });
+    expect(evidence!.claimedReachedAt).not.toBeNull();
     // beta에는 APPROVED 프로필이 없으므로 평균 장비 레벨을 저장하지 않는다 (랭킹에 쓰지 않음)
     expect(row!.averageItemLevel).toBeNull();
     expect(row!.gearProfileId).toBeNull();
