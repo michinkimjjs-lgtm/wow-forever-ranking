@@ -241,3 +241,15 @@ validate → normalize → identify → Gear Profile → duplicate check → con
 - 테스트용 예시 파일은 mock 배포의 `/contribute/test-export`에서 받을 수 있습니다. beta / live에서는 404입니다.
 - beta / live는 검증 전용 제출이어도 fixture를 `MOCK_FIXTURE_REJECTED`로 거부합니다.
 - fixture가 저장 단계에 오면 예외로 멈춥니다. 그래서 fixture는 `COMMUNITY_SUBMITTED` / `VERIFIED`가 되지 않습니다.
+
+## 11. 웹 직접 등록 (Phase 4B)
+
+애드온 없이 `/contribute/register` 양식으로 등록하는 경로. 상세: `docs/DATA-COLLECTION-STRATEGY.md` §2.
+
+- `POST /api/v1/submissions/manual`. 본문 `{ registration, consent }`, 동의는 `dataUsage` / `noPersonalData` / `accurateInformation` 세 개.
+- 보안 검사는 §5와 같은 `guardPublicRequest`를 쓴다(Origin, CSRF, 요청 제한, 크기·깊이). 개인정보 검사도 같다.
+- 같은 `character_submissions` 표에 `data_source = user_submission`, `channel = public`으로 저장한다(migration 0009).
+- 랭킹 반영에 필요한 게임 설정·매핑(`docs/DATA-COLLECTION-STRATEGY.md` §2.5)이 없으면 화면은 입력 양식 없이 안내만 보여 주고, API는 `503 REGISTRATION_UNAVAILABLE`로 거부한다(검증 요청 포함, DB 연결 없음). 2026-10-25 현재 이 상태다.
+- 자동 반영 설정과 관계없이 항상 `PENDING`(충돌이면 `CONFLICT`). 확인된 목록에 없는 직업 이름은 `blocked_reason = MAPPING_PENDING`.
+- Collector 제출 화면은 같은 설정이 없으면 "현재 제출 자료는 랭킹에 반영되지 않습니다"를 표시한다. 제출 동작은 바뀌지 않는다.
+- 중복·반복 제출 제한·충돌 비교는 §6·§7과 같다. 매핑 전에는 신고한 지역·규칙·전체 이름으로 만든 식별 키(`reported:` 접두사)로 묶는다.

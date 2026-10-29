@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContributeNav } from "@/components/contribute/contribute-nav";
+import { ContributeNav, NoAddonEntry } from "@/components/contribute/contribute-nav";
 import { PageHeader } from "@/components/page-header";
 import { SubmitForm } from "@/components/submit/submit-form";
 import { collectorRelease } from "@/config/collector";
@@ -11,6 +11,7 @@ import { getMessages, t } from "@/lib/i18n";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { getAppEnvironmentSafe } from "@/lib/server/context";
+import { currentCollectorRankingReady, currentManualRegistrationStatus } from "@/lib/submissions/availability";
 import { issueCsrfToken } from "@/lib/submissions/security";
 
 export function generateMetadata(): Metadata {
@@ -27,6 +28,8 @@ export default function SubmitPage() {
   // 제출은 실제 영역(beta / live) 기준 설정으로 확인한다. mock 배포는 beta 기준으로 검증만 한다.
   const target = appEnv === "live" ? "live" : "beta";
   const slotProfile = resolveSlotMappingProfile(target, "*");
+  // 안내 문구만 바꾼다. Collector 제출 동작(저장·검토 대기·매핑 대기)은 그대로다.
+  const rankingReady = currentCollectorRankingReady(appEnv);
 
   return (
     <div className="flex flex-col gap-5">
@@ -36,6 +39,7 @@ export default function SubmitPage() {
             {line}
           </p>
         ))}
+        {rankingReady ? <p className="text-sm text-muted">{s.rankingReady}</p> : null}
       </PageHeader>
 
       <ContributeNav current="submit" />
@@ -56,6 +60,16 @@ export default function SubmitPage() {
         </div>
       ) : verifyOnly ? (
         <p className="rounded-lg border border-warning/40 bg-warning/5 px-4 py-3 text-sm text-warning">{s.mockNotice}</p>
+      ) : null}
+
+      {!rankingReady ? (
+        <section aria-labelledby="ranking-not-ready-title" className="rounded-lg border border-warning/40 bg-warning/5 px-4 py-3">
+          <h2 id="ranking-not-ready-title" className="text-sm font-semibold text-warning">
+            {s.rankingNotReady.title}
+          </h2>
+          <p className="mt-1 text-sm text-foreground">{s.rankingNotReady.body}</p>
+          <p className="mt-1 text-xs text-muted">{s.rankingNotReady.detail}</p>
+        </section>
       ) : null}
 
       <section aria-labelledby="before-submit-title" className="rounded-lg border border-accent/40 bg-accent/5 px-4 py-4">
@@ -95,6 +109,8 @@ export default function SubmitPage() {
         exportSchemaVersion={collectorRelease.exportSchemaVersion}
         supportedExportSchemaVersions={collectorRelease.supportedExportSchemaVersions}
       />
+
+      <NoAddonEntry open={currentManualRegistrationStatus(appEnv).open} />
 
       <section aria-labelledby="howto-title" className="rounded-lg border border-border bg-surface px-4 py-4">
         <h2 id="howto-title" className="mb-2 text-base font-semibold text-foreground">

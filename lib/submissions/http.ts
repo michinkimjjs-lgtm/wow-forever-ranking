@@ -22,6 +22,8 @@ import type { FixedWindowRateLimiter } from "./rate-limit";
 import { parseJsonWithLimits } from "./json-limits";
 import { isSameOriginRequest, temporaryClientKey, verifyCsrfToken } from "./security";
 import { findSensitiveData } from "./sensitive";
+import { evaluateManualRegistrationSetup, type SetupSources } from "./availability";
+import { submitManualRegistration } from "./manual";
 import { resolveSubmissionConfig, submitCharacterExport, type SubmissionResult } from "./submit";
 
 export const MAX_SUBMISSION_BYTES = 256 * 1024;
@@ -37,6 +39,8 @@ export interface SubmissionHttpDeps {
     slotProfile: (env: "beta" | "live", gameMode: string) => GearProfile | null;
     rankingProfile: (env: "beta" | "live", gameMode: string) => GearProfile | null;
   };
+  /** 웹 직접 등록의 설정 출처 (테스트 주입용). 기본: config/registration.ts, config/game-scopes.ts */
+  manualRegistration?: Omit<SetupSources, "mapping">;
   /** 공개 제출 설정. 없으면 공개 제출을 받지 않는다(404). */
   publicSubmission?: {
     settings: { enabled: boolean; secret: string | null };
@@ -158,40 +162,145 @@ function failure(result: Extract<SubmissionResult, { ok: false }>): Response {
   });
 }
 
-/** 공개 제출 (docs/SUBMISSION-SYSTEM.md §5). 응답에는 내부 ID(캐릭터, 수집 기록)를 넣지 않는다. */
-async function handlePublicSubmission(request: Request, deps: SubmissionHttpDeps): Promise<Response> {
+type PublicSubmissionDeps = NonNullable<SubmissionHttpDeps["publicSubmission"]>;
+
+/**
+ * 공개 제출 화면에서 온 요청의 공통 검사 (Collector 파일 제출, 웹 직접 등록 모두)
+ * Origin / 화면 보안 토큰 / 요청 제한 / 형식·크기·깊이. 통과하면 JSON 값을 돌려준다.
+ */
+async function guardPublicRequest(
+  request: Request,
+  deps: SubmissionHttpDeps,
+): Promise<{ ok: false; response: Response } | { ok: true; value: unknown; pub: PublicSubmissionDeps; dryRun: boolean }> {
   const pub = deps.publicSubmission;
-  if (!pub || !pub.settings.enabled || !pub.settings.secret) return error("NOT_FOUND", 404);
+  if (!pub || !pub.settings.enabled || !pub.settings.secret) return { ok: false, response: error("NOT_FOUND", 404) };
   const { policy, settings } = pub;
   const secret = settings.secret!;
+  const fail = (response: Response) => ({ ok: false as const, response });
 
   // 1. 같은 사이트에서 보낸 요청인지 (CSRF / Origin)
-  if (!isSameOriginRequest(request, pub.allowedOrigins)) return error("FORBIDDEN_ORIGIN", 403);
+  if (!isSameOriginRequest(request, pub.allowedOrigins)) return fail(error("FORBIDDEN_ORIGIN", 403));
   if (!verifyCsrfToken(secret, request.headers.get("x-forever-rank-csrf"), deps.now, policy.csrfTokenTtlMinutes)) {
-    return error("CSRF_INVALID", 403);
+    return fail(error("CSRF_INVALID", 403));
   }
 
   // 2. 요청 제한 (일시 식별값만 사용, 저장하지 않음)
   const nowMs = deps.now.getTime();
   if (!pub.globalLimiter.take("global", nowMs) || !pub.clientLimiter.take(temporaryClientKey(secret, request, deps.now), nowMs)) {
-    return error("RATE_LIMITED", 429);
+    return fail(error("RATE_LIMITED", 429));
   }
 
   // 3. 형식·크기·깊이
   if (!(request.headers.get("content-type") ?? "").toLowerCase().includes("application/json")) {
-    return error("UNSUPPORTED_MEDIA_TYPE", 415);
+    return fail(error("UNSUPPORTED_MEDIA_TYPE", 415));
   }
   const maxBytes = policy.limits.maxBytes + 4096; // 동의 정보 등 감싸는 필드 여유
-  if (Number(request.headers.get("content-length") ?? "0") > maxBytes) return error("PAYLOAD_TOO_LARGE", 413);
+  if (Number(request.headers.get("content-length") ?? "0") > maxBytes) return fail(error("PAYLOAD_TOO_LARGE", 413));
   const text = await request.text();
-  if (Buffer.byteLength(text, "utf8") > maxBytes) return error("PAYLOAD_TOO_LARGE", 413);
+  if (Buffer.byteLength(text, "utf8") > maxBytes) return fail(error("PAYLOAD_TOO_LARGE", 413));
   const parsed = parseJsonWithLimits(text, policy.limits);
-  if (!parsed.ok) return error(parsed.error === "INVALID_JSON" ? "INVALID_JSON" : "JSON_LIMIT", 400, { reason: parsed.error });
-  const envelope = publicEnvelopeSchema.safeParse(parsed.value);
+  if (!parsed.ok) return fail(error(parsed.error === "INVALID_JSON" ? "INVALID_JSON" : "JSON_LIMIT", 400, { reason: parsed.error }));
+  const dryRun = new URL(request.url).searchParams.get("dryRun") === "true";
+  return { ok: true, value: parsed.value, pub, dryRun };
+}
+
+const manualEnvelopeSchema = z
+  .object({
+    registration: z.unknown(),
+    consent: z
+      .object({
+        consentVersion: z.string().max(64),
+        policyVersion: z.string().max(64),
+        agreements: z
+          .object({ dataUsage: z.literal(true), noPersonalData: z.literal(true), accurateInformation: z.literal(true) })
+          .strict(),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+
+export const MANUAL_CONSENT_AGREEMENTS = ["dataUsage", "noPersonalData", "accurateInformation"] as const;
+
+/**
+ * POST /api/v1/submissions/manual — 웹 직접 등록 (docs/DATA-COLLECTION-STRATEGY.md §2)
+ * 공개 제출과 같은 보안 검사·동의·반복 제출 제한을 쓰고, 항상 관리자 검토 대기로 저장한다.
+ */
+export async function handleManualRegistration(request: Request, deps: SubmissionHttpDeps): Promise<Response> {
+  const guarded = await guardPublicRequest(request, deps);
+  if (!guarded.ok) return guarded.response;
+  const { pub, dryRun } = guarded;
+  const { policy } = pub;
+  const target: "beta" | "live" = deps.appEnv === "live" ? "live" : "beta";
+
+  // 랭킹에 반영할 설정(게임 범위·지역·규칙·직업·이름 구분)이 없으면 등록을 받지 않는다.
+  // 검증(dryRun)도 받지 않고, 본문을 해석하거나 DB에 저장하지 않는다.
+  const setup = evaluateManualRegistrationSetup(target, { mapping: deps.config.mapping(target), ...deps.manualRegistration });
+  if (!setup.ready) return error("REGISTRATION_UNAVAILABLE", 503, { reasons: setup.gaps });
+
+  const envelope = manualEnvelopeSchema.safeParse(guarded.value);
   if (!envelope.success) return error("INVALID_ENVELOPE", 400);
 
-  const dryRun = new URL(request.url).searchParams.get("dryRun") === "true";
+  if (findSensitiveData(envelope.data.registration).length > 0) return error("SENSITIVE_DATA", 422);
 
+  const consent = envelope.data.consent;
+  if (!dryRun) {
+    if (!consent) return error("CONSENT_REQUIRED", 400);
+    if (consent.consentVersion !== policy.consentVersion || consent.policyVersion !== policy.policyVersion) {
+      return error("CONSENT_OUTDATED", 409);
+    }
+  }
+  if (deps.appEnv === "mock" && !dryRun) return error("MOCK_ENVIRONMENT", 409);
+
+  const result = await submitManualRegistration(envelope.data.registration, {
+    targetEnvironment: target,
+    mapping: deps.config.mapping(target),
+    slotProfile: deps.config.slotProfile(target, "*"),
+    now: deps.now,
+    dryRun,
+    db: deps.appEnv === "mock" ? null : deps.db,
+    consent: consent ? { consentVersion: consent.consentVersion, policyVersion: consent.policyVersion, consentedAt: deps.now } : null,
+    frequency: { perCharacterMinIntervalMinutes: policy.perCharacterMinIntervalMinutes, maxOpenPerCharacter: policy.maxOpenPerCharacter },
+    registration: deps.manualRegistration?.registration,
+    gameModeForRuleset: deps.manualRegistration?.gameModeForRuleset,
+  });
+  if (!result.ok) {
+    if (result.stage === "limit") return error(result.limit, 429);
+    const issueMessages = getMessages().submissions.issues;
+    return error("VALIDATION_FAILED", 400, {
+      stage: result.stage,
+      issues: result.issues.map((i) => ({ ...i, message: i.code === "INVALID_FORMAT" && i.detail ? i.detail : issueMessages[i.code] })),
+    });
+  }
+  return json(
+    {
+      data: {
+        mode: result.mode,
+        submissionId: result.submissionId,
+        reviewStatus: result.reviewStatus,
+        dataSource: result.dataSource,
+        verificationStatus: result.verificationStatus,
+        duplicate: result.duplicate,
+        blockedReason: result.blockedReason,
+        preview: result.preview,
+        changes: result.comparison?.changes ?? [],
+        conflict: result.comparison?.conflict ?? false,
+        warnings: result.warnings,
+      },
+      meta: { dryRun: result.mode === "dry-run", generatedAt: deps.now.toISOString() },
+    },
+    200,
+  );
+}
+
+/** 공개 제출 (docs/SUBMISSION-SYSTEM.md §5). 응답에는 내부 ID(캐릭터, 수집 기록)를 넣지 않는다. */
+async function handlePublicSubmission(request: Request, deps: SubmissionHttpDeps): Promise<Response> {
+  const guarded = await guardPublicRequest(request, deps);
+  if (!guarded.ok) return guarded.response;
+  const { pub, dryRun } = guarded;
+  const { policy } = pub;
+  const envelope = publicEnvelopeSchema.safeParse(guarded.value);
+  if (!envelope.success) return error("INVALID_ENVELOPE", 400);
   // 4. 개인정보로 보이는 값
   if (findSensitiveData(envelope.data.export).length > 0) return error("SENSITIVE_DATA", 422);
 

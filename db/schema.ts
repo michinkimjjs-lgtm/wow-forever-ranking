@@ -711,7 +711,8 @@ export const characterSubmissions = pgTable(
   },
   (t) => [
     check("character_submissions_real_only", sql`data_environment <> 'mock'`),
-    check("character_submissions_source", sql`data_source = 'addon'`),
+    // addon: Collector 파일 제출 / user_submission: 웹 직접 등록 (docs/DATA-COLLECTION-STRATEGY.md §2)
+    check("character_submissions_source", sql`data_source IN ('addon', 'user_submission')`),
     check("character_submissions_community", sql`verification_status = 'COMMUNITY_SUBMITTED'`),
     check(
       "character_submissions_public_consent",

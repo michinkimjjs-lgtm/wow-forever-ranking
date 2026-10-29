@@ -13,6 +13,7 @@
 import type { CapabilityRegistry } from "@/providers/capabilities";
 
 const REVIEWED_AT = "2026-10-06";
+const DISCOVERY_REVIEWED_AT = "2026-10-25";
 const NOT_PUBLISHED = "Blizzard WoW: Forever 웹 API가 공개되지 않았습니다. 확인 필요.";
 
 export const blizzardCapabilities: CapabilityRegistry = {
@@ -24,4 +25,30 @@ export const blizzardCapabilities: CapabilityRegistry = {
   achievement: { status: "UNKNOWN", note: `${NOT_PUBLISHED} 업적 API 미확인.`, reviewedAt: REVIEWED_AT, evidence: null },
   dungeon: { status: "UNKNOWN", note: `${NOT_PUBLISHED} 던전 기록 API 미확인.`, reviewedAt: REVIEWED_AT, evidence: null },
   raid: { status: "UNKNOWN", note: `${NOT_PUBLISHED} 공격대 기록 API 미확인.`, reviewedAt: REVIEWED_AT, evidence: null },
+  // 2026-10-25 추가: 캐릭터 발견·상태 확인 (docs/DATA-COLLECTION-STRATEGY.md §3)
+  // 리테일 WoW API에는 길드 구성원·순위표·캐릭터 상태 API가 있지만, Forever에 같은 API가 있는지는 확인되지 않았다.
+  guild_roster: {
+    status: "UNKNOWN",
+    note: `${NOT_PUBLISHED} 리테일의 길드 구성원 API는 realm 기반이다. realm 없는 Forever에 같은 기능이 있는지 미확인. 있어도 길드 구성원만 찾을 수 있다.`,
+    reviewedAt: DISCOVERY_REVIEWED_AT,
+    evidence: null,
+  },
+  leaderboard: {
+    status: "UNKNOWN",
+    note: `${NOT_PUBLISHED} 리테일의 PvP·쐐기 순위표는 Forever 콘텐츠에 맞지 않을 수 있다. 있어도 상위 일부 캐릭터만 찾을 수 있다.`,
+    reviewedAt: DISCOVERY_REVIEWED_AT,
+    evidence: null,
+  },
+  character_search: {
+    status: "UNKNOWN",
+    note: `${NOT_PUBLISHED} 리테일에도 캐릭터 이름 검색·전체 목록 API는 없다. 전체 캐릭터 목록을 얻는 공식 수단은 확인되지 않았다.`,
+    reviewedAt: DISCOVERY_REVIEWED_AT,
+    evidence: null,
+  },
+  character_status: {
+    status: "UNKNOWN",
+    note: `${NOT_PUBLISHED} 리테일에는 캐릭터 상태(존재 여부·같은 캐릭터인지) API가 있다. Forever 적용 여부 미확인.`,
+    reviewedAt: DISCOVERY_REVIEWED_AT,
+    evidence: null,
+  },
 };

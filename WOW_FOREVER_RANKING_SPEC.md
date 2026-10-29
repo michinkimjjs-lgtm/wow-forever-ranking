@@ -1515,6 +1515,9 @@ WoW: Forever 베타 클라이언트와 애드온 API는 변경될 수 있다.
 | 26 | 같은 전체 이름이 다른 Ruleset에 있을 수 있는지, 숨긴 성이 export에 담기는지 | 캐릭터 식별 (`docs/RULESETS.md` §3) |
 | 27 | Collector 애드온의 실제 게임 실행: 인터페이스 번호(`## Interface`), 애드온 목록·"오래된 애드온" 표시, `/frc export` 동작, `/reload`·로그아웃 때 SavedVariables 저장 위치와 파일 이름 | Collector 배포·설치 안내 (`docs/CONTRIBUTOR-GUIDE.md` §10) |
 | 28 | 레벨 달성 시각의 신뢰할 수 있는 하한(게임 서비스 시작일 등). 확인 전에는 사이트 첫 관측보다 이른 커뮤니티 주장을 검토 대기로 둔다 | `assessReachedAtClaim` (§8.5, `docs/HISTORY-PRESERVATION.md`) |
+| 29 | Forever용 Blizzard API의 데이터 보존 조건(리테일 30일 갱신·삭제)과 호출 한도(리테일 시간당 36,000회)가 같은지 | `config/blizzard/data-policy.ts` (`docs/DATA-COLLECTION-STRATEGY.md` §4) |
+| 30 | Forever 순위표·길드 구성원·캐릭터 상태 API 제공 여부. 전체 캐릭터 목록을 얻는 공식 수단 존재 여부 | `guild_roster` / `leaderboard` / `character_search` / `character_status` capability |
+| 31 | Battle.net 지역(us / eu / kr / tw)별 Forever 제공 여부와 데이터 영역 region 코드, 게임 표시 직업 이름 → 직업 코드 | `config/registration.ts` (웹 직접 등록 매핑) |
 
 ---
 

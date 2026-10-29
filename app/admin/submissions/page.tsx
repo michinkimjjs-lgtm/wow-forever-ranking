@@ -10,13 +10,61 @@ import { SUBMISSION_REVIEW_STATUSES, type SubmissionReviewStatus } from "@/lib/d
 import { formatKstDateTime, formatPercent } from "@/lib/format";
 import { getMessages, t } from "@/lib/i18n";
 import { getServerContext } from "@/lib/server/context";
+import { manualCharacterSchema } from "@/lib/submissions/manual-schema";
 import { listSubmissions, type SubmissionComparison, type SubmissionRow } from "@/lib/submissions/review";
 import { acceptAction, logoutAction, rejectAction } from "../actions";
 
 const PAGE_SIZE = 50;
 
-/** 제출 데이터는 Collector(애드온) 파일이다. 데이터 출처 구분은 커뮤니티 제출 (lib/domain/data-origin.ts) */
-const SUBMISSION_DATA_ORIGIN = dataOriginOf("addon");
+/** 제출 경로 표시: 공개 제출 화면에서 올린 Collector 파일은 "웹 업로드", 웹 양식으로 직접 입력한 것은 "웹 직접 등록" */
+function channelLabel(row: SubmissionRow): string {
+  const labels = getMessages().admin.submissions;
+  if (row.dataSource === "user_submission") return labels.channelManual;
+  return labels.channel[row.channel];
+}
+
+/** 웹 직접 등록의 신고 값과 확인 자료 (원본에서 읽는다) */
+function ManualDetail({ payload }: { payload: unknown }) {
+  const m = getMessages();
+  const d = m.admin.submissions.detail;
+  const parsed = manualCharacterSchema.safeParse(payload);
+  if (!parsed.success) return null;
+  const p = parsed.data;
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-subtle">{d.manualTitle}</p>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3">
+        <dt className="text-subtle">{d.reportedRegion}</dt>
+        <dd>{m.register.regions[p.region]}</dd>
+        <dt className="text-subtle">{d.reportedRuleset}</dt>
+        <dd>{m.game.rulesets[p.ruleset as keyof typeof m.game.rulesets] ?? p.ruleset}</dd>
+        <dt className="text-subtle">{d.evidenceUrl}</dt>
+        <dd className="break-all">
+          {p.evidence.screenshotUrl ? (
+            <a href={p.evidence.screenshotUrl} target="_blank" rel="noopener noreferrer nofollow" className="text-accent hover:underline">
+              {p.evidence.screenshotUrl}
+            </a>
+          ) : (
+            m.admin.submissions.none
+          )}
+        </dd>
+        <dt className="text-subtle">{d.evidenceNote}</dt>
+        <dd className="whitespace-pre-wrap break-words">{p.evidence.note ?? m.admin.submissions.none}</dd>
+      </dl>
+      {p.equipment.length > 0 ? (
+        <ul className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
+          {p.equipment.map((e) => (
+            <li key={e.slot} className="break-words">
+              {m.game.slots[e.slot as keyof typeof m.game.slots] ?? e.slot}: {e.itemName}
+              {e.itemLevel !== undefined ? ` (${e.itemLevel})` : ""}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <p className="text-subtle">{d.manualNote}</p>
+    </div>
+  );
+}
 
 const STATUS_VARIANT: Record<SubmissionReviewStatus, "info" | "success" | "default" | "danger"> = {
   PENDING: "info",
@@ -85,9 +133,11 @@ function Detail({ row }: { row: SubmissionRow }) {
       <div className="mt-2 flex flex-col gap-2 text-muted">
         <dl className="grid grid-cols-[auto_1fr] gap-x-3">
           <dt className="text-subtle">{d.channel}</dt>
-          <dd>{m.admin.submissions.channel[row.channel]}</dd>
+          <dd>{channelLabel(row)}</dd>
           <dt className="text-subtle">{d.dataSource}</dt>
-          <dd>{m.game.dataOrigins[SUBMISSION_DATA_ORIGIN]}</dd>
+          <dd>
+            {m.game.dataOrigins[dataOriginOf(row.dataSource)]} · {m.game.dataSources[row.dataSource]}
+          </dd>
           <dt className="text-subtle">{d.reviewStatus}</dt>
           <dd>{m.submit.reviewStatuses[row.reviewStatus]}</dd>
           <dt className="text-subtle">{d.collector}</dt>
@@ -95,6 +145,7 @@ function Detail({ row }: { row: SubmissionRow }) {
           <dt className="text-subtle">{d.exportSchema}</dt>
           <dd>{typeof summary.exportSchemaVersion === "number" ? summary.exportSchemaVersion : none}</dd>
         </dl>
+        {row.dataSource === "user_submission" ? <ManualDetail payload={row.payload} /> : null}
         <div>
           <p className="text-subtle">{d.preview}</p>
           <ul className="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
@@ -253,8 +304,8 @@ export default async function AdminSubmissionsPage({
                     </td>
                     <td className="px-3 py-2">
                       <div className="flex flex-col items-start gap-1">
-                        <Badge>{a.channel[row.channel]}</Badge>
-                        <Badge variant="info">{m.game.dataOrigins[SUBMISSION_DATA_ORIGIN]}</Badge>
+                        <Badge>{channelLabel(row)}</Badge>
+                        <Badge variant="info">{m.game.dataOrigins[dataOriginOf(row.dataSource)]}</Badge>
                       </div>
                     </td>
                     <td className="px-3 py-2 text-xs text-muted">{formatKstDateTime(row.submittedAt)}</td>

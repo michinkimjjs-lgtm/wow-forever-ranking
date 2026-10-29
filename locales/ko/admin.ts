@@ -38,6 +38,8 @@ export const admin = {
     } as Record<string, string>,
     /** 제출 경로: 공개 제출 화면(/submit)에서 올린 파일은 "웹 업로드" */
     channel: { public: "웹 업로드", admin_api: "관리자 API" },
+    /** 웹 양식으로 직접 입력한 등록 (데이터 출처 user_submission) */
+    channelManual: "웹 직접 등록",
     detail: {
       summary: "상세 보기",
       preview: "제출 내용",
@@ -53,6 +55,12 @@ export const admin = {
       reviewStatus: "검토 상태",
       collector: "Collector 버전",
       exportSchema: "Export 형식 버전",
+      manualTitle: "직접 등록 내용 (신고 값)",
+      reportedRegion: "Battle.net 지역",
+      reportedRuleset: "게임 규칙",
+      evidenceUrl: "확인 자료 주소",
+      evidenceNote: "확인 자료 설명",
+      manualNote: "직접 입력한 값입니다. 확인 자료와 대조한 뒤 반영하세요. 링크는 새 창에서 열리며 이 화면에 이미지를 불러오지 않습니다.",
     },
     actions: {
       accept: "랭킹에 반영",
