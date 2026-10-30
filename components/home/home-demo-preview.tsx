@@ -1,10 +1,12 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { DEMO_CLASS_STYLE, DemoClassIcon, DemoRaceMark } from "@/components/home/demo-class-icons";
 import { SetupPending } from "@/components/setup-pending";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   demoCharacter,
+  demoDistribution,
   demoSummary,
   homeDemoFixture,
   type DemoActivity,
@@ -24,8 +26,8 @@ import { cn } from "@/lib/utils";
  * - 실제 서비스 상태(SetupPending)를 그대로 알리고, 그 아래에 가상 데이터로 기능을 미리 보여 준다.
  * - 데이터는 lib/demo/home-preview-fixture.ts의 정적 값만 쓴다. DB·랭킹 엔진·API를 거치지 않는다.
  * - 모든 예시 영역(data-demo)에 DEMO 안내를 붙이고, 캐릭터 이름은 실제 페이지로 연결하지 않는다.
+ * - dataEnvironment가 null이면 데이터 영역이 연결되지 않은 디자인 확인용 배포다.
  */
-/** dataEnvironment가 null이면 데이터 영역이 연결되지 않은 디자인 확인용 배포다. */
 export function HomeDemoPreview({ dataEnvironment }: { dataEnvironment: DataEnvironment | null }) {
   return (
     <div className="flex flex-col gap-10">
@@ -33,6 +35,7 @@ export function HomeDemoPreview({ dataEnvironment }: { dataEnvironment: DataEnvi
       <SetupPending dataEnvironment={dataEnvironment} />
       <SummaryStats />
       <RankingPreview />
+      <DistributionPreview />
       <ActivityPreview />
       <Features />
       <Flow />
@@ -153,6 +156,7 @@ function RankingPreview() {
   const { rankings } = homeDemoFixture;
   return (
     <DemoSection title={r.title} subtitle={r.subtitle}>
+      <p className="text-xs text-subtle">{getMessages().home.demo.classRaceNote}</p>
       <div className="grid gap-4 lg:grid-cols-3">
         <DemoRankingCard
           kind="level"
@@ -212,7 +216,9 @@ function DemoRankingCard({
       <CardContent className="px-0 py-0">
         <div aria-hidden="true" className="flex items-center gap-3 border-b border-border px-4 py-2 text-[11px] text-subtle">
           <span className="w-7 text-center">{r.columns.rank}</span>
-          <span>{r.columns.character}</span>
+          <span>
+            {r.columns.character} · {r.columns.classRace}
+          </span>
           <span className="ml-auto">{score(demoCharacter(keys[0]!)).label}</span>
         </div>
         <ol className="divide-y divide-border">
@@ -220,8 +226,9 @@ function DemoRankingCard({
             const c = demoCharacter(key);
             const rank = index + 1;
             const s = score(c);
+            const style = DEMO_CLASS_STYLE[c.demoClass];
             return (
-              <li key={key} className="flex items-center gap-3 px-4 py-2.5">
+              <li key={key} className="flex items-center gap-3 px-4 py-3">
                 <span
                   className={cn(
                     "tabular flex size-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
@@ -230,21 +237,115 @@ function DemoRankingCard({
                 >
                   {rank}
                 </span>
+                <DemoClassIcon demoClass={c.demoClass} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   {/* 가상 캐릭터이므로 캐릭터 페이지로 연결하지 않는다 */}
-                  <span className="truncate text-sm font-medium text-foreground">{c.name}</span>
-                  <span className="truncate text-xs text-subtle">
-                    {d.roles[c.role]} · {t(r.levelValue, { level: c.level })} · {c.guild ?? r.noGuild}
+                  <span className={cn("text-sm font-semibold break-keep", style.text)}>{c.name}</span>
+                  <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
+                    <span className={style.text}>{d.classes[c.demoClass]}</span>
+                    <span aria-hidden="true" className="text-subtle">
+                      ·
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-muted">
+                      <DemoRaceMark demoRace={c.demoRace} />
+                      {d.races[c.demoRace]}
+                    </span>
                   </span>
-                  {detail ? <span className="truncate text-xs">{detail(c)}</span> : null}
+                  <span className="text-xs text-subtle">
+                    {c.guild ?? r.noGuild}
+                    {kind === "level" ? null : ` · ${t(r.levelValue, { level: c.level })}`}
+                  </span>
+                  {detail ? <span className="text-xs">{detail(c)}</span> : null}
                 </div>
-                <span className="tabular shrink-0 text-base font-semibold text-foreground">{s.value}</span>
+                <span className="tabular shrink-0 self-center text-right text-base font-semibold text-foreground">{s.value}</span>
               </li>
             );
           })}
         </ol>
       </CardContent>
     </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// C-2. 직업·종족 분포 (가로 막대, 이름과 수치를 텍스트로 함께 표시)
+// ---------------------------------------------------------------------------
+
+function DistributionPreview() {
+  const d = getMessages().home.demo;
+  const dist = d.distribution;
+  const { classes, races } = demoDistribution();
+  const total = homeDemoFixture.characters.length;
+  return (
+    <DemoSection title={dist.title} subtitle={t(dist.subtitle, { total })}>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card data-demo-distribution="classes">
+          <CardHeader>
+            <CardTitle>{dist.classes}</CardTitle>
+            <Badge variant="accent">{d.badge}</Badge>
+          </CardHeader>
+          <CardContent>
+            <DistributionBars
+              rows={classes.map((row) => ({
+                key: row.key,
+                label: d.classes[row.key],
+                count: row.count,
+                icon: <DemoClassIcon demoClass={row.key} size="sm" />,
+                labelClass: DEMO_CLASS_STYLE[row.key].text,
+                barClass: DEMO_CLASS_STYLE[row.key].bar,
+              }))}
+            />
+          </CardContent>
+        </Card>
+        <Card data-demo-distribution="races">
+          <CardHeader>
+            <CardTitle>{dist.races}</CardTitle>
+            <Badge variant="accent">{d.badge}</Badge>
+          </CardHeader>
+          <CardContent>
+            <DistributionBars
+              rows={races.map((row) => ({
+                key: row.key,
+                label: d.races[row.key],
+                count: row.count,
+                icon: <DemoRaceMark demoRace={row.key} />,
+                labelClass: "text-foreground",
+                barClass: "bg-muted/60",
+              }))}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </DemoSection>
+  );
+}
+
+function DistributionBars({
+  rows,
+}: {
+  rows: { key: string; label: string; count: number; icon: ReactNode; labelClass: string; barClass: string }[];
+}) {
+  const dist = getMessages().home.demo.distribution;
+  const max = Math.max(...rows.map((row) => row.count));
+  return (
+    <ul className="flex flex-col gap-2.5">
+      {rows.map((row) => (
+        <li
+          key={row.key}
+          title={t(dist.tooltip, { label: row.label, count: row.count })}
+          className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_2.5rem] items-center gap-3"
+        >
+          <span className={cn("flex min-w-0 items-center gap-2 text-sm", row.labelClass)}>
+            {row.icon}
+            <span className="break-keep">{row.label}</span>
+          </span>
+          <span className="h-2 rounded-full bg-surface-raised">
+            <span className={cn("block h-2 rounded-full", row.barClass)} style={{ width: `${(row.count / max) * 100}%` }} />
+          </span>
+          <span className="tabular text-right text-sm text-muted">{t(dist.count, { count: row.count })}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

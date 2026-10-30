@@ -120,7 +120,7 @@ describe("Preview 디자인 확인 배포의 화면과 API", () => {
     expect(out).toContain(ko.common.setupPending.noEnvironment);
     // DEMO 미리보기
     expect(out).toContain(ko.home.demo.hero.title);
-    expect(out.split(ko.home.demo.notice).length - 1).toBe(3);
+    expect(out.split(ko.home.demo.notice).length - 1).toBe(4);
     expect(out).toContain(homeDemoFixture.characters[0]!.name);
     expect(out).not.toContain("<form");
   });

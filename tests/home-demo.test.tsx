@@ -11,7 +11,7 @@ import { NextRequest } from "next/server";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getGameScope } from "@/lib/config";
-import { demoSummary, HOME_DEMO_FIXTURE_KIND, homeDemoFixture } from "@/lib/demo/home-preview-fixture";
+import { DEMO_CLASSES, DEMO_RACES, demoDistribution, demoSummary, HOME_DEMO_FIXTURE_KIND, homeDemoFixture } from "@/lib/demo/home-preview-fixture";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { ko } from "@/locales/ko";
 
@@ -75,7 +75,7 @@ describe("설정 미완료 홈: 준비 중 안내 + 기능 미리보기", () => 
   it.each(["live", "beta"] as const)("%s: 가상 데이터가 있는 모든 영역에 DEMO 안내가 붙는다", async (env) => {
     const out = await renderHome(env);
     const sections = out.split('data-demo="true"').slice(1);
-    expect(sections.length).toBe(3); // 샘플 통계, 랭킹 미리보기, 성장 기록
+    expect(sections.length).toBe(4); // 샘플 통계, 랭킹 미리보기, 직업·종족 분포, 성장 기록
     // 각 가상 데이터 영역은 다음 영역이 시작되기 전에 DEMO 안내 문장을 갖는다
     for (const section of sections) expect(section).toContain(d.notice);
     expect(out.split(d.notice).length - 1).toBe(sections.length);
@@ -103,6 +103,37 @@ describe("설정 미완료 홈: 준비 중 안내 + 기능 미리보기", () => 
     for (const kind of Object.keys(d.activity.kinds) as (keyof typeof d.activity.kinds)[]) {
       expect(out).toContain(d.activity.kinds[kind]);
     }
+  });
+
+  it("랭킹 행마다 직업 아이콘(직업 색상)과 직업·종족 이름을 텍스트로 함께 보여 준다", async () => {
+    const out = await renderHome("live");
+    expect(out).toContain(d.classRaceNote);
+    for (const kind of ["level", "gear", "highestItem"] as const) {
+      const card = out.split(`data-demo-ranking="${kind}"`)[1]!.split("data-demo-ranking=")[0]!.split('data-demo="true"')[0]!;
+      for (const key of homeDemoFixture.rankings[kind]) {
+        const c = homeDemoFixture.characters.find((x) => x.key === key)!;
+        const row = card.slice(card.indexOf(`data-demo-class="${c.demoClass}"`));
+        expect(row).toContain(c.name);
+        // 직업 이름은 직업 색상, 종족 이름은 텍스트로 (아이콘만으로 구분하지 않음)
+        expect(card).toContain(`text-demo-${c.demoClass}">${d.classes[c.demoClass]}<`);
+        expect(card).toContain(d.races[c.demoRace]);
+        expect(card).toContain(`aria-label="${d.classes[c.demoClass]} 직업 기호"`);
+      }
+    }
+    // 종족 표시는 직업 색상을 쓰지 않는다
+    for (const mark of out.split('data-demo-race="').slice(1)) expect(mark.slice(0, mark.indexOf(">"))).not.toMatch(/demo-(warrior|paladin|hunter|rogue|priest|shaman|mage|warlock|druid)/);
+  });
+
+  it("직업·종족 분포는 가상 데이터에서만 세고, 이름과 수치를 텍스트로 보여 준다", async () => {
+    const out = await renderHome("live");
+    const { classes, races } = demoDistribution();
+    expect(classes.reduce((n, r) => n + r.count, 0)).toBe(homeDemoFixture.characters.length);
+    expect(races.reduce((n, r) => n + r.count, 0)).toBe(homeDemoFixture.characters.length);
+    expect(classes[0]).toEqual({ key: "warrior", count: 3 });
+    for (const row of classes) expect(out).toContain(`title="${d.classes[row.key]} ${row.count}명 (샘플)"`);
+    for (const row of races) expect(out).toContain(`title="${d.races[row.key]} ${row.count}명 (샘플)"`);
+    expect(out).toContain('data-demo-distribution="classes"');
+    expect(out).toContain('data-demo-distribution="races"');
   });
 
   it("구현 완료 기능과 개발 예정 기능을 구분하고, 아직 제공하지 않는 단계는 준비 중으로 표시한다", async () => {
@@ -160,22 +191,31 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     const importers = ["app", "components", "lib", "db", "providers", "scripts", "config"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/lib\/demo\/home-preview-fixture"/.test(readFileSync(file, "utf8")));
-    expect(importers).toEqual([join("components", "home", "home-demo-preview.tsx")]);
+    expect(importers.sort()).toEqual([join("components", "home", "demo-class-icons.tsx"), join("components", "home", "home-demo-preview.tsx")]);
+    const iconUsers = ["app", "components", "lib"]
+      .flatMap((dir) => sourceFiles(dir))
+      .filter((file) => /from "@\/components\/home\/demo-class-icons"/.test(readFileSync(file, "utf8")));
+    expect(iconUsers).toEqual([join("components", "home", "home-demo-preview.tsx")]);
     const previewUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/components\/home\/home-demo-preview"/.test(readFileSync(file, "utf8")));
     expect(previewUsers).toEqual([join("app", "page.tsx")]);
   });
 
-  it("가상 데이터에는 확인되지 않은 지역·게임 규칙·직업 코드가 없다", () => {
+  it("가상 데이터는 지역·게임 규칙 값이 없고, 직업·종족은 게임 설정이 아닌 화면 예시용 목록만 쓴다", () => {
     expect(homeDemoFixture.kind).toBe(HOME_DEMO_FIXTURE_KIND);
     for (const c of homeDemoFixture.characters) {
       expect(Object.keys(c).sort()).toEqual(
-        ["averageItemLevel", "growthRecords", "guild", "highestItemLevel", "highestItemName", "highestItemQuality", "key", "level", "name", "role"].sort(),
+        ["averageItemLevel", "demoClass", "demoRace", "growthRecords", "guild", "highestItemLevel", "highestItemName", "highestItemQuality", "key", "level", "name"].sort(),
       );
-      // 직업 코드가 아닌 화면 예시용 역할 분류만 쓴다
-      expect(Object.keys(ko.game.classes)).not.toContain(c.role);
-      expect(Object.keys(d.roles)).toContain(c.role);
+      expect(DEMO_CLASSES).toContain(c.demoClass);
+      expect(DEMO_RACES).toContain(c.demoRace);
+    }
+    // 화면 예시용 이름은 홈 미리보기 문구에 따로 있다 (게임 코드 설정을 읽지 않음)
+    expect(Object.keys(d.classes).sort()).toEqual([...DEMO_CLASSES].sort());
+    expect(Object.keys(d.races).sort()).toEqual([...DEMO_RACES].sort());
+    for (const file of ["lib/demo/home-preview-fixture.ts", "components/home/demo-class-icons.tsx", "components/home/home-demo-preview.tsx"]) {
+      expect(readFileSync(file, "utf8")).not.toMatch(/@\/config\/|locales\/ko\/game|m\.game\.|getGameScope/);
     }
   });
 });
