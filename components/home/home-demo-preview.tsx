@@ -25,7 +25,8 @@ import { cn } from "@/lib/utils";
  * - 데이터는 lib/demo/home-preview-fixture.ts의 정적 값만 쓴다. DB·랭킹 엔진·API를 거치지 않는다.
  * - 모든 예시 영역(data-demo)에 DEMO 안내를 붙이고, 캐릭터 이름은 실제 페이지로 연결하지 않는다.
  */
-export function HomeDemoPreview({ dataEnvironment }: { dataEnvironment: DataEnvironment }) {
+/** dataEnvironment가 null이면 데이터 영역이 연결되지 않은 디자인 확인용 배포다. */
+export function HomeDemoPreview({ dataEnvironment }: { dataEnvironment: DataEnvironment | null }) {
   return (
     <div className="flex flex-col gap-10">
       <Hero />

@@ -10,6 +10,7 @@ import { getMessages, labelOf, t } from "@/lib/i18n";
 import type { RankingResult, RankingRow, RankingType } from "@/lib/ranking/types";
 import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
+import { isDesignPreviewDeployment } from "@/lib/server/design-preview";
 import { loadHome } from "@/lib/server/services";
 import { pageMetadata } from "@/lib/seo";
 
@@ -94,6 +95,8 @@ function TopList({
 }
 
 export default async function HomePage() {
+  // 디자인 확인용 Preview 배포: DB에 연결하지 않고 정적 가상 데이터 미리보기만 보여 준다 (lib/server/design-preview.ts)
+  if (isDesignPreviewDeployment()) return <HomeDemoPreview dataEnvironment={null} />;
   const m = getMessages();
   const { appEnv, now } = await getServerContext();
   const gameScope = getGameScope(appEnv);

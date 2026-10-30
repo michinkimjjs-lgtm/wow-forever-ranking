@@ -7,7 +7,7 @@ import { routes } from "@/lib/routes";
  * region / gameMode 설정이 확정되지 않은 영역의 "준비 중" 화면 (Phase 3B).
  * 오류 화면이 아니다. 확인되지 않은 값은 표시하지 않는다.
  */
-export function SetupPending({ dataEnvironment }: { dataEnvironment: DataEnvironment }) {
+export function SetupPending({ dataEnvironment }: { dataEnvironment: DataEnvironment | null }) {
   const m = getMessages();
   const s = m.common.setupPending;
   return (
@@ -18,7 +18,9 @@ export function SetupPending({ dataEnvironment }: { dataEnvironment: DataEnviron
       <p className="font-medium text-foreground">{s.title}</p>
       <p className="max-w-xl text-sm text-muted">{s.body}</p>
       <p className="max-w-xl text-xs text-subtle">{s.note}</p>
-      <p className="text-xs text-subtle">{t(s.environment, { env: m.game.dataEnvironments[dataEnvironment] })}</p>
+      <p className="text-xs text-subtle">
+        {dataEnvironment ? t(s.environment, { env: m.game.dataEnvironments[dataEnvironment] }) : s.noEnvironment}
+      </p>
       <Link href={routes.contribute()} className="mt-1 text-sm text-accent hover:underline">
         {s.submitLink}
       </Link>

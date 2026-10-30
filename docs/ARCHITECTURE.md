@@ -236,6 +236,7 @@ config/blizzard/
 - 가상 캐릭터는 실제 캐릭터·길드 페이지로 연결하지 않습니다. 확인되지 않은 지역·게임 규칙·직업 코드는 쓰지 않고, 직업 대신 화면 예시용 역할 분류(근접·원거리·치유·방어)를 씁니다.
 - 등록·제출이 랭킹에 반영되는 것처럼 안내하지 않습니다. 하단 안내는 참여 방법 안내(`/contribute`)로만 연결합니다.
 - mock 영역의 홈(설정 있음)은 실제 mock DB 데이터를 쓰는 기존 화면 그대로입니다.
+- 디자인 확인용 Vercel Preview(데이터 영역 설정 없음)에서는 홈이 DB 없이 이 미리보기를 보여 줍니다. 서버 시작 검사도 이 배포에서만 건너뜁니다(`docs/DEPLOYMENT.md` §1, `tests/design-preview.test.tsx`).
 
 테스트: `tests/setup-pending.test.tsx`, `tests/home-demo.test.tsx`
 - beta / live 화면을 서버 컨텍스트를 바꿔 DB 없이 렌더링하고, 준비 중 화면이 나오는지 확인합니다.
