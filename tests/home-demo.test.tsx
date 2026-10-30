@@ -5,13 +5,14 @@
  * - 가상 데이터는 홈 화면 전용 정적 값이다. DB·랭킹 API·검색 API·랭킹 엔진으로 흘러가지 않는다.
  * - 가상 캐릭터는 실제 캐릭터 페이지로 연결하지 않고, 등록이 가능한 것처럼 안내하지 않는다.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { NextRequest } from "next/server";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getGameScope } from "@/lib/config";
 import { DEMO_CLASSES, DEMO_RACES, demoDistribution, demoSummary, HOME_DEMO_FIXTURE_KIND, homeDemoFixture } from "@/lib/demo/home-preview-fixture";
+import { DEMO_RACE_PORTRAITS, type DemoRacePortrait } from "@/lib/demo/race-portraits";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { ko } from "@/locales/ko";
 
@@ -105,23 +106,103 @@ describe("설정 미완료 홈: 준비 중 안내 + 기능 미리보기", () => 
     }
   });
 
-  it("랭킹 행마다 직업 아이콘(직업 색상)과 직업·종족 이름을 텍스트로 함께 보여 준다", async () => {
+  /** 랭킹 카드의 행(<li>) HTML 목록 */
+  const rankingRows = (out: string, kind: "level" | "gear" | "highestItem") =>
+    out.split(`data-demo-ranking="${kind}"`)[1]!.split("</ol>")[0]!.split("<li").slice(1);
+  /** 행 안의 초상화 틀 태그 */
+  const portraitTag = (row: string) => {
+    const i = row.indexOf("data-demo-portrait=");
+    return row.slice(row.lastIndexOf("<span", i), row.indexOf(">", i));
+  };
+
+  it("세 랭킹 모두 같은 규칙: 초상화 얼굴은 종족, 테두리 색은 직업, 직업·종족 이름은 텍스트로", async () => {
     const out = await renderHome("live");
     expect(out).toContain(d.classRaceNote);
     for (const kind of ["level", "gear", "highestItem"] as const) {
-      const card = out.split(`data-demo-ranking="${kind}"`)[1]!.split("data-demo-ranking=")[0]!.split('data-demo="true"')[0]!;
-      for (const key of homeDemoFixture.rankings[kind]) {
+      const rows = rankingRows(out, kind);
+      expect(rows).toHaveLength(homeDemoFixture.rankings[kind].length);
+      homeDemoFixture.rankings[kind].forEach((key, i) => {
         const c = homeDemoFixture.characters.find((x) => x.key === key)!;
-        const row = card.slice(card.indexOf(`data-demo-class="${c.demoClass}"`));
+        const row = rows[i]!;
+        const tag = portraitTag(row);
+        expect(tag).toContain(`data-demo-portrait="${c.demoRace}"`);
+        expect(tag).toContain(`data-demo-portrait-class="${c.demoClass}"`);
+        // 테두리는 직업으로만 정한다
+        expect(tag).toContain(`border-demo-${c.demoClass}`);
+        expect(tag.match(/border-demo-(\w+)/g)).toEqual([`border-demo-${c.demoClass}`]);
         expect(row).toContain(c.name);
-        // 직업 이름은 직업 색상, 종족 이름은 텍스트로 (아이콘만으로 구분하지 않음)
-        expect(card).toContain(`text-demo-${c.demoClass}">${d.classes[c.demoClass]}<`);
-        expect(card).toContain(d.races[c.demoRace]);
-        expect(card).toContain(`aria-label="${d.classes[c.demoClass]} 직업 기호"`);
-      }
+        expect(row).toContain(`text-demo-${c.demoClass}">${d.classes[c.demoClass]}<`);
+        expect(row).toContain(`text-muted">${d.races[c.demoRace]}<`);
+      });
     }
-    // 종족 표시는 직업 색상을 쓰지 않는다
-    for (const mark of out.split('data-demo-race="').slice(1)) expect(mark.slice(0, mark.indexOf(">"))).not.toMatch(/demo-(warrior|paladin|hunter|rogue|priest|shaman|mage|warlock|druid)/);
+  });
+
+  it("오크 도적(붉은갈기)은 세 랭킹 모두에서 오크 초상화 + 도적(노란색) 테두리", async () => {
+    const orcRogue = homeDemoFixture.characters.filter((c) => c.demoRace === "orc" && c.demoClass === "rogue");
+    expect(orcRogue.map((c) => c.name)).toContain("붉은갈기");
+    const out = await renderHome("live");
+    for (const kind of ["level", "gear", "highestItem"] as const) {
+      const row = rankingRows(out, kind).find((r) => r.includes(">붉은갈기<"))!;
+      const tag = portraitTag(row);
+      expect(tag).toContain('data-demo-portrait="orc"');
+      expect(tag).toContain("border-demo-rogue");
+      expect(row).toContain(`text-demo-rogue">${d.classes.rogue}<`);
+      expect(row).toContain(`>${d.races.orc}<`);
+    }
+    // 노란색 = 도적 토큰
+    expect(readFileSync("app/globals.css", "utf8")).toMatch(/--color-demo-rogue:\s*#fff468;/i);
+  });
+
+  it("같은 종족·다른 직업, 같은 직업·다른 종족이 서로 독립적으로 표시된다", async () => {
+    const { DemoPortrait } = await import("@/components/home/demo-portrait");
+    const a = renderToStaticMarkup(<DemoPortrait demoRace="orc" demoClass="rogue" />);
+    const b = renderToStaticMarkup(<DemoPortrait demoRace="orc" demoClass="mage" />);
+    const c = renderToStaticMarkup(<DemoPortrait demoRace="undead" demoClass="rogue" />);
+    expect(a).toContain("border-demo-rogue");
+    expect(b).toContain("border-demo-mage");
+    expect(c).toContain("border-demo-rogue");
+    expect(a).toContain('data-demo-portrait="orc"');
+    expect(b).toContain('data-demo-portrait="orc"');
+    expect(c).toContain('data-demo-portrait="undead"');
+    // 종족 분포처럼 직업이 없으면 직업 색상을 쓰지 않는다
+    expect(renderToStaticMarkup(<DemoPortrait demoRace="orc" />)).not.toMatch(/demo-(warrior|paladin|hunter|rogue|priest|shaman|mage|warlock|druid)/);
+  });
+
+  it("초상화 이미지가 없으면 깨진 이미지·이니셜 없이 빈 틀만 보여 준다", async () => {
+    const { DemoPortrait } = await import("@/components/home/demo-portrait");
+    const empty = Object.fromEntries(DEMO_RACES.map((r) => [r, null])) as Record<(typeof DEMO_RACES)[number], null>;
+    for (const race of DEMO_RACES) {
+      const html = renderToStaticMarkup(<DemoPortrait demoRace={race} demoClass="rogue" portraits={empty} />);
+      expect(html).not.toContain("<img");
+      expect(html).toContain('data-portrait-missing="true"');
+      expect(html).toContain('aria-hidden="true"');
+      // 태그 사이에 글자가 없다 (이니셜·대체 문자 없음)
+      expect(html.replace(/<[^>]*>/g, "")).toBe("");
+    }
+  });
+
+  it("초상화가 등록되면 로컬 이미지를 직업 색 테두리 안에 object-cover로 표시한다", async () => {
+    const { DemoPortrait } = await import("@/components/home/demo-portrait");
+    const portraits = Object.fromEntries(DEMO_RACES.map((r) => [r, null])) as Record<(typeof DEMO_RACES)[number], DemoRacePortrait | null>;
+    portraits.orc = { file: "orc.webp", source: "테스트", author: "테스트", license: "테스트" };
+    const html = renderToStaticMarkup(<DemoPortrait demoRace="orc" demoClass="rogue" portraits={portraits} />);
+    expect(html).toContain("<img");
+    expect(html).toContain("orc.webp");
+    expect(html).toContain("object-cover");
+    expect(html).toContain("border-demo-rogue");
+    expect(html).toContain(`aria-label="${d.races.orc} 초상화, ${d.classes.rogue} 직업 색 테두리 (화면 예시)"`);
+    expect(html).not.toMatch(/src="https?:/);
+  });
+
+  it("등록된 초상화는 모두 public/demo/races에 실제 파일이 있고 출처·제작자·라이선스가 기록되어 있다", () => {
+    const readme = readFileSync("docs/DEMO-RACE-PORTRAITS.md", "utf8");
+    for (const [race, entry] of Object.entries(DEMO_RACE_PORTRAITS)) {
+      if (!entry) continue;
+      expect(existsSync(join("public", "demo", "races", entry.file)), race).toBe(true);
+      for (const field of [entry.source, entry.author, entry.license]) expect(field.trim().length, race).toBeGreaterThan(0);
+      expect(readme).toContain(entry.file);
+      expect(entry.source).not.toMatch(/blizzard|worldofwarcraft|wowhead/i);
+    }
   });
 
   it("직업·종족 분포는 가상 데이터에서만 세고, 이름과 수치를 텍스트로 보여 준다", async () => {
@@ -129,7 +210,7 @@ describe("설정 미완료 홈: 준비 중 안내 + 기능 미리보기", () => 
     const { classes, races } = demoDistribution();
     expect(classes.reduce((n, r) => n + r.count, 0)).toBe(homeDemoFixture.characters.length);
     expect(races.reduce((n, r) => n + r.count, 0)).toBe(homeDemoFixture.characters.length);
-    expect(classes[0]).toEqual({ key: "warrior", count: 3 });
+    expect(classes[0]).toEqual({ key: "rogue", count: 3 });
     for (const row of classes) expect(out).toContain(`title="${d.classes[row.key]} ${row.count}명 (샘플)"`);
     for (const row of races) expect(out).toContain(`title="${d.races[row.key]} ${row.count}명 (샘플)"`);
     expect(out).toContain('data-demo-distribution="classes"');
@@ -191,11 +272,11 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     const importers = ["app", "components", "lib", "db", "providers", "scripts", "config"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/lib\/demo\/home-preview-fixture"/.test(readFileSync(file, "utf8")));
-    expect(importers.sort()).toEqual([join("components", "home", "demo-class-icons.tsx"), join("components", "home", "home-demo-preview.tsx")]);
-    const iconUsers = ["app", "components", "lib"]
+    expect(importers.sort()).toEqual([join("components", "home", "demo-portrait.tsx"), join("components", "home", "home-demo-preview.tsx")]);
+    const portraitUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
-      .filter((file) => /from "@\/components\/home\/demo-class-icons"/.test(readFileSync(file, "utf8")));
-    expect(iconUsers).toEqual([join("components", "home", "home-demo-preview.tsx")]);
+      .filter((file) => /from "@\/(components\/home\/demo-portrait|lib\/demo\/race-portraits)"/.test(readFileSync(file, "utf8")));
+    expect(portraitUsers.sort()).toEqual([join("components", "home", "demo-portrait.tsx"), join("components", "home", "home-demo-preview.tsx")]);
     const previewUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/components\/home\/home-demo-preview"/.test(readFileSync(file, "utf8")));
@@ -214,7 +295,7 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     // 화면 예시용 이름은 홈 미리보기 문구에 따로 있다 (게임 코드 설정을 읽지 않음)
     expect(Object.keys(d.classes).sort()).toEqual([...DEMO_CLASSES].sort());
     expect(Object.keys(d.races).sort()).toEqual([...DEMO_RACES].sort());
-    for (const file of ["lib/demo/home-preview-fixture.ts", "components/home/demo-class-icons.tsx", "components/home/home-demo-preview.tsx"]) {
+    for (const file of ["lib/demo/home-preview-fixture.ts", "components/home/demo-portrait.tsx", "lib/demo/race-portraits.ts", "components/home/home-demo-preview.tsx"]) {
       expect(readFileSync(file, "utf8")).not.toMatch(/@\/config\/|locales\/ko\/game|m\.game\.|getGameScope/);
     }
   });

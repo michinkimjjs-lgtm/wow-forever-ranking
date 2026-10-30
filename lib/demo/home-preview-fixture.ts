@@ -38,7 +38,7 @@ export interface DemoCharacter {
 
 const characters = [
   { key: "c01", name: "새벽서리", demoClass: "mage", demoRace: "human", level: 42, guild: "은빛 등불", averageItemLevel: 118.6, highestItemLevel: 128, highestItemName: "서리 맺힌 예시 지팡이", highestItemQuality: "epic", growthRecords: 41 },
-  { key: "c02", name: "붉은갈기", demoClass: "warrior", demoRace: "orc", level: 42, guild: "새벽 원정대", averageItemLevel: 116.9, highestItemLevel: 131, highestItemName: "불꽃 각인 예시 도끼", highestItemQuality: "epic", growthRecords: 39 },
+  { key: "c02", name: "붉은갈기", demoClass: "rogue", demoRace: "orc", level: 42, guild: "새벽 원정대", averageItemLevel: 116.9, highestItemLevel: 131, highestItemName: "불꽃 각인 예시 단검", highestItemQuality: "epic", growthRecords: 39 },
   { key: "c03", name: "고요한숲", demoClass: "druid", demoRace: "nightElf", level: 41, guild: "은빛 등불", averageItemLevel: 119.2, highestItemLevel: 126, highestItemName: "잎맥 예시 성물", highestItemQuality: "epic", growthRecords: 37 },
   { key: "c04", name: "강철방패", demoClass: "paladin", demoRace: "dwarf", level: 41, guild: "북부 수비대", averageItemLevel: 117.4, highestItemLevel: 124, highestItemName: "성채 예시 방패", highestItemQuality: "rare", growthRecords: 36 },
   { key: "c05", name: "달빛사냥꾼", demoClass: "hunter", demoRace: "nightElf", level: 40, guild: "새벽 원정대", averageItemLevel: 114.8, highestItemLevel: 127, highestItemName: "달그림자 예시 활", highestItemQuality: "epic", growthRecords: 34 },
@@ -47,7 +47,7 @@ const characters = [
   { key: "c08", name: "돌주먹", demoClass: "warrior", demoRace: "dwarf", level: 39, guild: "북부 수비대", averageItemLevel: 115.1, highestItemLevel: 125, highestItemName: "바위 예시 투구", highestItemQuality: "epic", growthRecords: 28 },
   { key: "c09", name: "바람칼날", demoClass: "rogue", demoRace: "human", level: 38, guild: "파도 쉼터", averageItemLevel: 110.7, highestItemLevel: 119, highestItemName: "질풍 예시 검", highestItemQuality: "rare", growthRecords: 25 },
   { key: "c10", name: "별빛노래", demoClass: "warlock", demoRace: "gnome", level: 37, guild: "은빛 등불", averageItemLevel: 109.9, highestItemLevel: 120, highestItemName: "별노래 예시 마법봉", highestItemQuality: "rare", growthRecords: 22 },
-  { key: "c11", name: "늦깎이모험가", demoClass: "priest", demoRace: "human", level: 33, guild: null, averageItemLevel: 98.4, highestItemLevel: 108, highestItemName: "새싹 예시 지팡이", highestItemQuality: "rare", growthRecords: 15 },
+  { key: "c11", name: "늦깎이모험가", demoClass: "priest", demoRace: "undead", level: 33, guild: null, averageItemLevel: 98.4, highestItemLevel: 108, highestItemName: "새싹 예시 지팡이", highestItemQuality: "rare", growthRecords: 15 },
   { key: "c12", name: "첫걸음", demoClass: "warrior", demoRace: "troll", level: 28, guild: "파도 쉼터", averageItemLevel: 86.2, highestItemLevel: 97, highestItemName: "초보 예시 방패", highestItemQuality: "rare", growthRecords: 9 },
 ] as const satisfies readonly DemoCharacter[];
 
@@ -75,7 +75,7 @@ export interface DemoActivity {
 
 const activity = [
   { kind: "levelUp", character: "c01", hoursAgo: 1, level: 42 },
-  { kind: "gearChange", character: "c02", hoursAgo: 3, itemName: "불꽃 각인 예시 도끼", itemLevel: 131 },
+  { kind: "gearChange", character: "c02", hoursAgo: 3, itemName: "불꽃 각인 예시 단검", itemLevel: 131 },
   { kind: "observed", character: "c07", hoursAgo: 5, level: 39 },
   { kind: "levelUp", character: "c03", hoursAgo: 8, level: 41 },
   { kind: "growth", character: "c12", hoursAgo: 12, records: 9 },

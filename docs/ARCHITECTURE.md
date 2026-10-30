@@ -234,7 +234,7 @@ config/blizzard/
 - 가상 데이터는 홈 전용 정적 파일 `lib/demo/home-preview-fixture.ts`에만 있습니다. DB 저장, mock seed, 랭킹 엔진, 통계 계산, API 응답에 쓰지 않으며, 이 파일을 가져다 쓰는 코드는 홈 미리보기 컴포넌트뿐입니다.
 - 가상 데이터가 있는 모든 영역에 "DEMO · 화면 예시용 가상 데이터입니다. 실제 게임 데이터와 랭킹이 아닙니다."를 표시합니다.
 - 가상 캐릭터는 실제 캐릭터·길드 페이지로 연결하지 않습니다. 확인되지 않은 지역·게임 규칙 값은 쓰지 않습니다.
-- 직업·종족·직업 색상은 화면 예시용입니다. 이름은 `home.demo.classes`/`home.demo.races` 문구, 색상은 `app/globals.css`의 `--color-demo-*`에만 있고 게임 코드 설정(`config/codes.ts`)을 읽지 않습니다. 직업 아이콘은 저장소에서 직접 그린 단순한 기호이고(외부 이미지 없음), 종족은 중립 색상의 첫 글자 표시입니다. 아이콘만으로 구분하지 않도록 직업·종족 이름을 항상 텍스트로 함께 표시합니다.
+- 직업·종족·직업 색상은 화면 예시용입니다. 이름은 `home.demo.classes`/`home.demo.races` 문구, 색상은 `app/globals.css`의 `--color-demo-*`에만 있고 게임 코드 설정(`config/codes.ts`)을 읽지 않습니다. 캐릭터 초상화는 얼굴=종족 이미지, 테두리 색=직업입니다(`components/home/demo-portrait.tsx`). 종족 이미지는 출처·라이선스를 확인한 로컬 파일만 등록하며(`docs/DEMO-RACE-PORTRAITS.md`), 등록되지 않은 종족은 이미지 없이 빈 틀만 보여 줍니다. 직업·종족 이름은 항상 텍스트로 함께 표시합니다.
 - 등록·제출이 랭킹에 반영되는 것처럼 안내하지 않습니다. 하단 안내는 참여 방법 안내(`/contribute`)로만 연결합니다.
 - mock 영역의 홈(설정 있음)은 실제 mock DB 데이터를 쓰는 기존 화면 그대로입니다.
 - 디자인 확인용 Vercel Preview(데이터 영역 설정 없음)에서는 홈이 DB 없이 이 미리보기를 보여 줍니다. 서버 시작 검사도 이 배포에서만 건너뜁니다(`docs/DEPLOYMENT.md` §1, `tests/design-preview.test.tsx`).

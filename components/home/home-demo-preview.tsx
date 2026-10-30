@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { DEMO_CLASS_STYLE, DemoClassIcon, DemoRaceMark } from "@/components/home/demo-class-icons";
+import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
 import { SetupPending } from "@/components/setup-pending";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -237,7 +237,7 @@ function DemoRankingCard({
                 >
                   {rank}
                 </span>
-                <DemoClassIcon demoClass={c.demoClass} />
+                <DemoPortrait demoRace={c.demoRace} demoClass={c.demoClass} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   {/* 가상 캐릭터이므로 캐릭터 페이지로 연결하지 않는다 */}
                   <span className={cn("text-sm font-semibold break-keep", style.text)}>{c.name}</span>
@@ -246,10 +246,7 @@ function DemoRankingCard({
                     <span aria-hidden="true" className="text-subtle">
                       ·
                     </span>
-                    <span className="inline-flex items-center gap-1 text-muted">
-                      <DemoRaceMark demoRace={c.demoRace} />
-                      {d.races[c.demoRace]}
-                    </span>
+                    <span className="text-muted">{d.races[c.demoRace]}</span>
                   </span>
                   <span className="text-xs text-subtle">
                     {c.guild ?? r.noGuild}
@@ -290,7 +287,7 @@ function DistributionPreview() {
                 key: row.key,
                 label: d.classes[row.key],
                 count: row.count,
-                icon: <DemoClassIcon demoClass={row.key} size="sm" />,
+                icon: null,
                 labelClass: DEMO_CLASS_STYLE[row.key].text,
                 barClass: DEMO_CLASS_STYLE[row.key].bar,
               }))}
@@ -308,7 +305,7 @@ function DistributionPreview() {
                 key: row.key,
                 label: d.races[row.key],
                 count: row.count,
-                icon: <DemoRaceMark demoRace={row.key} />,
+                icon: <DemoPortrait demoRace={row.key} size="sm" />,
                 labelClass: "text-foreground",
                 barClass: "bg-muted/60",
               }))}

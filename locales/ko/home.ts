@@ -49,7 +49,7 @@ export const home = {
     },
     rankings: {
       title: "랭킹 미리보기",
-      subtitle: "실제 서비스에서 제공할 세 가지 랭킹을 가상의 캐릭터로 보여 줍니다. 직업은 고유 색상, 종족은 보조 정보로 표시합니다.",
+      subtitle: "실제 서비스에서 제공할 세 가지 랭킹을 가상의 캐릭터로 보여 줍니다. 초상화 얼굴은 종족, 테두리 색은 직업을 나타냅니다.",
       level: "레벨 랭킹",
       gear: "장비 랭킹",
       highestItem: "최고 아이템 랭킹",
@@ -90,7 +90,10 @@ export const home = {
       troll: "트롤",
     },
     classRaceNote: "직업·종족·직업 색상은 화면 예시용 가상 데이터입니다. 실제 게임에서 제공하는 직업·종족 목록이 아닙니다.",
-    classIcon: "{name} 직업 기호",
+    portrait: {
+      labelWithClass: "{race} 초상화, {className} 직업 색 테두리 (화면 예시)",
+      label: "{race} 초상화 (화면 예시)",
+    },
     distribution: {
       title: "직업·종족 분포 미리보기",
       subtitle: "샘플 캐릭터 {total}명의 직업과 종족 구성을 예시로 보여 줍니다.",
