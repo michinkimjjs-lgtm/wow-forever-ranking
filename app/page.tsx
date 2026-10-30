@@ -4,7 +4,7 @@ import { DataFreshness } from "@/components/data-freshness";
 import { CharacterLink, ClassLabel, RelativeTime } from "@/components/game-labels";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getGameScope } from "@/lib/config";
-import { SetupPending } from "@/components/setup-pending";
+import { HomeDemoPreview } from "@/components/home/home-demo-preview";
 import { formatAverageItemLevel, formatInteger, formatKstDateTime, formatRelativeTime } from "@/lib/format";
 import { getMessages, labelOf, t } from "@/lib/i18n";
 import type { RankingResult, RankingRow, RankingType } from "@/lib/ranking/types";
@@ -98,17 +98,8 @@ export default async function HomePage() {
   const { appEnv, now } = await getServerContext();
   const gameScope = getGameScope(appEnv);
   if (!gameScope) {
-    // 지역·게임 모드 설정이 확정되지 않은 배포: 오류 대신 준비 중 화면
-    return (
-      <div className="flex flex-col gap-6">
-        <section className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">{m.home.title}</h1>
-          <p className="text-sm text-muted">{m.home.subtitle}</p>
-        </section>
-        <SetupPending dataEnvironment={appEnv} />
-        <ContributeCta />
-      </div>
-    );
+    // 지역·게임 모드 설정이 확정되지 않은 배포: 준비 중 안내 + 가상 데이터 기능 미리보기 (DB를 조회하지 않음)
+    return <HomeDemoPreview dataEnvironment={appEnv} />;
   }
   const { overview } = await loadHome({ dataEnvironment: appEnv, gameMode: gameScope.defaultGameMode });
   const { kpi } = overview;

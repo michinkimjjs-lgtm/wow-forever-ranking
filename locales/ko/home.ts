@@ -24,4 +24,118 @@ export const home = {
     body: "Forever Rank Collector로 내 캐릭터 데이터를 파일로 저장해 제출할 수 있습니다. 검토 후 랭킹에 반영됩니다.",
     button: "내 캐릭터 랭킹 등록",
   },
+  /** 실제 데이터 설정이 확인되기 전 홈페이지의 기능 미리보기 (components/home/home-demo-preview.tsx) */
+  demo: {
+    notice: "DEMO · 화면 예시용 가상 데이터입니다. 실제 게임 데이터와 랭킹이 아닙니다.",
+    badge: "DEMO",
+    sampleTag: "샘플",
+    hero: {
+      eyebrow: "WoW 포에버 랭킹 · Forever Rank",
+      title: "당신의 모험이 하나의 기록이 되다.",
+      body: "캐릭터 성장부터 장비, 최초 달성 기록까지. WoW Forever의 여정을 기록하고 비교하는 랭킹 플랫폼.",
+      statusTitle: "현재 서비스 상태",
+      statusLive: "실제 게임 데이터 연결 준비 중",
+      statusDemo: "샘플 데이터 기반 화면 미리보기 제공",
+    },
+    statusSection: {
+      title: "실제 데이터 연결 상태",
+    },
+    stats: {
+      title: "기록 미리보기",
+      characters: "샘플 캐릭터",
+      rankingTypes: "샘플 랭킹 유형",
+      growthRecords: "샘플 성장 기록",
+      guilds: "샘플 길드",
+    },
+    rankings: {
+      title: "랭킹 미리보기",
+      subtitle: "실제 서비스에서 제공할 세 가지 랭킹을 가상의 캐릭터로 보여 줍니다.",
+      level: "레벨 랭킹",
+      gear: "장비 랭킹",
+      highestItem: "최고 아이템 랭킹",
+      levelHint: "같은 레벨이면 먼저 달성한 캐릭터가 위",
+      gearHint: "장착 장비의 평균 아이템 레벨",
+      highestItemHint: "장착한 아이템 중 가장 높은 아이템 레벨",
+      columns: {
+        rank: "순위",
+        character: "캐릭터",
+        role: "예시 분류",
+        level: "샘플 레벨",
+        score: "샘플 점수",
+        guild: "길드",
+      },
+      levelValue: "레벨 {level}",
+      noGuild: "길드 없음",
+    },
+    roles: {
+      melee: "근접 공격",
+      ranged: "원거리 공격",
+      healer: "치유",
+      tank: "방어",
+    },
+    activity: {
+      title: "최근 성장 기록 미리보기",
+      subtitle: "캐릭터 기록이 이렇게 쌓입니다. 실제로 일어난 일이 아닙니다.",
+      kinds: {
+        levelUp: "레벨 달성",
+        observed: "최근 관측",
+        gearChange: "장비 변경",
+        growth: "성장 기록",
+      },
+      levelUp: "{name} 님이 {level}레벨에 도달했습니다.",
+      observed: "{name} 님의 레벨 {level} 상태가 다시 확인되었습니다.",
+      gearChange: "{name} 님이 {item}(아이템 레벨 {itemLevel})을 장착했습니다.",
+      growth: "{name} 님의 성장 기록이 {records}건 쌓였습니다.",
+      when: "예시 · {hours}시간 전",
+    },
+    features: {
+      title: "서비스 기능",
+      done: "구현 완료",
+      partial: "일부 구현",
+      planned: "개발 예정",
+      items: {
+        ranking: {
+          title: "캐릭터 랭킹",
+          body: "레벨·장비·최고 아이템 랭킹을 서버에서 계산합니다. 실제 게임 설정이 확인되면 공개합니다.",
+        },
+        gear: {
+          title: "장비 비교",
+          body: "캐릭터별 장착 장비와 평균 아이템 레벨을 보여 줍니다. 캐릭터끼리 나란히 비교하는 화면은 개발 예정입니다.",
+        },
+        history: {
+          title: "성장 이력 보존",
+          body: "레벨 달성 근거와 관측 기록을 지우지 않고 쌓습니다. 성장 그래프 화면은 개발 예정입니다.",
+        },
+        community: {
+          title: "길드 및 커뮤니티 정보",
+          body: "길드 목록과 길드별 캐릭터 정보 화면을 갖췄습니다. 길드별 랭킹과 커뮤니티 기능은 개발 예정입니다.",
+        },
+      },
+    },
+    flow: {
+      title: "데이터가 랭킹이 되기까지",
+      subtitle: "아직 실제로 제공하지 않는 단계는 준비 중으로 표시합니다.",
+      ready: "구현 완료",
+      pending: "준비 중",
+      steps: {
+        collect: {
+          title: "캐릭터 데이터 수집",
+          body: "Collector 파일 제출과 웹 직접 등록으로 캐릭터 정보를 받습니다. 게임 값 매핑이 확인되기 전까지 랭킹에 반영하지 않습니다.",
+        },
+        review: {
+          title: "데이터 검증 및 관리자 검토",
+          body: "형식·개인정보 검사를 거친 자료를 관리자가 확인합니다. 승인해도 검증 상태는 커뮤니티 제출입니다.",
+        },
+        publish: {
+          title: "랭킹 및 역사 기록 반영",
+          body: "승인된 기록이 랭킹과 성장 이력에 반영됩니다. 실제 데이터 연결 후 시작합니다.",
+        },
+      },
+    },
+    closing: {
+      title: "정식 랭킹 데이터는 실제 게임 설정이 확인되면 공개합니다",
+      body: "지역·게임 규칙 등 실제 게임 설정이 확인되기 전까지는 등록·제출 자료를 랭킹에 반영하지 않습니다. 위 화면은 모두 예시입니다.",
+      link: "참여 방법 미리 보기",
+    },
+  },
 } as const;
