@@ -112,24 +112,24 @@
 - **WOWF.IO가 직접 만들거나 편집한 이미지, 다른 권리자의 이미지:** 무단 복제하지 않습니다. 권리자 허락이 있어야 합니다.
 - **저작권 고지:** 사이트 하단에 비공식 팬 사이트 안내와 Blizzard 저작권·상표 고지를 표시합니다. 고지를 붙였다고 상업적 이용 권한이 생기지는 않습니다.
 
-### 4.4 현재 상태: 확인 필요
+### 4.4 현재 상태: 확인 완료, 종족 초상화 8종 적용 (2026-10-31)
 
-2026-10-31 작업 환경에서 `wowf.io`, `blizzard.com` 접속이 네트워크 정책으로 막혀 아래를 아직 확인하지 못했습니다. 확인 전에는 이미지 파일을 저장하지 않습니다.
+작업 환경의 네트워크 접근을 허용한 뒤 원문을 직접 확인했습니다. 상세 기록: [`DEMO-RACE-PORTRAITS.md`](./DEMO-RACE-PORTRAITS.md)
 
-| 확인 항목 | 상태 |
+| 확인 항목 | 결과 |
 |---|---|
-| 종족 선택 화면·캐릭터 이미지의 파일 주소와 호스트 | 확인 필요 |
-| 원본이 Blizzard 게임 클라이언트 리소스인지, WOWF.IO 편집본인지 | 확인 필요 |
-| Blizzard Legal FAQ·상표 가이드라인 원문: 비상업 팬 사이트의 게임 이미지 사용 범위, 공개 웹사이트 표시 허용 여부, "개인적 이용" 조건의 적용 범위, 원본 변경·크롭 제한, 필요한 저작권·상표 표시 문구 | 확인 필요 (검색 결과로 항목 존재만 확인) |
-| 우리 사이트 운영 형태(비상업 여부) | 결정 완료: 비상업적 팬 사이트 (§6.2) |
+| 이미지 파일 주소와 호스트 | WOWF.IO 에셋 서버(`wowf-assets.t3.tigrisfiles.io`)의 아이콘 묶음 파일 안 `races-achievement_character_*_male` 칸 (56×56) |
+| 원본이 게임 리소스인지 | World of Warcraft 게임 아이콘(`achievement_character_*`)이며 권리자는 Blizzard. WOWF.IO About도 "게임 스크린샷·아이콘·게임 데이터는 Blizzard 소유"라고 밝힘 |
+| Blizzard 법률 FAQ 원문 | [법률 FAQ](https://www.blizzard.com/en-us/legal/28d5ebbf-c245-4408-8ba9-043dd5f056bf/legal-faq): 팬 사이트의 Blizzard 이미지 사용을 "일정 범위 안에서" 허용. 조건: 비상업적 사용, 저작권·상표 고지 유지, 변경 금지, Blizzard가 언제든 철회 가능, 부적절한 콘텐츠 사이트 금지 |
+| 고지 문구 | [Copyright Notices](https://www.blizzard.com/en-us/legal/5515ca11-1c96-42a0-b853-e7876a0d19bf/copyright-notices)의 World of Warcraft 고지를 사이트 하단에 그대로 표시 |
+| 우리 사이트 운영 형태 | 비상업적 팬 사이트 (§6.2) |
 
-확인하려면 작업 환경의 허용 도메인에 `wowf.io`, `blizzard.com`, `www.blizzard.com`을 추가해야 합니다.
+적용 방식:
 
-참고(검색 결과, 원문 확인 아님):
-
-- [Blizzard 법률 FAQ (팬 사이트·이미지 항목 포함)](https://blizzard.com/legal/28d5ebbf-c245-4408-8ba9-043dd5f056bf/faq-prawny): 저작권·상표 고지를 포함해야 한다는 취지
-- [Blizzard Video Policy](https://www.blizzard.com/en-us/legal/dd76b654-f2c4-4aaa-ba49-ca3122de2376/blizzard-video-policy): 비상업 목적으로 제한
-- [Warcraft Wiki 저작권 정책](https://warcraft.wiki.gg/wiki/Fair_use): Blizzard 콘텐츠는 명확한 허가 또는 공정 이용 요건이 필요하다는 팬 커뮤니티 운영 기준
+- 묶음 파일에서 해당 칸만 잘라 픽셀 변경 없이 무손실 WebP로 저장했습니다(`public/demo/races/`). 외부 이미지 주소를 화면에서 직접 쓰지 않습니다.
+- 출처·권리자·조건은 `lib/demo/race-portraits.ts`, `lib/demo/race-portrait-sources.ts`에 기록했습니다.
+- 이미지만 사용했습니다. WOWF.IO의 다른 데이터나 페이지는 수집하지 않습니다.
+- Blizzard가 허락을 철회하거나 운영 형태가 바뀌면(광고·후원·유료 기능) 이미지를 내리고 다시 검토합니다.
 
 ## 5. 기술 설계
 
@@ -209,7 +209,7 @@ Forever Rank는 다음 조건의 **비상업적 팬 사이트**로 운영합니�
 ## 7. 실제 수집을 구현하는 순서
 
 1. **정책 확정:** 이 문서와 정책 문구 변경을 검토·승인합니다. 운영 형태는 비상업적 팬 사이트로 결정됐습니다(§6.2).
-2. **출처 조사:** 작업 환경에서 대상 도메인 접속을 허용하고, 약관·robots.txt 원문을 확인해 등록부 초안을 씁니다. 필요하면 운영자에게 서면 허가를 요청합니다.
+2. **출처 조사:** 대상 출처의 약관·robots.txt 원문을 확인해 등록부 초안을 씁니다(작업 환경의 네트워크 접근은 허용됨). 필요하면 운영자에게 서면 허가를 요청합니다.
 3. **등록부 구현:** `config/external-sources` 스키마와 검증, `APPROVED`만 실행되는 확인 로직, 테스트.
 4. **공통 수집 계층:** fetcher(속도 제한, robots.txt, 재시도, 중단), 요청 기록 테이블 migration. 실제 외부 호출 없이 가짜 서버로 테스트.
 5. **첫 어댑터:** 승인된 출처 하나만, 항목 최소로. 파서 테스트는 저장한 샘플 응답으로(재배포 가능한 범위).
