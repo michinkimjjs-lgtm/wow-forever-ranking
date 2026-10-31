@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getMessages } from "@/lib/i18n";
+import { BLIZZARD_WOW_NOTICE } from "@/lib/legal/blizzard-notice";
 import { routes } from "@/lib/routes";
 
 export function SiteFooter() {
@@ -24,6 +25,7 @@ export function SiteFooter() {
           <p>{m.footer.fanSite}</p>
           <p>{m.footer.nonCommercial}</p>
           <p>{m.footer.copyright}</p>
+          <p lang="en">{BLIZZARD_WOW_NOTICE}</p>
         </div>
       </div>
     </footer>

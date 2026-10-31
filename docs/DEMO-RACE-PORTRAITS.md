@@ -6,14 +6,14 @@
 
 | 종족 | 파일 이름 | 상태 |
 |---|---|---|
-| 인간 | `human.webp` | 미확보 |
-| 드워프 | `dwarf.webp` | 미확보 |
-| 나이트 엘프 | `night-elf.webp` | 미확보 |
-| 노움 | `gnome.webp` | 미확보 |
-| 오크 | `orc.webp` | 미확보 |
-| 언데드 | `undead.webp` | 미확보 |
-| 타우렌 | `tauren.webp` | 미확보 |
-| 트롤 | `troll.webp` | 미확보 |
+| 인간 | `human.webp` | 확보 (2026-10-31) |
+| 드워프 | `dwarf.webp` | 확보 (2026-10-31) |
+| 나이트 엘프 | `night-elf.webp` | 확보 (2026-10-31) |
+| 노움 | `gnome.webp` | 확보 (2026-10-31) |
+| 오크 | `orc.webp` | 확보 (2026-10-31) |
+| 언데드 | `undead.webp` | 확보 (2026-10-31) |
+| 타우렌 | `tauren.webp` | 확보 (2026-10-31) |
+| 트롤 | `troll.webp` | 확보 (2026-10-31) |
 
 - 정사각형, 최소 128×128px(화면 표시는 약 44px). 얼굴이 가운데에 오도록 자른 흉상.
 - 형식: WebP 또는 PNG. 한 장에 50KB 이하 권장.
@@ -67,6 +67,31 @@
 
 ## 출처
 
-| 파일 | 원본 | 제작자 | 라이선스 |
+| 파일 | 원본 | 권리자 | 이용 조건 |
 |---|---|---|---|
-| (아직 없음) | | | |
+| `human.webp` | WoW 게임 아이콘 `achievement_character_human_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_human_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `dwarf.webp` | WoW 게임 아이콘 `achievement_character_dwarf_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_dwarf_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `night-elf.webp` | WoW 게임 아이콘 `achievement_character_nightelf_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_nightelf_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `gnome.webp` | WoW 게임 아이콘 `achievement_character_gnome_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_gnome_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `orc.webp` | WoW 게임 아이콘 `achievement_character_orc_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_orc_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `undead.webp` | WoW 게임 아이콘 `achievement_character_undead_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_undead_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `tauren.webp` | WoW 게임 아이콘 `achievement_character_tauren_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_tauren_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+| `troll.webp` | WoW 게임 아이콘 `achievement_character_troll_male` — `https://wowf-assets.t3.tigrisfiles.io/sprites/common.26c420c8c4.svg#races-achievement_character_troll_male` | Blizzard Entertainment, Inc. | Blizzard 법률 FAQ 팬사이트 이미지 조건 |
+
+### 확보 방법 (2026-10-31)
+
+- 참고 페이지: `https://wowf.io/en/level-up?f=horde&r=undead`의 종족 선택 영역
+- 이미지 주소: WOWF.IO 에셋 서버의 아이콘 묶음 `common.26c420c8c4.svg` 1개만 받았습니다(89,857바이트). 이 파일은 WebP 원본 1장(600×240)과 아이콘별 표시 영역(`<view>`) 목록입니다.
+- 각 종족의 표시 영역(56×56)을 잘라 **픽셀 변경 없이** 무손실 WebP로 저장했습니다(원본과 픽셀 일치 검증). 크기 조정·색 보정·편집은 하지 않았습니다. 화면에서 44px로 보이는 것은 브라우저 표시 크기입니다.
+- 사이트 전체는 수집하지 않았습니다.
+
+### 권리와 이용 조건
+
+- 권리자: Blizzard Entertainment. WOWF.IO About 페이지도 "Game screenshots, icons and game data are the property of Blizzard Entertainment"라고 밝힙니다. WOWF.IO 자체 제작 이미지가 아닙니다.
+- [Blizzard 법률 FAQ](https://www.blizzard.com/en-us/legal/28d5ebbf-c245-4408-8ba9-043dd5f056bf/legal-faq)의 "팬사이트에서 Blizzard 이미지·화면을 웹 페이지에 써도 되는가" 질문에 대한 답: "Yes, within certain limits". 조건 요약:
+  - 비상업적 사용 (Forever Rank: 광고·후원·유료 기능·이용료 없음, PR #10 §6.2)
+  - 저작권·상표 고지 유지 → 사이트 하단에 [Blizzard 공식 고지](https://www.blizzard.com/en-us/legal/5515ca11-1c96-42a0-b853-e7876a0d19bf/copyright-notices) World of Warcraft 문구 원문 표시(`lib/legal/blizzard-notice.ts`)
+  - 변경 금지 → 원본 픽셀 그대로
+  - Blizzard가 언제든 철회 가능 → 철회되면 `lib/demo/race-portraits.ts`에서 등록을 지우고 파일을 삭제합니다(화면은 빈 틀로 돌아감)
+  - 부적절한 콘텐츠(해킹·치트 등) 사이트에서 사용 금지
+- 남는 해석 문제: 같은 답의 라이선스 문구가 "home, noncommercial and personal use"라고 적고 있어, 공개 팬사이트 표시가 그 범위에 정확히 들어가는지는 해석의 여지가 있습니다. 질문 자체가 팬사이트 웹 페이지 사용을 묻고 "Yes"로 답한 점을 근거로 적용했습니다. 광고·후원·유료 기능을 도입하면 다시 검토합니다.
