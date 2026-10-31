@@ -16,6 +16,8 @@ import {
 } from "@/lib/api/params";
 import { GameScopeNotConfiguredError, getGameScope } from "@/lib/config";
 import { SetupPending } from "@/components/setup-pending";
+import { CharacterDemoPreview } from "@/components/demo/character-demo-preview";
+import { isDesignPreviewDeployment } from "@/lib/server/design-preview";
 import { formatInteger } from "@/lib/format";
 import { getMessages, labelOf, t } from "@/lib/i18n";
 import { routes } from "@/lib/routes";
@@ -35,6 +37,16 @@ export default async function CharacterSearchPage({
 }) {
   const m = getMessages();
   const s = m.characters.search;
+  if (isDesignPreviewDeployment()) {
+    // 디자인 확인용 Preview 배포: DB 없이 준비 중 안내와 화면 미리보기만 보여 준다
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={s.title} description={s.description} />
+        <SetupPending dataEnvironment={null} />
+        <CharacterDemoPreview />
+      </div>
+    );
+  }
   const { appEnv, now } = await getServerContext();
   const query = toURLSearchParams(await searchParams);
   const path = routes.characters();
@@ -45,6 +57,7 @@ export default async function CharacterSearchPage({
       <div className="flex flex-col gap-5">
         <PageHeader title={s.title} description={s.description} />
         <SetupPending dataEnvironment={appEnv} />
+        {appEnv === "mock" ? null : <CharacterDemoPreview />}
       </div>
     );
   }

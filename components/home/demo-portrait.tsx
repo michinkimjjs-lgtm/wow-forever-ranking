@@ -26,7 +26,7 @@ export const DEMO_CLASS_STYLE: Record<DemoClass, { text: string; border: string;
   druid: { text: "text-demo-druid", border: "border-demo-druid", glow: "shadow-[0_0_10px_-3px_var(--color-demo-druid)]", bar: "bg-demo-druid" },
 };
 
-const SIZE = { md: { frame: "size-11", px: 38 }, sm: { frame: "size-6", px: 20 } } as const;
+const SIZE = { lg: { frame: "size-16", px: 56 }, md: { frame: "size-11", px: 38 }, sm: { frame: "size-6", px: 20 } } as const;
 
 export function DemoPortrait({
   demoRace,
@@ -37,7 +37,7 @@ export function DemoPortrait({
   demoRace: DemoRace;
   /** 없으면(종족 분포 등) 직업 색상 대신 중립 테두리 */
   demoClass?: DemoClass;
-  size?: "md" | "sm";
+  size?: "lg" | "md" | "sm";
   portraits?: Record<DemoRace, DemoRacePortrait | null>;
 }) {
   const d = getMessages().home.demo;
@@ -55,7 +55,7 @@ export function DemoPortrait({
       className={cn(
         "relative flex shrink-0 overflow-hidden rounded-md bg-background",
         SIZE[size].frame,
-        style ? cn(size === "md" ? "border-[3px]" : "border-2", style.border, style.glow) : "border border-border-strong",
+        style ? cn(size === "sm" ? "border-2" : "border-[3px]", style.border, style.glow) : "border border-border-strong",
       )}
     >
       {src ? (

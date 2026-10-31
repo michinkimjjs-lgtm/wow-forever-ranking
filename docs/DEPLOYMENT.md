@@ -25,7 +25,7 @@ npm run build:vercel
 
 **Preview 실행 (디자인 확인용):** Preview에 `APP_DATA_ENVIRONMENT`가 없으면(`VERCEL=1`, `VERCEL_ENV=preview`) 서버 시작 검사를 하지 않고 DB에 연결하지 않습니다(`lib/server/design-preview.ts`).
 
-- 홈(`/`)만 정적 가상 데이터로 기능 미리보기를 보여 줍니다(DEMO 표시, 검색 엔진 제외, 테스트 데이터 안내).
+- 홈(`/`)과 랭킹·캐릭터 검색·길드 목록·통계 화면이 정적 가상 데이터로 기능 미리보기를 보여 줍니다(DEMO 표시, 검색 엔진 제외, 테스트 데이터 안내).
 - 다른 데이터 화면과 API는 설정이 없으므로 오류(API 503)로 응답하고 데이터를 내보내지 않습니다.
 - Preview에 `APP_DATA_ENVIRONMENT`를 설정하면 일반 경로와 같은 검사를 합니다.
 - Production(`VERCEL_ENV=production`)과 로컬 실행에는 적용되지 않습니다. 설정·DB 식별 표식 검사가 그대로 실행됩니다.

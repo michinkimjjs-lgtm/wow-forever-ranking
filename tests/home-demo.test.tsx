@@ -276,11 +276,13 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     const importers = ["app", "components", "lib", "db", "providers", "scripts", "config"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/lib\/demo\/home-preview-fixture"/.test(readFileSync(file, "utf8")));
-    expect(importers.sort()).toEqual([join("components", "home", "demo-portrait.tsx"), join("components", "home", "home-demo-preview.tsx")]);
+    // 홈 미리보기(components/home/)와 랭킹·캐릭터·길드·통계 미리보기(components/demo/)만
+    expect(importers.length).toBeGreaterThan(0);
+    for (const file of importers) expect(file).toMatch(/^components[\\/](home|demo)[\\/]/);
     const portraitUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/(components\/home\/demo-portrait|lib\/demo\/race-portraits)"/.test(readFileSync(file, "utf8")));
-    expect(portraitUsers.sort()).toEqual([join("components", "home", "demo-portrait.tsx"), join("components", "home", "home-demo-preview.tsx")]);
+    for (const file of portraitUsers) expect(file).toMatch(/^components[\\/](home|demo)[\\/]/);
     const previewUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/components\/home\/home-demo-preview"/.test(readFileSync(file, "utf8")));
@@ -299,7 +301,13 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     // 화면 예시용 이름은 홈 미리보기 문구에 따로 있다 (게임 코드 설정을 읽지 않음)
     expect(Object.keys(d.classes).sort()).toEqual([...DEMO_CLASSES].sort());
     expect(Object.keys(d.races).sort()).toEqual([...DEMO_RACES].sort());
-    for (const file of ["lib/demo/home-preview-fixture.ts", "components/home/demo-portrait.tsx", "lib/demo/race-portraits.ts", "components/home/home-demo-preview.tsx"]) {
+    for (const file of [
+      "lib/demo/home-preview-fixture.ts",
+      "components/home/demo-portrait.tsx",
+      "lib/demo/race-portraits.ts",
+      "components/home/home-demo-preview.tsx",
+      ...sourceFiles("components/demo"),
+    ]) {
       expect(readFileSync(file, "utf8")).not.toMatch(/@\/config\/|locales\/ko\/game|m\.game\.|getGameScope/);
     }
   });

@@ -179,10 +179,22 @@ describe("Preview 디자인 확인 배포의 화면과 API", () => {
     expect(db.calls).toBe(0);
   });
 
-  it("다른 데이터 화면(랭킹)은 미리보기 데이터를 쓰지 않고 오류로 끝난다", async () => {
+  it("랭킹·캐릭터·길드·통계 화면도 DB 없이 준비 중 안내와 화면 미리보기를 보여 준다", async () => {
     setEnv(PREVIEW);
     const { RankingPageView } = await import("@/components/ranking/ranking-page");
-    await expect(Promise.resolve().then(() => RankingPageView({ type: "level", searchParams: {} }))).rejects.toMatchObject({ name: "ConfigurationError" });
+    const { default: CharactersPage } = await import("@/app/characters/page");
+    const { default: GuildsPage } = await import("@/app/guilds/page");
+    const { default: StatsPage } = await import("@/app/stats/page");
+    const outs = [
+      renderToStaticMarkup(await RankingPageView({ type: "level", searchParams: {} })),
+      renderToStaticMarkup(await CharactersPage({ searchParams: Promise.resolve({}) })),
+      renderToStaticMarkup(await GuildsPage()),
+      renderToStaticMarkup(StatsPage()),
+    ];
+    for (const out of outs) {
+      expect(out).toContain(ko.demo.pageBanner.title);
+      expect(out).toContain(ko.home.demo.notice);
+    }
     expect(db.calls).toBe(0);
   });
 
