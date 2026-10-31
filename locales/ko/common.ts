@@ -62,6 +62,7 @@ export const common = {
     disclaimer: "Forever Rank는 Blizzard Entertainment와 관련이 없는 독립 서비스입니다.",
     /** 비공식 팬 사이트·저작권·상표 고지 (docs/EXTERNAL-DATA-COLLECTION.md §4.3). 고지가 상업적 이용 권한을 주지는 않는다 */
     fanSite: "Forever Rank는 Blizzard Entertainment가 운영·후원·보증하지 않는 비공식 팬 사이트입니다.",
+    nonCommercial: "Forever Rank는 광고·후원·유료 기능 없이 운영되는 비상업적 팬 사이트입니다.",
     copyright: "월드 오브 워크래프트, 워크래프트와 게임 화면·아이콘·이미지 등 게임 콘텐츠의 저작권과 상표권은 Blizzard Entertainment에 있습니다.",
     timezone: "모든 시각은 한국 시간(KST) 기준입니다.",
     submit: "캐릭터 데이터 제출",

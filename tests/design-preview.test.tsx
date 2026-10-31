@@ -180,6 +180,8 @@ describe("하단 고지", () => {
     const out = renderToStaticMarkup(SiteFooter());
     expect(out).toContain('data-legal-notice="true"');
     expect(out).toContain(ko.common.footer.fanSite);
+    expect(out).toContain(ko.common.footer.nonCommercial);
+    expect(ko.common.footer.nonCommercial).toBe("Forever Rank는 광고·후원·유료 기능 없이 운영되는 비상업적 팬 사이트입니다.");
     expect(out).toContain(ko.common.footer.copyright);
     expect(ko.common.footer.fanSite).toContain("비공식 팬 사이트");
     expect(ko.common.footer.copyright).toContain("Blizzard Entertainment");

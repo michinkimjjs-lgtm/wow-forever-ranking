@@ -22,6 +22,7 @@ export function SiteFooter() {
         {/* 비공식 팬 사이트·저작권·상표 고지 */}
         <div data-legal-notice="true" className="flex flex-col gap-0.5 border-t border-border pt-3">
           <p>{m.footer.fanSite}</p>
+          <p>{m.footer.nonCommercial}</p>
           <p>{m.footer.copyright}</p>
         </div>
       </div>
