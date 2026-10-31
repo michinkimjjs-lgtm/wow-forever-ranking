@@ -173,3 +173,15 @@ describe("Preview 디자인 확인 배포의 화면과 API", () => {
     expect(db.calls).toBe(0);
   });
 });
+
+describe("하단 고지", () => {
+  it("모든 화면 하단에 비공식 팬 사이트와 Blizzard 저작권·상표 고지를 표시한다", async () => {
+    const { SiteFooter } = await import("@/components/layout/site-footer");
+    const out = renderToStaticMarkup(SiteFooter());
+    expect(out).toContain('data-legal-notice="true"');
+    expect(out).toContain(ko.common.footer.fanSite);
+    expect(out).toContain(ko.common.footer.copyright);
+    expect(ko.common.footer.fanSite).toContain("비공식 팬 사이트");
+    expect(ko.common.footer.copyright).toContain("Blizzard Entertainment");
+  });
+});
