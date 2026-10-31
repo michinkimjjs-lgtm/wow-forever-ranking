@@ -12,6 +12,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getGameScope } from "@/lib/config";
 import { DEMO_CLASSES, DEMO_RACES, demoDistribution, demoSummary, HOME_DEMO_FIXTURE_KIND, homeDemoFixture } from "@/lib/demo/home-preview-fixture";
+import { RACE_PORTRAIT_SOURCES } from "@/lib/demo/race-portrait-sources";
 import { DEMO_RACE_PORTRAITS, type DemoRacePortrait } from "@/lib/demo/race-portraits";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { ko } from "@/locales/ko";
@@ -201,7 +202,10 @@ describe("설정 미완료 홈: 준비 중 안내 + 기능 미리보기", () => 
       expect(existsSync(join("public", "demo", "races", entry.file)), race).toBe(true);
       for (const field of [entry.source, entry.author, entry.license]) expect(field.trim().length, race).toBeGreaterThan(0);
       expect(readme).toContain(entry.file);
-      expect(entry.source).not.toMatch(/blizzard|worldofwarcraft|wowhead/i);
+      // 화면에 등록하려면 수집 대상에서 이용 조건 확인(CONFIRMED)이 끝나 있어야 한다 (권리자·조건·근거 포함)
+      const src = RACE_PORTRAIT_SOURCES.find((x) => x.key === race)!;
+      expect(src.rights.status, race).toBe("CONFIRMED");
+      expect(src.file).toBe(entry.file);
     }
   });
 
