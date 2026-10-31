@@ -10,6 +10,7 @@
 > Phase 4A 문서: `docs/CONTRIBUTOR-GUIDE.md` (랭킹 등록 안내, Collector 배포·버전 관리)
 > Phase 4B 문서: `docs/DATA-COLLECTION-STRATEGY.md` (애드온 없는 웹 직접 등록, 공식 API 발견·30일 보존 준비)
 > 역사 기록 보존: `docs/HISTORY-PRESERVATION.md` (레벨 달성 근거, 삭제 방지)
+> 외부 데이터 수집 정책·설계: `docs/EXTERNAL-DATA-COLLECTION.md` (출처 등록부, 허용·금지 범위)
 > 운영 배포: `docs/DEPLOYMENT.md` (Vercel Production 빌드의 운영 DB 자동 초기화)
 
 ## 1. 프로젝트 목적
@@ -455,7 +456,7 @@ MVP에서는 임의의 자체 `Gear Score`를 만들지 않는다.
 - 랭킹 화면에 데이터 기준 / 데이터 범위 / 데이터 출처 / 검증 상태를 표시한다.
 - "전체 서버 1위" 같은 전체 서버 표현은 `evaluateServerWideClaim`이 허용할 때만 쓴다. 사용자 제출만으로는 허용하지 않는다.
 - 모집단을 모르면 비율(%) 커버리지를 표시하지 않는다. 단계 기준값은 실제 데이터를 보기 전에 임의로 정하지 않는다(`config/community-ranking.ts`, `docs/DATA-COVERAGE-MODEL.md`).
-- 외부 랭킹·census 서비스 데이터와 scraping은 쓰지 않는다. Raider.IO Forever API는 사용하지 않는다(`docs/DATA-SOURCE-POLICY.md`).
+- 외부 데이터는 출처 등록부에서 승인된 출처만 수집한다(약관·robots.txt·라이선스·상업 이용·출처 표시·빈도·보존 조건 기록). 승인 전 외부 랭킹·census 서비스 데이터와 웹페이지 수집은 쓰지 않는다. Raider.IO Forever API는 사용하지 않는다(`docs/DATA-SOURCE-POLICY.md`, `docs/EXTERNAL-DATA-COLLECTION.md`).
 
 ---
 
@@ -787,7 +788,12 @@ API 경로는 영어로 유지해도 된다.
 
 # 24. 외부 데이터 사용 규칙
 
-외부 사이트를 무단 스크래핑하여 핵심 서비스 데이터로 사용하지 않는다.
+외부 데이터는 출처별로 허용 여부를 판단한다(`docs/EXTERNAL-DATA-COLLECTION.md`).
+
+- 허용(등록부 승인 후): 공식 API, 사용 권한이 확인된 데이터, 오픈 라이선스 데이터, 약관상 수집·재사용이 허용된 공개 웹페이지, 운영자 허가를 받은 사이트, 사용자가 직접 제출한 데이터
+- 금지: 승인되지 않은 출처의 수집, 로그인·유료·CAPTCHA·봇 차단·IP 차단 우회, 비공개 내부 API 무단 호출, 개인정보·비공개 데이터, 과도한 부하, 대량 복제, 출처와 사용 조건을 확인할 수 없는 이미지의 재배포
+- 공개되어 있다는 사실만으로 재사용·재배포 권한이 있다고 보지 않는다. 이미지와 데이터는 따로 판단한다.
+- 수집한 데이터도 같은 수집 파이프라인과 역사 기록 규칙을 거치며, 출처만으로 `VERIFIED`가 되지 않는다. 특정 외부 사이트를 핵심 원천으로 고정하지 않는다.
 
 Raider.IO나 기타 제3자 서비스의 이용약관에 경쟁 서비스 구축 제한이 있는 경우, 해당 API를 핵심 랭킹 데이터 공급원으로 사용하지 않는다.
 
