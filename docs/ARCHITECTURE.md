@@ -89,7 +89,7 @@ tests/                  Vitest 테스트
 | 정적 데이터 | importer + DB CHECK: mock 영역 ⇔ mock 데이터셋, 실제 영역은 이용 조건 확인(`PERMITTED`)만. 수정 금지 트리거 |
 | CHECK 제약 | mock 영역 ⇔ mock 공급원 ⇔ MOCK 검증 상태 (`db/schema.ts`) |
 | 부모-자식 영역 일치 | `(id, data_environment)` 복합 외래 키 |
-| 앱 시작 검사 | `instrumentation.ts` → `verifyStartup()`, 그리고 요청마다 `getServerContext()` |
+| 앱 시작 검사 | `instrumentation.ts` → `verifyStartup()`, 그리고 요청마다 `getServerContext()`. 설정 오류·DB 식별 표식 불일치는 서버를 시작하지 않는다. 일시적인 DB 접속 실패는 시작을 막지 않고 기록만 남긴 뒤 요청마다 다시 검사한다(시작 검사가 한 번 실패하면 Next.js가 그 인스턴스의 모든 화면을 500으로 응답하기 때문) |
 | Provider 등록 제한 | `providers/registry.ts` |
 | Seed 이중 확인 | `lib/mock/seed.ts`: `APP_DATA_ENVIRONMENT=mock` + DB 표식 `{mock}` + `--confirm-mock` |
 | 수집 파이프라인 | 영역은 서버 설정에서 부여. payload의 다른 영역 주장은 거부 |
