@@ -12,3 +12,6 @@ npm-debug.log*
 
 # Collector 다운로드 파일 (npm run collector:build 로 생성)
 /public/downloads/
+
+# 이미지 수집 로그 (npm run portraits:collect)
+/logs/

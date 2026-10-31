@@ -708,7 +708,7 @@ API 경로는 영어로 유지해도 된다.
 ```
 
 사용자가 보게 되는 문자열은 영어가 아니라 한국어를 사용한다.
-영어로 남겨도 되는 것은 고유명사와 형식·코드 이름(WoW, Forever, Armory, Blizzard, API, JSON, KST, World First 등)뿐이다. `tests/setup-pending.test.tsx`의 한국어 UI 검사가 허용 목록 밖의 영어를 찾는다.
+영어로 남겨도 되는 것은 고유명사와 형식·코드 이름(WoW, Forever, Armory, Blizzard, API, JSON, KST, World First 등)과 가상 데이터 표시 `DEMO`뿐이다. `tests/setup-pending.test.tsx`의 한국어 UI 검사가 허용 목록 밖의 영어를 찾는다.
 
 게임 고유명사/아이템명/직업명 등은 **실제 게임 클라이언트에서 사용하는 한국어 명칭을 우선**한다.
 
