@@ -11,7 +11,7 @@
 | Blizzard 공식 API | 준비만 (미공개) | 공개되면 capability별로 다름 | (공개 후 결정) |
 
 - 2026-10-25 기준 WoW: Forever용 Blizzard 웹 API는 공개되지 않았다. endpoint는 등록하지 않았고 capability는 모두 `UNKNOWN`이다.
-- 쓰지 않는 방법: 무작위 이름 대입, 외부 사이트 스크래핑, 비공개·내부 API 접근, 제3자 랭킹·census 서비스 데이터(`docs/DATA-SOURCE-POLICY.md`).
+- 쓰지 않는 방법: 무작위 이름 대입, 승인되지 않은 외부 사이트 수집, 비공개·내부 API 접근, 승인되지 않은 제3자 랭킹·census 서비스 데이터(`docs/DATA-SOURCE-POLICY.md`). 외부 출처 승인 절차는 `docs/EXTERNAL-DATA-COLLECTION.md`.
 
 ## 2. 웹 직접 등록 (애드온 없이)
 
