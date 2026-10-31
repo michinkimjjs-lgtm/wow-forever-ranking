@@ -462,7 +462,9 @@ describe("제출 화면 연결 (/submit)", () => {
     const { default: Home } = await import("@/app/page");
     const home = await html(Home());
     expect(home).toContain('href="/contribute"');
-    expect(text(home)).toContain(ko.home.contributeCta.button);
+    // 설정이 확인되지 않은 홈은 등록이 가능한 것처럼 안내하지 않고, 참여 방법 안내로만 연결한다
+    expect(text(home)).toContain(ko.home.demo.closing.link);
+    expect(text(home)).not.toContain(ko.home.contributeCta.body);
   });
 });
 

@@ -152,6 +152,8 @@ const ALLOWED_ENGLISH = new Set([
   "SavedVariables", "WTF", "Account", "lua", "json", "frc", "export", "reload",
   // Phase 4A: Collector 배포·설치 안내 (형식 이름, 게임 폴더 이름, 애드온 명령)
   "Lua", "ZIP", "zip", "SHA", "exe", "Interface", "AddOns", "status", "clear",
+  // 홈 기능 미리보기의 가상 데이터 표시 (components/home/home-demo-preview.tsx)
+  "DEMO",
 ]);
 
 function englishWords(text: string): string[] {

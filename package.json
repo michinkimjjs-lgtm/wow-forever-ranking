@@ -23,7 +23,8 @@
     "db:seed": "tsx scripts/db-seed-mock.ts",
     "static-data:import": "tsx scripts/static-data-import.ts",
     "collector:build": "tsx scripts/build-collector.ts",
-    "collector:check": "tsx scripts/build-collector.ts --check"
+    "collector:check": "tsx scripts/build-collector.ts --check",
+    "portraits:collect": "tsx scripts/collect-race-portraits.ts"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.4.0",

@@ -53,3 +53,19 @@ body {
 .tabular {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+ * 홈 기능 미리보기(DEMO) 전용 직업 색상. 화면 예시용이며 WoW: Forever의 실제 직업 목록이나 게임 설정이 아니다.
+ * components/home/home-demo-preview.tsx 밖에서 쓰지 않는다.
+ */
+@theme {
+  --color-demo-warrior: #c79c6e;
+  --color-demo-paladin: #f48cba;
+  --color-demo-hunter: #aad372;
+  --color-demo-rogue: #fff468;
+  --color-demo-priest: #ffffff;
+  --color-demo-shaman: #0070dd;
+  --color-demo-mage: #3fc7eb;
+  --color-demo-warlock: #8788ee;
+  --color-demo-druid: #ff7c0a;
+}
