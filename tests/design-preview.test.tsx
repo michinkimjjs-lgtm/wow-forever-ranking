@@ -3,7 +3,7 @@
  *
  * - VERCEL_ENV = preview이고 APP_DATA_ENVIRONMENT가 없으면 홈(/)은 DB 없이 기능 미리보기를 보여 준다.
  * - 다른 페이지·API는 설정이 없으므로 데이터를 내보내지 않는다.
- * - Production과 로컬 실행은 시작 검사(설정·DB 식별 표식)를 그대로 한다.
+ * - Production과 로컬 실행은 시작 검사(설정·DB 식별 표식)를 그대로 한다. 일시적인 DB 접속 실패만 요청 시점 검사로 미룬다.
  *
  * 서버 컨텍스트를 가짜로 바꾸지 않는다. DB 연결 함수만 "쓰면 실패"하도록 바꿔, 실제 경로에서 DB 접근이 없는지 확인한다.
  */
@@ -85,7 +85,8 @@ describe("서버 시작 검사 (instrumentation-node.ts)", () => {
     expect(db.calls).toBe(0);
   });
 
-  it("회귀: Production과 로컬 실행은 설정이 있으면 DB 식별 표식을 조회한다", async () => {
+  it("DB 접속 실패는 서버 시작을 막지 않고, 요청마다 검사를 다시 한다", async () => {
+    const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
     for (const env of [
       { VERCEL: "1", VERCEL_ENV: "production", APP_DATA_ENVIRONMENT: "live", DATABASE_URL: "postgres://unused" },
       { APP_DATA_ENVIRONMENT: "live", DATABASE_URL: "postgres://unused" },
@@ -95,9 +96,29 @@ describe("서버 시작 검사 (instrumentation-node.ts)", () => {
       (globalThis as { __foreverRankVerified?: unknown }).__foreverRankVerified = undefined;
       db.calls = 0;
       setEnv(env);
-      await expect(import("@/instrumentation-node")).rejects.toThrow("DB_ACCESS_ATTEMPTED");
+      await expect(import("@/instrumentation-node")).resolves.toBeDefined();
+      // 시작 시점에 DB 식별 표식을 조회했다
       expect(db.calls).toBe(1);
+      // 실패 결과를 기억하지 않으므로, 요청 시점의 검사가 DB를 다시 조회하고 실패하면 요청을 처리하지 않는다
+      const { getServerContext } = await import("@/lib/server/context");
+      await expect(getServerContext()).rejects.toThrow("DB_ACCESS_ATTEMPTED");
+      expect(db.calls).toBe(2);
     }
+    expect(errorLog).toHaveBeenCalled();
+    expect(String(errorLog.mock.calls[0]?.[0])).not.toContain("postgres://");
+    errorLog.mockRestore();
+  });
+
+  it("회귀: DB 식별 표식이 맞지 않으면 서버를 시작하지 않는다", async () => {
+    setEnv({ APP_DATA_ENVIRONMENT: "live", DATABASE_URL: "postgres://unused" });
+    vi.resetModules();
+    (globalThis as { __foreverRankVerified?: unknown }).__foreverRankVerified = undefined;
+    vi.doMock("@/db/identity", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@/db/identity")>();
+      return { ...actual, assertDatabaseIdentityMatches: () => Promise.reject(new actual.DatabaseIdentityError("영역 불일치")) };
+    });
+    await expect(import("@/instrumentation-node")).rejects.toMatchObject({ name: "DatabaseIdentityError" });
+    vi.doUnmock("@/db/identity");
   });
 });
 
