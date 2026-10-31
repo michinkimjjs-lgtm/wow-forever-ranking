@@ -2,6 +2,7 @@ import { api } from "./api";
 import { characters } from "./characters";
 import { common } from "./common";
 import { contribute } from "./contribute";
+import { demo } from "./demo";
 import { game } from "./game";
 import { guilds } from "./guilds";
 import { home } from "./home";
@@ -13,5 +14,5 @@ import { submissions } from "./submissions";
 import { submit } from "./submit";
 import { admin } from "./admin";
 
-export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo, submissions, submit, admin, contribute, register };
+export const ko = { common, game, rankings, characters, guilds, home, stats, api, seo, submissions, submit, admin, contribute, register, demo };
 export type Messages = typeof ko;

@@ -15,6 +15,8 @@ import { classifyRankingStage, evaluateServerWideClaim } from "@/lib/ranking/com
 import { GameScopeNotConfiguredError, resolveGearProfile, RulesetNotAvailableError } from "@/lib/config";
 import { RulesetFilter } from "./ruleset-filter";
 import { SetupPending } from "@/components/setup-pending";
+import { RankingDemoPreview } from "@/components/demo/ranking-demo-preview";
+import { isDesignPreviewDeployment } from "@/lib/server/design-preview";
 import { cn } from "@/lib/utils";
 import { DataScopePanel } from "./data-scope-panel";
 import { RankingFiltersForm } from "./ranking-filters";
@@ -48,6 +50,17 @@ function RankingTabs({ active }: { active: RankingType }) {
 export async function RankingPageView({ type, searchParams }: { type: RankingType; searchParams: SearchParamsInput }) {
   const m = getMessages();
   const path = routes.ranking(type);
+  if (isDesignPreviewDeployment()) {
+    // 디자인 확인용 Preview 배포: DB 없이 준비 중 안내와 화면 미리보기만 보여 준다
+    return (
+      <div className="flex flex-col gap-5">
+        <PageHeader title={m.rankings.stageTitles.COMMUNITY[type]} description={m.rankings.descriptions[type]} />
+        <RankingTabs active={type} />
+        <SetupPending dataEnvironment={null} />
+        <RankingDemoPreview type={type} />
+      </div>
+    );
+  }
   const { appEnv, now } = await getServerContext();
   const query = toURLSearchParams(searchParams);
 
@@ -65,6 +78,8 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
           <RankingTabs active={type} />
           <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={null} />
           <SetupPending dataEnvironment={error.dataEnvironment} />
+          {/* 실제 영역(beta·live)만. mock 영역은 항상 게임 설정이 있으므로 여기 오지 않는다 */}
+          {error.dataEnvironment === "mock" ? null : <RankingDemoPreview type={type} />}
         </div>
       );
     }

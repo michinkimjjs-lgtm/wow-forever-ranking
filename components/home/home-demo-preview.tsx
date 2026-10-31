@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
+import { DemoSection, DistributionBars, SectionHeader } from "@/components/demo/demo-common";
 import { SetupPending } from "@/components/setup-pending";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,42 +48,6 @@ export function HomeDemoPreview({ dataEnvironment }: { dataEnvironment: DataEnvi
 // ---------------------------------------------------------------------------
 // 공통
 // ---------------------------------------------------------------------------
-
-function DemoNotice({ className }: { className?: string }) {
-  const d = getMessages().home.demo;
-  return (
-    <p
-      role="note"
-      className={cn(
-        "flex flex-wrap items-center gap-2 rounded-md border border-dashed border-accent/40 bg-accent/5 px-3 py-2 text-xs text-muted",
-        className,
-      )}
-    >
-      <Badge variant="accent">{d.badge}</Badge>
-      <span>{d.notice}</span>
-    </p>
-  );
-}
-
-function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
-  return (
-    <div className="flex flex-col gap-1">
-      <h2 className="text-lg font-semibold tracking-tight text-foreground">{title}</h2>
-      {subtitle ? <p className="text-sm text-muted">{subtitle}</p> : null}
-    </div>
-  );
-}
-
-/** 가상 데이터를 담는 영역. DEMO 안내를 항상 함께 표시한다. */
-function DemoSection({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
-  return (
-    <section data-demo="true" className="flex flex-col gap-4">
-      <SectionHeader title={title} subtitle={subtitle} />
-      <DemoNotice />
-      {children}
-    </section>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // A. 히어로
@@ -314,35 +279,6 @@ function DistributionPreview() {
         </Card>
       </div>
     </DemoSection>
-  );
-}
-
-function DistributionBars({
-  rows,
-}: {
-  rows: { key: string; label: string; count: number; icon: ReactNode; labelClass: string; barClass: string }[];
-}) {
-  const dist = getMessages().home.demo.distribution;
-  const max = Math.max(...rows.map((row) => row.count));
-  return (
-    <ul className="flex flex-col gap-2.5">
-      {rows.map((row) => (
-        <li
-          key={row.key}
-          title={t(dist.tooltip, { label: row.label, count: row.count })}
-          className="grid grid-cols-[minmax(0,7.5rem)_minmax(0,1fr)_2.5rem] items-center gap-3"
-        >
-          <span className={cn("flex min-w-0 items-center gap-2 text-sm", row.labelClass)}>
-            {row.icon}
-            <span className="break-keep">{row.label}</span>
-          </span>
-          <span className="h-2 rounded-full bg-surface-raised">
-            <span className={cn("block h-2 rounded-full", row.barClass)} style={{ width: `${(row.count / max) * 100}%` }} />
-          </span>
-          <span className="tabular text-right text-sm text-muted">{t(dist.count, { count: row.count })}</span>
-        </li>
-      ))}
-    </ul>
   );
 }
 
