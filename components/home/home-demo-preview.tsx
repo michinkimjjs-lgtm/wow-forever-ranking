@@ -3,14 +3,13 @@ import type { ReactNode } from "react";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
 import { DemoCharacterName, DemoSection, DistributionBars, SectionHeader } from "@/components/demo/demo-common";
 import { SetupPending } from "@/components/setup-pending";
-import { DemoItemIcon } from "@/components/demo/demo-item-icon";
-import { ItemName } from "@/components/game-labels";
+import { DemoItem } from "@/components/demo/demo-item";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   demoCharacter,
   demoDistribution,
-  demoHighestItemIcon,
+  demoHighestItemId,
   demoSummary,
   homeDemoFixture,
   type DemoActivity,
@@ -147,13 +146,8 @@ function RankingPreview() {
           keys={rankings.highestItem}
           score={(c) => ({ value: formatInteger(c.highestItemLevel), label: r.columns.score })}
           detail={(c) => {
-            const icon = demoHighestItemIcon(c.key as DemoCharacterKey);
-            return (
-              <span className="inline-flex items-center gap-1.5">
-                {icon ? <DemoItemIcon icon={icon} quality={c.highestItemQuality} size="sm" /> : null}
-                <ItemName name={c.highestItemName} quality={c.highestItemQuality} />
-              </span>
-            );
+            const id = demoHighestItemId(c.key as DemoCharacterKey);
+            return id ? <DemoItem itemId={id} iconSize="sm" /> : null;
           }}
         />
       </div>

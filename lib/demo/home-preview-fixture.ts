@@ -228,10 +228,11 @@ export function demoEquipment(key: DemoCharacterKey): DemoEquippedItem[] {
   });
 }
 
-/** 캐릭터의 최고 아이템(랭킹 표시용) 아이콘 이름 */
-export function demoHighestItemIcon(key: DemoCharacterKey): string | null {
+/** 캐릭터의 최고 아이템(랭킹 표시용) 번호 */
+export function demoHighestItemId(key: DemoCharacterKey): DemoItemId | null {
   const c = demoCharacter(key);
-  return demoEquipment(key).find((i) => i.name === c.highestItemName && i.itemLevel === c.highestItemLevel)?.icon ?? null;
+  const found = demoEquipment(key).find((i) => i.name === c.highestItemName && i.itemLevel === c.highestItemLevel);
+  return (found?.itemId as DemoItemId | undefined) ?? null;
 }
 
 export interface DemoMilestone {

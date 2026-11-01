@@ -321,3 +321,47 @@ describe("아이템 아이콘", () => {
     expect(out).not.toContain("wowf.io");
   });
 });
+
+describe("아이템 툴팁", () => {
+  it("예시 아이템마다 툴팁 정보가 있다", async () => {
+    const { DEMO_ITEM_TOOLTIPS } = await import("@/lib/demo/demo-item-tooltips");
+    expect(new Set(Object.keys(DEMO_ITEM_TOOLTIPS))).toEqual(new Set(Object.keys(DEMO_ITEMS)));
+  });
+
+  it("게임 툴팁 순서와 표기로 보여 준다 (기가볼트 전자반응기)", async () => {
+    const { DemoItemTooltipCard } = await import("@/components/demo/demo-item");
+    const out = renderToStaticMarkup(DemoItemTooltipCard({ itemId: 9492 }));
+    const text = out.replace(/<[^>]+>/g, "|");
+    const order = ["기가볼트 전자반응기", "아이템 레벨 36", "획득 시 귀속", "머리", "천", "방어도 43", "+9 정신력", "+8 지능", "최소 요구 레벨: 31", "착용 효과: +8 주문력", "사용 효과: 번개를", "(5분 재사용 대기시간)"];
+    let at = -1;
+    for (const part of order) {
+      const i = text.indexOf(part, at + 1);
+      expect(i, part).toBeGreaterThan(at);
+      at = i;
+    }
+  });
+
+  it("무기·방패 정보와 공격 시 효과를 보여 준다", async () => {
+    const { DemoItemTooltipCard } = await import("@/components/demo/demo-item");
+    const dagger = renderToStaticMarkup(DemoItemTooltipCard({ itemId: 6681 }));
+    expect(dagger).toContain("공격력 24 - 46");
+    expect(dagger).toContain("속도 1.70");
+    expect(dagger).toContain("(초당 공격력 20.6)");
+    expect(dagger).toContain("공격 시:");
+    const shield = renderToStaticMarkup(DemoItemTooltipCard({ itemId: 7726 }));
+    expect(shield).toContain("방어도 1548");
+    expect(shield).toContain("방패 막기 21");
+  });
+
+  it("상세 화면의 장착한 아이템마다 툴팁을 여는 버튼이 있다 (빈 칸은 없음)", async () => {
+    serverState.appEnv = "live";
+    const c = homeDemoFixture.characters[0]!;
+    const { default: Page } = await import("@/app/demo/characters/[name]/page");
+    const out = renderToStaticMarkup(await Page({ params: Promise.resolve({ name: encodeURIComponent(c.name) }) }));
+    const armory = out.slice(out.indexOf('data-demo-equipment="true"'), out.indexOf('data-demo-growth="true"'));
+    const equipped = demoEquipment(c.key).filter((i) => i.itemId !== null).length;
+    expect(armory.match(/data-demo-item-tooltip-trigger="true"/g)).toHaveLength(equipped);
+    expect(armory).toContain('type="button"');
+    expect(armory).toContain('aria-label="');
+  });
+});

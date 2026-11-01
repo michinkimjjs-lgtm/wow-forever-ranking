@@ -137,6 +137,32 @@ export const demo = {
     detailSubtitle: "길드 화면에서는 소속 캐릭터를 레벨 순으로 보여 줍니다.",
     memberLine: "레벨 {level} · 평균 아이템 레벨 {itemLevel}",
   },
+  /** 아이템 툴팁 (게임 툴팁 표기를 따름) */
+  itemTooltip: {
+    triggerLabel: "{name} 아이템 정보 보기",
+    itemLevel: "아이템 레벨 {level}",
+    bind: {
+      pickup: "획득 시 귀속",
+      equip: "착용 시 귀속",
+    },
+    unique: "고유 장착",
+    armor: "방어도 {value}",
+    block: "방패 막기 {value}",
+    damage: "공격력 {min} - {max}",
+    speed: "속도 {speed}",
+    dps: "(초당 공격력 {dps})",
+    stat: "+{value} {label}",
+    requiredLevel: "최소 요구 레벨: {level}",
+    trigger: {
+      equip: "착용 효과:",
+      use: "사용 효과:",
+      hit: "공격 시:",
+    },
+    cooldownMinutes: "({minutes}분 재사용 대기시간)",
+    cooldownSeconds: "({seconds}초 재사용 대기시간)",
+    charges: "(사용 가능 횟수 {charges}회)",
+    note: "WoW: Forever 아이템 정보 · 예시 장비",
+  },
   stats: {
     title: "통계 미리보기",
     subtitle: "샘플 캐릭터 {total}명으로 만든 예시 통계입니다.",

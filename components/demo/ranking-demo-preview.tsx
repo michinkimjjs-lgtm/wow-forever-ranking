@@ -1,10 +1,9 @@
-import { DemoItemIcon } from "@/components/demo/demo-item-icon";
+import { DemoItem } from "@/components/demo/demo-item";
 import { DemoCharacterIdentity, DemoFactionTag, DemoPageBanner, DemoRankChip, DemoSection, demoFactionOf } from "@/components/demo/demo-common";
-import { ItemName } from "@/components/game-labels";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { demoCharacter, demoHighestItemIcon, homeDemoFixture, type DemoCharacter, type DemoCharacterKey } from "@/lib/demo/home-preview-fixture";
+import { demoCharacter, demoHighestItemId, homeDemoFixture, type DemoCharacter, type DemoCharacterKey } from "@/lib/demo/home-preview-fixture";
 import { formatAverageItemLevel, formatInteger } from "@/lib/format";
 import { getMessages, t } from "@/lib/i18n";
 import type { RankingType } from "@/lib/ranking/types";
@@ -108,17 +107,14 @@ function ScoreCells({ type, character: c }: { type: RankingType; character: Demo
       <TableCell className="text-right">
         <span className="flex flex-col items-end gap-0.5">
           <span className="tabular text-base font-semibold text-foreground">{formatInteger(c.highestItemLevel)}</span>
-          <span className="flex items-center gap-1.5 text-xs">
-            <DemoHighestIcon character={c} />
-            <ItemName name={c.highestItemName} quality={c.highestItemQuality} />
-          </span>
+          <DemoHighestItem character={c} />
         </span>
       </TableCell>
     </>
   );
 }
 
-function DemoHighestIcon({ character: c }: { character: DemoCharacter }) {
-  const icon = demoHighestItemIcon(c.key as DemoCharacterKey);
-  return icon ? <DemoItemIcon icon={icon} quality={c.highestItemQuality} size="sm" /> : null;
+function DemoHighestItem({ character: c }: { character: DemoCharacter }) {
+  const id = demoHighestItemId(c.key as DemoCharacterKey);
+  return id ? <DemoItem itemId={id} iconSize="sm" className="text-xs" /> : null;
 }
