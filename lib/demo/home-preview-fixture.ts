@@ -242,19 +242,95 @@ export function demoHighestItemId(key: DemoCharacterKey): DemoItemId | null {
 
 export interface DemoMilestone {
   level: number;
-  /** 예시 경과 일수. 실제 날짜가 아니다. */
+  /** 예시 경과 시간(시간 단위). 실제 시각이 아니다. */
+  hoursAgo: number;
+  /** 예시 경과 일수(hoursAgo를 일 단위로 내림) */
   daysAgo: number;
   basis: "firstObserved" | "inferred";
 }
 
-/** 예시 레벨 달성 기록: 최신(현재 레벨)부터. 건너뛴 중간 레벨은 추정으로 표시한다. */
+/**
+ * 예시 성장 속도. 현재 레벨에 도달한 뒤 지난 시간(offset)과, 그 아래로 한 레벨당 걸린 시간(pace)이다(시간 단위).
+ * 레벨 L에 도달한 때 = offset + (현재 레벨 − L) × pace 시간 전.
+ * 같은 레벨인 캐릭터는 먼저 도달한 쪽이 레벨 예시 순위에서 위에 있도록 맞췄다(tests/page-demo.test.tsx).
+ */
+const growthPace = {
+  c01: { offset: 20, pace: 30 },
+  c02: { offset: 6, pace: 28 },
+  c03: { offset: 60, pace: 34 },
+  c04: { offset: 18, pace: 37 },
+  c05: { offset: 100, pace: 32 },
+  c06: { offset: 12, pace: 35 },
+  c07: { offset: 140, pace: 32 },
+  c08: { offset: 10, pace: 40 },
+  c09: { offset: 190, pace: 31 },
+  c10: { offset: 240, pace: 20 },
+  c11: { offset: 40, pace: 50 },
+  c12: { offset: 12, pace: 75 },
+  c13: { offset: 5, pace: 30 },
+  c14: { offset: 8, pace: 26 },
+} as const satisfies Record<DemoCharacterKey, { offset: number; pace: number }>;
+
+/** 예시 캐릭터가 레벨 level에 처음 도달한 때(몇 시간 전). 아직 도달하지 않았으면 null */
+export function demoReachedHoursAgo(key: DemoCharacterKey, level: number): number | null {
+  const c = demoCharacter(key);
+  if (level > c.level || level < 1) return null;
+  const { offset, pace } = growthPace[key];
+  return offset + (c.level - level) * pace;
+}
+
+/** 예시 레벨 달성 기록: 최신(현재 레벨)부터. 건너뛴 중간 레벨은 추정으로 표시하고, 다음 관측과 같은 때로 둔다. */
 export function demoMilestones(key: DemoCharacterKey): DemoMilestone[] {
   const c = demoCharacter(key);
   const steps = [0, 1, 2, 3, 4, 6, 9, 12];
-  const days = [0, 2, 4, 6, 6, 9, 13, 17];
   return steps
-    .map((step, i): DemoMilestone => ({ level: c.level - step, daysAgo: days[i]!, basis: step === 3 ? "inferred" : "firstObserved" }))
-    .filter((m) => m.level >= 1);
+    .filter((step) => c.level - step >= 1)
+    .map((step): DemoMilestone => {
+      const inferred = step === 3;
+      const hoursAgo = demoReachedHoursAgo(key, c.level - (inferred ? 2 : step))!;
+      return { level: c.level - step, hoursAgo, daysAgo: Math.floor(hoursAgo / 24), basis: inferred ? "inferred" : "firstObserved" };
+    });
+}
+
+// ---------------------------------------------------------------------------
+// 최초 달성 기록 미리보기 (components/demo/first-records-demo-preview.tsx)
+// ---------------------------------------------------------------------------
+
+/** 예시로 보여 줄 최초 달성 레벨. 실제 최대 레벨은 게임 설정으로 정하므로 여기 넣지 않는다. */
+export const DEMO_FIRST_LEVELS = [10, 20, 30, 40] as const;
+
+export interface DemoFirst {
+  character: DemoCharacterEntry;
+  level: number;
+  hoursAgo: number;
+}
+
+/**
+ * 조건에 맞는 예시 캐릭터 중 level에 가장 먼저 도달한 기록. 같은 때면 이름, 키 순.
+ * 명세서 §23의 first_records 계산(원본: level_milestones)을 화면 예시로 흉내 낸 것이다.
+ */
+export function demoFirst(level: number, filter: (c: DemoCharacterEntry) => boolean = () => true): DemoFirst | null {
+  const candidates = homeDemoFixture.characters
+    .filter(filter)
+    .map((c) => ({ character: c, level, hoursAgo: demoReachedHoursAgo(c.key, level) }))
+    .filter((x): x is DemoFirst => x.hoursAgo !== null)
+    .sort((a, b) => b.hoursAgo - a.hoursAgo || a.character.name.localeCompare(b.character.name, "ko") || a.character.key.localeCompare(b.character.key));
+  return candidates[0] ?? null;
+}
+
+/** 예시 캐릭터 중 가장 높은 레벨 (서버 최고 레벨 최초 달성 예시용) */
+export function demoTopLevel(): number {
+  return Math.max(...homeDemoFixture.characters.map((c) => c.level));
+}
+
+/** 최근 서버 최초 달성 소식: 레벨마다 서버 최초 기록을 모아 최근 순 */
+export function demoRecentFirsts(count: number, fromLevel: number): DemoFirst[] {
+  const out: DemoFirst[] = [];
+  for (let level = fromLevel; level <= demoTopLevel(); level++) {
+    const f = demoFirst(level);
+    if (f) out.push(f);
+  }
+  return out.sort((a, b) => a.hoursAgo - b.hoursAgo || b.level - a.level).slice(0, count);
 }
 
 /** 세 가지 예시 랭킹에서의 순위 (미리 정해 둔 순서 안의 위치) */

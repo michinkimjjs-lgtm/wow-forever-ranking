@@ -10,10 +10,11 @@ export function SiteHeader() {
     { href: routes.ranking("level"), label: m.nav.rankings, match: "/rankings" },
     { href: routes.characters(), label: m.nav.characters, match: "/characters" },
     { href: routes.guilds(), label: m.nav.guilds, match: "/guilds" },
+    { href: routes.firstRecords(), label: m.nav.firstRecords, match: "/first-records" },
     { href: routes.stats(), label: m.nav.stats, match: "/stats" },
     { href: routes.contribute(), label: m.nav.contribute, match: "/contribute" },
   ];
-  const upcoming = [m.nav.dungeons, m.nav.raids, m.nav.worldFirst];
+  const upcoming = [m.nav.dungeons, m.nav.raids];
 
   return (
     <header className="border-b border-border bg-surface/80">

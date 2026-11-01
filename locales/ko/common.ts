@@ -8,6 +8,7 @@ export const common = {
     characters: "캐릭터",
     guilds: "길드",
     stats: "통계",
+    firstRecords: "최초 기록",
     contribute: "랭킹 등록",
     dungeons: "던전",
     raids: "공격대",

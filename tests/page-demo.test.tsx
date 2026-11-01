@@ -396,3 +396,73 @@ describe("가상 캐릭터의 종족·직업 조합", () => {
     }
   });
 });
+
+describe("최초 달성 기록 미리보기", () => {
+  async function renderFirst(env: DataEnvironment) {
+    serverState.appEnv = env;
+    const { default: Page } = await import("@/app/first-records/page");
+    return renderToStaticMarkup(Page());
+  }
+
+  it("같은 레벨이면 먼저 도달한 캐릭터가 레벨 예시 순위에서 위에 있다 (레벨 랭킹 규칙)", async () => {
+    const { demoReachedHoursAgo } = await import("@/lib/demo/home-preview-fixture");
+    const order = homeDemoFixture.rankingsFull.level;
+    for (let i = 1; i < order.length; i++) {
+      const a = homeDemoFixture.characters.find((c) => c.key === order[i - 1])!;
+      const b = homeDemoFixture.characters.find((c) => c.key === order[i])!;
+      expect(a.level).toBeGreaterThanOrEqual(b.level);
+      if (a.level === b.level) expect(demoReachedHoursAgo(a.key, a.level)!).toBeGreaterThan(demoReachedHoursAgo(b.key, b.level)!);
+    }
+  });
+
+  it("서버 최초는 그 레벨에 가장 먼저 도달한 캐릭터이고, 도달하지 못한 부문은 비어 있다", async () => {
+    const { demoFirst, demoReachedHoursAgo, DEMO_FIRST_LEVELS } = await import("@/lib/demo/home-preview-fixture");
+    for (const level of DEMO_FIRST_LEVELS) {
+      const first = demoFirst(level)!;
+      for (const c of homeDemoFixture.characters) {
+        const h = demoReachedHoursAgo(c.key, level);
+        if (h !== null) expect(first.hoursAgo).toBeGreaterThanOrEqual(h);
+      }
+    }
+    // 40레벨에 도달한 전사가 없으므로 전사 부문은 비어 있다
+    expect(homeDemoFixture.characters.some((c) => c.demoClass === "warrior" && c.level >= 40)).toBe(false);
+    expect(demoFirst(40, (c) => c.demoClass === "warrior")).toBeNull();
+  });
+
+  it("레벨 달성 기록(Armory)과 최초 기록은 같은 예시 성장 기록에서 나온다", async () => {
+    const { demoReachedHoursAgo } = await import("@/lib/demo/home-preview-fixture");
+    for (const c of homeDemoFixture.characters) {
+      for (const m of demoMilestones(c.key)) {
+        if (m.basis === "firstObserved") expect(m.hoursAgo).toBe(demoReachedHoursAgo(c.key, m.level));
+      }
+    }
+  });
+
+  it("live·beta: 준비 중 안내와 서버·직업·진영·길드 최초 미리보기를 DB 없이 보여 준다", async () => {
+    for (const env of ["live", "beta"] as const) {
+      const out = await renderFirst(env);
+      expect(out).toContain(ko.common.setupPending.title);
+      expect(out).toContain(notice);
+      for (const kind of ["class", "faction", "guild"]) expect(out).toContain(`data-demo-first-category="${kind}"`);
+      expect(out).toContain('data-demo-first-server="l10"');
+      expect(out).toContain('data-demo-first-recent="true"');
+      expect(out).toContain('data-first-rules="true"');
+      // 가상 기록에는 검증 상태·공식 칭호를 붙이지 않는다
+      for (const label of Object.values(ko.game.verificationStatuses)) expect(out).not.toContain(`>${label}<`);
+      expect(out).not.toContain('href="/characters/');
+    }
+  });
+
+  it("mock 배포는 미리보기 없이 준비 중 안내만 보여 준다", async () => {
+    const out = await renderFirst("mock");
+    expect(out).toContain(demo.firstRecords.pending);
+    expect(out).not.toContain('data-demo="true"');
+  });
+
+  it("상단 메뉴에 최초 기록이 있다", async () => {
+    const { SiteHeader } = await import("@/components/layout/site-header");
+    const out = renderToStaticMarkup(SiteHeader());
+    expect(out).toContain('href="/first-records"');
+    expect(out).toContain(ko.common.nav.firstRecords);
+  });
+});
