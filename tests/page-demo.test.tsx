@@ -22,6 +22,7 @@ import {
   demoSearch,
   homeDemoFixture,
 } from "@/lib/demo/home-preview-fixture";
+import { DEMO_ITEMS } from "@/lib/demo/demo-items";
 import type { DataEnvironment } from "@/lib/domain/enums";
 import { ko } from "@/locales/ko";
 
@@ -146,7 +147,30 @@ describe("설정 미완료 영역의 화면 미리보기", () => {
       expect(Math.max(...levels)).toBe(c.highestItemLevel);
       expect(levels.filter((v) => v === c.highestItemLevel)).toHaveLength(1);
       expect(items.find((i) => i.itemLevel === c.highestItemLevel)?.name).toBe(c.highestItemName);
-      for (const i of items) if (i.name) expect(i.name).toContain("예시");
+      expect(items.find((i) => i.itemLevel === c.highestItemLevel)?.quality).toBe(c.highestItemQuality);
+      // 실제 아이템: 이름이 아이템 목록과 같고, 요구 레벨이 캐릭터 레벨 이하이며, 칸에 맞는 부위다
+      const SLOT_PARTS: Record<string, string[]> = {
+        head: ["머리"], neck: ["목"], shoulder: ["어깨"], back: ["등"], chest: ["가슴"], wrist: ["손목"], hands: ["손"],
+        waist: ["허리"], legs: ["다리"], feet: ["발"], finger1: ["손가락"], finger2: ["손가락"], trinket1: ["장신구"],
+        trinket2: ["장신구"], mainHand: ["한손", "주장비", "양손"], offHand: ["한손", "보조장비"], ranged: ["원거리"],
+      };
+      for (const i of items) {
+        if (i.itemId === null) continue;
+        const item = DEMO_ITEMS[i.itemId as keyof typeof DEMO_ITEMS];
+        expect(item.name).toBe(i.name);
+        expect(item.name).not.toContain("예시");
+        expect(item.requiredLevel).toBeLessThanOrEqual(c.level);
+        expect(SLOT_PARTS[i.slot]).toContain(item.slot);
+      }
+      // 양손 무기를 들면 보조 장비 칸은 비어 있다
+      const main = items.find((i) => i.slot === "mainHand")!;
+      const off = items.find((i) => i.slot === "offHand")!;
+      if (main.itemId && DEMO_ITEMS[main.itemId as keyof typeof DEMO_ITEMS].slot === "양손") {
+        expect(off.itemId).toBeNull();
+        expect(off.blockedByTwoHand).toBe(true);
+      }
+      const rings = items.filter((i) => i.slot.startsWith("finger") && i.itemId !== null).map((i) => i.itemId);
+      expect(new Set(rings).size).toBe(rings.length);
       const milestones = demoMilestones(c.key);
       expect(milestones[0]!.level).toBe(c.level);
       for (let i = 1; i < milestones.length; i++) {
@@ -226,5 +250,33 @@ describe("가상 캐릭터 상세 예시 (/demo/characters/{이름})", () => {
     for (const c of homeDemoFixture.characters) {
       expect(out).toContain(`href="/demo/characters/${encodeURIComponent(c.name)}"`);
     }
+  });
+});
+
+describe("가상 캐릭터의 착용 아이템", () => {
+  it("모든 아이템은 이름·등급·아이템 레벨이 있는 실제 아이템 목록에서 온다 (지어낸 '예시' 이름 없음)", () => {
+    for (const [id, item] of Object.entries(DEMO_ITEMS)) {
+      expect(Number(id)).toBeGreaterThan(0);
+      expect(item.name.length).toBeGreaterThan(0);
+      expect(item.name).not.toContain("예시");
+      expect(item.itemLevel).toBeGreaterThan(0);
+    }
+    const names = homeDemoFixture.activity.flatMap((a) => ("itemName" in a ? [a.itemName] : []));
+    const all = Object.values(DEMO_ITEMS).map((i) => i.name);
+    for (const n of names) expect(all).toContain(n);
+  });
+
+  it("장비·최고 아이템 랭킹 예시 순서는 정렬 규칙(평균 → 최고 → 이름, 최고 → 평균 → 이름)과 같다", () => {
+    const chars = [...homeDemoFixture.characters];
+    const gear = chars
+      .slice()
+      .sort((a, b) => b.averageItemLevel - a.averageItemLevel || b.highestItemLevel - a.highestItemLevel || a.name.localeCompare(b.name, "ko"))
+      .map((c) => c.key);
+    const high = chars
+      .slice()
+      .sort((a, b) => b.highestItemLevel - a.highestItemLevel || b.averageItemLevel - a.averageItemLevel || a.name.localeCompare(b.name, "ko"))
+      .map((c) => c.key);
+    expect([...homeDemoFixture.rankingsFull.gear]).toEqual(gear);
+    expect([...homeDemoFixture.rankingsFull.highestItem]).toEqual(high);
   });
 });
