@@ -1,8 +1,10 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
 import { Badge } from "@/components/ui/badge";
 import { demoFaction, type DemoCharacter, type DemoFaction } from "@/lib/demo/home-preview-fixture";
 import { getMessages, t } from "@/lib/i18n";
+import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
 /**
@@ -65,7 +67,10 @@ export function DemoPageBanner() {
   );
 }
 
-/** 초상화 + 이름(직업 색) + 직업 · 종족. 가상 캐릭터이므로 링크를 걸지 않는다. */
+/**
+ * 초상화 + 이름(직업 색) + 직업 · 종족.
+ * 이름은 실제 캐릭터 페이지가 아니라 가상 캐릭터의 상세 예시(/demo/characters/…)로만 연결한다.
+ */
 export function DemoCharacterIdentity({ character, extra }: { character: DemoCharacter; extra?: ReactNode }) {
   const d = getMessages().home.demo;
   const style = DEMO_CLASS_STYLE[character.demoClass];
@@ -73,7 +78,7 @@ export function DemoCharacterIdentity({ character, extra }: { character: DemoCha
     <div className="flex min-w-0 items-center gap-3">
       <DemoPortrait demoRace={character.demoRace} demoClass={character.demoClass} />
       <div className="flex min-w-0 flex-col gap-0.5">
-        <span className={cn("text-sm font-semibold break-keep", style.text)}>{character.name}</span>
+        <DemoCharacterName character={character} className="text-sm" />
         <span className="flex flex-wrap items-center gap-x-1.5 text-xs">
           <span className={style.text}>{d.classes[character.demoClass]}</span>
           <span aria-hidden="true" className="text-subtle">
@@ -84,6 +89,19 @@ export function DemoCharacterIdentity({ character, extra }: { character: DemoCha
         {extra ? <span className="text-xs text-subtle">{extra}</span> : null}
       </div>
     </div>
+  );
+}
+
+/** 가상 캐릭터 이름. 상세 예시 화면으로 연결한다. */
+export function DemoCharacterName({ character, className }: { character: DemoCharacter; className?: string }) {
+  return (
+    <Link
+      href={routes.demoCharacter(character.name)}
+      data-demo-character-link={character.key}
+      className={cn("font-semibold break-keep hover:underline", DEMO_CLASS_STYLE[character.demoClass].text, className)}
+    >
+      {character.name}
+    </Link>
   );
 }
 

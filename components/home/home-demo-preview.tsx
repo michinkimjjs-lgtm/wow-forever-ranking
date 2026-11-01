@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
-import { DemoSection, DistributionBars, SectionHeader } from "@/components/demo/demo-common";
+import { DemoCharacterName, DemoSection, DistributionBars, SectionHeader } from "@/components/demo/demo-common";
 import { SetupPending } from "@/components/setup-pending";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -204,8 +204,8 @@ function DemoRankingCard({
                 </span>
                 <DemoPortrait demoRace={c.demoRace} demoClass={c.demoClass} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  {/* 가상 캐릭터이므로 캐릭터 페이지로 연결하지 않는다 */}
-                  <span className={cn("text-sm font-semibold break-keep", style.text)}>{c.name}</span>
+                  {/* 가상 캐릭터는 실제 캐릭터 페이지가 아니라 상세 예시 화면으로만 연결한다 */}
+                  <DemoCharacterName character={c} className="text-sm" />
                   <span className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs">
                     <span className={style.text}>{d.classes[c.demoClass]}</span>
                     <span aria-hidden="true" className="text-subtle">

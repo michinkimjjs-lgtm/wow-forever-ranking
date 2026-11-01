@@ -712,12 +712,12 @@ describe("SEO", () => {
     expect(meta.robots).toEqual({ index: false, follow: false });
   });
 
-  it("robots.txt: 테스트 데이터 배포는 전체 제외, 실제 배포는 관리자·API·예시 파일만 제외", async () => {
+  it("robots.txt: 테스트 데이터 배포는 전체 제외, 실제 배포는 관리자·API·예시 파일·가상 데이터 예시 화면만 제외", async () => {
     const { default: robots } = await import("@/app/robots");
     state.appEnv = "mock";
     expect(robots().rules).toEqual([{ userAgent: "*", disallow: "/" }]);
     state.appEnv = "live";
-    expect(robots().rules).toEqual([{ userAgent: "*", allow: "/", disallow: ["/admin", "/api/", "/contribute/test-export"] }]);
+    expect(robots().rules).toEqual([{ userAgent: "*", allow: "/", disallow: ["/admin", "/api/", "/contribute/test-export", "/demo/"] }]);
   });
 });
 

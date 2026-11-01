@@ -8,12 +8,17 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  DEMO_ARMORY_CHARACTER,
   DEMO_SEARCH_QUERY,
-  demoArmory,
+  DEMO_SLOTS,
+  demoCharacterByName,
+  demoEquipment,
   demoFaction,
   demoFactionCounts,
   demoGuilds,
   demoLevelBuckets,
+  demoMilestones,
+  demoRanks,
   demoSearch,
   homeDemoFixture,
 } from "@/lib/demo/home-preview-fixture";
@@ -81,6 +86,11 @@ describe("설정 미완료 영역의 화면 미리보기", () => {
   it.each(PAGES)("%s: 가상 캐릭터·길드를 실제 페이지로 연결하지 않고 입력 양식이 없다", async (page) => {
     const out = await renderPage(page);
     expect(out).not.toContain('href="/characters/');
+    // 가상 캐릭터 이름은 상세 예시(/demo/characters/…)로만 연결한다
+    for (const m of out.matchAll(/data-demo-character-link="(c\d+)"/g)) expect(m[1]).toMatch(/^c\d{2}$/);
+    for (const m of out.matchAll(/href="([^"]+)"/g)) {
+      if (m[1]!.startsWith("/demo/")) expect(m[1]).toMatch(/^\/demo\/characters\/[^/]+$/);
+    }
     expect(out).not.toContain('href="/guilds/');
     expect(out).not.toContain("<form");
     expect(out).not.toContain("<input");
@@ -116,8 +126,8 @@ describe("설정 미완료 영역의 화면 미리보기", () => {
       if (!c.name.includes(DEMO_SEARCH_QUERY)) expect(results).not.toContain(c);
     }
     expect(out).toContain(`data-demo-search-results="true"`);
-    expect(out).toContain(`data-demo-armory="true"`);
-    for (const item of demoArmory.equipment) {
+    expect(out).toContain(`data-demo-armory="${DEMO_ARMORY_CHARACTER}"`);
+    for (const item of demoEquipment(DEMO_ARMORY_CHARACTER)) {
       expect(out).toContain(`data-demo-slot="${item.slot}"`);
       expect(out).toContain(demo.characters.equipment.slots[item.slot]);
     }
@@ -125,19 +135,28 @@ describe("설정 미완료 영역의 화면 미리보기", () => {
     expect(out).toContain(`data-demo-milestones="true"`);
   });
 
-  it("Armory 예시 장비의 평균·최고 아이템 레벨은 예시 캐릭터 값과 맞는다 (빈 칸은 평균에서 제외)", () => {
-    const c = homeDemoFixture.characters.find((x) => x.key === demoArmory.character)!;
-    const levels = demoArmory.equipment.flatMap((i): number[] => (i.itemLevel === null ? [] : [i.itemLevel]));
-    expect(Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 100) / 100).toBe(c.averageItemLevel);
-    expect(Math.max(...levels)).toBe(c.highestItemLevel);
-    expect(demoArmory.equipment.find((i) => i.itemLevel === c.highestItemLevel)?.name).toBe(c.highestItemName);
-    // 달성 기록은 최신이 현재 레벨이고, 레벨·날짜가 함께 줄어든다
-    expect(demoArmory.milestones[0]!.level).toBe(c.level);
-    for (let i = 1; i < demoArmory.milestones.length; i++) {
-      expect(demoArmory.milestones[i]!.level).toBeLessThan(demoArmory.milestones[i - 1]!.level);
-      expect(demoArmory.milestones[i]!.daysAgo).toBeGreaterThanOrEqual(demoArmory.milestones[i - 1]!.daysAgo);
-    }
-  });
+  it.each(homeDemoFixture.characters.map((c) => [c.name, c] as const))(
+    "%s: 예시 장비의 평균·최고 아이템 레벨이 캐릭터 값과 맞고, 달성 기록이 현재 레벨에서 시작한다",
+    (_name, c) => {
+      const items = demoEquipment(c.key);
+      expect(items.map((i) => i.slot)).toEqual([...DEMO_SLOTS]);
+      const levels = items.flatMap((i): number[] => (i.itemLevel === null ? [] : [i.itemLevel]));
+      // 빈 칸(양손 무기의 보조 무기)은 평균에서 제외
+      expect(Math.round((levels.reduce((a, b) => a + b, 0) / levels.length) * 100) / 100).toBe(c.averageItemLevel);
+      expect(Math.max(...levels)).toBe(c.highestItemLevel);
+      expect(levels.filter((v) => v === c.highestItemLevel)).toHaveLength(1);
+      expect(items.find((i) => i.itemLevel === c.highestItemLevel)?.name).toBe(c.highestItemName);
+      for (const i of items) if (i.name) expect(i.name).toContain("예시");
+      const milestones = demoMilestones(c.key);
+      expect(milestones[0]!.level).toBe(c.level);
+      for (let i = 1; i < milestones.length; i++) {
+        expect(milestones[i]!.level).toBeLessThan(milestones[i - 1]!.level);
+        expect(milestones[i]!.daysAgo).toBeGreaterThanOrEqual(milestones[i - 1]!.daysAgo);
+      }
+      const ranks = demoRanks(c.key);
+      for (const r of Object.values(ranks)) expect(r).toBeGreaterThanOrEqual(1);
+    },
+  );
 
   it("길드: 같은 길드 캐릭터는 같은 진영이고, 목록과 상세를 보여 준다", async () => {
     const guilds = demoGuilds();
@@ -165,5 +184,47 @@ describe("mock 배포에는 화면 미리보기를 넣지 않는다", () => {
     const out = await renderPage("stats", "mock");
     expect(out).not.toContain(demo.pageBanner.title);
     expect(out).not.toContain('data-demo="true"');
+  });
+});
+
+describe("가상 캐릭터 상세 예시 (/demo/characters/{이름})", () => {
+  async function renderDetail(name: string, env: DataEnvironment = "live") {
+    serverState.appEnv = env;
+    const { default: Page } = await import("@/app/demo/characters/[name]/page");
+    return renderToStaticMarkup(await Page({ params: Promise.resolve({ name: encodeURIComponent(name) }) }));
+  }
+
+  it.each(homeDemoFixture.characters.map((c) => c.name))("%s: 상세 예시를 DB 없이 보여 준다", async (name) => {
+    const c = demoCharacterByName(name)!;
+    const out = await renderDetail(name);
+    expect(out).toContain(notice);
+    expect(out).toContain(demo.pageBanner.title);
+    expect(out).toContain(`data-demo-armory="${c.key}"`);
+    expect(out).toContain('data-demo-ranks="true"');
+    for (const slot of DEMO_SLOTS) expect(out).toContain(`data-demo-slot="${slot}"`);
+    expect(out).not.toContain('href="/characters/');
+  });
+
+  it("없는 이름이나 mock 배포에서는 404", async () => {
+    await expect(renderDetail("없는캐릭터")).rejects.toThrow();
+    await expect(renderDetail(homeDemoFixture.characters[0]!.name, "mock")).rejects.toThrow();
+  });
+
+  it("검색 엔진에 노출하지 않는다", async () => {
+    serverState.appEnv = "live";
+    const { generateMetadata } = await import("@/app/demo/characters/[name]/page");
+    const meta = await generateMetadata({ params: Promise.resolve({ name: encodeURIComponent(homeDemoFixture.characters[0]!.name) }) });
+    expect(meta.robots).toEqual({ index: false, follow: false });
+    const { default: robots } = await import("@/app/robots");
+    expect(JSON.stringify(robots())).toContain("/demo/");
+  });
+
+  it("랭킹 미리보기의 캐릭터 이름은 각자의 상세 예시로 연결된다", async () => {
+    serverState.appEnv = "live";
+    const { RankingPageView } = await import("@/components/ranking/ranking-page");
+    const out = renderToStaticMarkup(await RankingPageView({ type: "level", searchParams: {} }));
+    for (const c of homeDemoFixture.characters) {
+      expect(out).toContain(`href="/demo/characters/${encodeURIComponent(c.name)}"`);
+    }
   });
 });

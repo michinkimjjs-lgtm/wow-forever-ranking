@@ -276,9 +276,9 @@ describe("가상 데이터가 실제 API로 흘러가지 않는다", () => {
     const importers = ["app", "components", "lib", "db", "providers", "scripts", "config"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/lib\/demo\/home-preview-fixture"/.test(readFileSync(file, "utf8")));
-    // 홈 미리보기(components/home/)와 랭킹·캐릭터·길드·통계 미리보기(components/demo/)만
+    // 홈 미리보기(components/home/), 랭킹·캐릭터·길드·통계 미리보기(components/demo/), 가상 캐릭터 상세 예시 경로(app/demo/)만
     expect(importers.length).toBeGreaterThan(0);
-    for (const file of importers) expect(file).toMatch(/^components[\\/](home|demo)[\\/]/);
+    for (const file of importers) expect(file).toMatch(/^(components[\\/](home|demo)|app[\\/]demo)[\\/]/);
     const portraitUsers = ["app", "components", "lib"]
       .flatMap((dir) => sourceFiles(dir))
       .filter((file) => /from "@\/(components\/home\/demo-portrait|lib\/demo\/race-portraits)"/.test(readFileSync(file, "utf8")));
