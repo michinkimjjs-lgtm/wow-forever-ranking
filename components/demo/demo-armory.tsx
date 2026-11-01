@@ -1,4 +1,5 @@
 import { DemoFactionTag, demoFactionOf } from "@/components/demo/demo-common";
+import { DemoEmptySlot, DemoItemIcon } from "@/components/demo/demo-item-icon";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
 import { ItemName } from "@/components/game-labels";
 import { Badge } from "@/components/ui/badge";
@@ -147,15 +148,18 @@ function EquipmentCard({ characterKey }: { characterKey: DemoCharacterKey }) {
               data-demo-slot={item.slot}
               className="flex items-center justify-between gap-3 border-b border-border/60 py-2 text-sm"
             >
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-xs text-subtle">{e.slots[item.slot]}</span>
-                {item.name ? (
-                  <span className="break-keep" data-demo-item-id={item.itemId ?? undefined}>
-                    <ItemName name={item.name} quality={item.quality} />
-                  </span>
-                ) : (
-                  <span className="text-subtle">{item.blockedByTwoHand ? `${e.empty} · ${e.twoHandNote}` : e.empty}</span>
-                )}
+              <span className="flex min-w-0 items-center gap-2.5">
+                {item.icon && item.quality ? <DemoItemIcon icon={item.icon} quality={item.quality} /> : <DemoEmptySlot />}
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span className="text-xs text-subtle">{e.slots[item.slot]}</span>
+                  {item.name ? (
+                    <span className="break-keep" data-demo-item-id={item.itemId ?? undefined}>
+                      <ItemName name={item.name} quality={item.quality} />
+                    </span>
+                  ) : (
+                    <span className="text-subtle">{item.blockedByTwoHand ? `${e.empty} · ${e.twoHandNote}` : e.empty}</span>
+                  )}
+                </span>
               </span>
               <span className="tabular shrink-0 text-sm font-semibold text-foreground">{item.itemLevel ?? "—"}</span>
             </li>

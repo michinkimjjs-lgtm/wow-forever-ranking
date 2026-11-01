@@ -5,6 +5,8 @@
  * - 미리보기는 DB에 접근하지 않고, 가상 캐릭터·길드를 실제 페이지로 연결하지 않는다.
  * - mock 배포의 실제 화면에는 미리보기를 넣지 않는다.
  */
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -278,5 +280,44 @@ describe("가상 캐릭터의 착용 아이템", () => {
       .map((c) => c.key);
     expect([...homeDemoFixture.rankingsFull.gear]).toEqual(gear);
     expect([...homeDemoFixture.rankingsFull.highestItem]).toEqual(high);
+  });
+});
+
+describe("아이템 아이콘", () => {
+  const ICON_DIR = "public/demo/items";
+
+  it("예시 아이템마다 로컬 아이콘 파일(56×56 JPEG)이 있고, 쓰지 않는 파일은 없다", () => {
+    const used = new Set(Object.values(DEMO_ITEMS).map((i) => i.icon));
+    const files = readdirSync(ICON_DIR);
+    expect(new Set(files)).toEqual(new Set([...used].map((icon) => `${icon}.jpg`)));
+    for (const file of files) {
+      const b = readFileSync(join(ICON_DIR, file));
+      expect([b[0], b[1], b[2]]).toEqual([0xff, 0xd8, 0xff]);
+      // JPEG SOF0/SOF2 프레임에서 크기를 읽는다
+      let i = 2;
+      let size: [number, number] | null = null;
+      while (i < b.length) {
+        const marker = b[i + 1]!;
+        const len = b.readUInt16BE(i + 2);
+        if (marker === 0xc0 || marker === 0xc2) {
+          size = [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)];
+          break;
+        }
+        i += 2 + len;
+      }
+      expect(size).toEqual([56, 56]);
+    }
+  });
+
+  it("상세 화면의 장착 장비는 아이템마다 로컬 아이콘을 보여 주고 외부 이미지 주소를 쓰지 않는다", async () => {
+    serverState.appEnv = "live";
+    const c = homeDemoFixture.characters[0]!;
+    const { default: Page } = await import("@/app/demo/characters/[name]/page");
+    const out = renderToStaticMarkup(await Page({ params: Promise.resolve({ name: encodeURIComponent(c.name) }) }));
+    for (const item of demoEquipment(c.key)) {
+      if (item.icon) expect(out).toContain(`data-demo-item-icon="${item.icon}"`);
+    }
+    expect(out).not.toContain("tigrisfiles");
+    expect(out).not.toContain("wowf.io");
   });
 });
