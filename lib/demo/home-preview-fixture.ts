@@ -19,7 +19,8 @@ export const DEMO_CLASSES = ["warrior", "paladin", "hunter", "rogue", "priest", 
 export type DemoClass = (typeof DEMO_CLASSES)[number];
 
 /** 화면 예시용 종족 (게임 설정의 종족 코드가 아니다) */
-export const DEMO_RACES = ["human", "dwarf", "nightElf", "gnome", "orc", "undead", "tauren", "troll"] as const;
+/** 스카이본은 WoW: Forever 신규 종족으로, 진영에 따라 하이 오더(얼라이언스)와 윈드셰이퍼(호드)로 나뉜다. */
+export const DEMO_RACES = ["human", "dwarf", "nightElf", "gnome", "skyborneAlliance", "orc", "undead", "tauren", "troll", "skyborneHorde"] as const;
 export type DemoRace = (typeof DEMO_RACES)[number];
 
 export interface DemoCharacter {
@@ -51,15 +52,17 @@ const characters = [
   { key: "c10", name: "별빛노래", demoClass: "warlock", demoRace: "gnome", level: 37, guild: "은빛 등불", averageItemLevel: 33.69, highestItemLevel: 37, highestItemName: "바람매듭 지팡이", highestItemQuality: "rare", growthRecords: 22 },
   { key: "c11", name: "늦깎이모험가", demoClass: "priest", demoRace: "undead", level: 33, guild: null, averageItemLevel: 30.2, highestItemLevel: 34, highestItemName: "바람 정령의 지팡이", highestItemQuality: "rare", growthRecords: 15 },
   { key: "c12", name: "첫걸음", demoClass: "warrior", demoRace: "troll", level: 28, guild: "파도 쉼터", averageItemLevel: 26.57, highestItemLevel: 28, highestItemName: "순교자의 사슬 갑옷", highestItemQuality: "rare", growthRecords: 9 },
+  { key: "c13", name: "구름날개", demoClass: "hunter", demoRace: "skyborneAlliance", level: 36, guild: "은빛 등불", averageItemLevel: 31.64, highestItemLevel: 36, highestItemName: "텔마플러그의 왼팔", highestItemQuality: "rare", growthRecords: 19 },
+  { key: "c14", name: "바람결", demoClass: "shaman", demoRace: "skyborneHorde", level: 41, guild: "파도 쉼터", averageItemLevel: 37.29, highestItemLevel: 44, highestItemName: "정의의 망치", highestItemQuality: "rare", growthRecords: 33 },
 ] as const satisfies readonly DemoCharacter[];
 
 export type DemoCharacterKey = (typeof characters)[number]["key"];
 
-/** 미리 정해 둔 예시 순위 (랭킹 엔진으로 계산하지 않는다). 랭킹 화면 미리보기는 12명 전체를 쓴다. */
+/** 미리 정해 둔 예시 순위 (랭킹 엔진으로 계산하지 않는다). 랭킹 화면 미리보기는 14명 전체를 쓴다. */
 const rankingsFull = {
-  level: ["c01", "c02", "c03", "c04", "c05", "c06", "c07", "c08", "c09", "c10", "c11", "c12"],
-  gear: ["c04", "c01", "c02", "c05", "c03", "c07", "c08", "c10", "c06", "c09", "c11", "c12"],
-  highestItem: ["c04", "c01", "c02", "c05", "c08", "c03", "c07", "c06", "c10", "c09", "c11", "c12"],
+  level: ["c01", "c02", "c03", "c04", "c14", "c05", "c06", "c07", "c08", "c09", "c10", "c13", "c11", "c12"],
+  gear: ["c04", "c01", "c14", "c02", "c05", "c03", "c07", "c08", "c10", "c06", "c13", "c09", "c11", "c12"],
+  highestItem: ["c04", "c14", "c01", "c02", "c05", "c08", "c03", "c07", "c06", "c10", "c09", "c13", "c11", "c12"],
 } as const satisfies Record<string, readonly DemoCharacterKey[]>;
 
 /** 홈 카드는 상위 8명만 보여 준다 */
@@ -71,7 +74,7 @@ const rankings = {
 
 /** 예시 마지막 확인 경과 시간(시간 단위). 실제 시각이 아니다. */
 const lastSeenHoursAgo = {
-  c01: 1, c02: 3, c03: 8, c04: 14, c05: 6, c06: 22, c07: 5, c08: 30, c09: 44, c10: 18, c11: 60, c12: 12,
+  c01: 1, c02: 3, c03: 8, c04: 14, c05: 6, c06: 22, c07: 5, c08: 30, c09: 44, c10: 18, c11: 60, c12: 12, c13: 9, c14: 4,
 } as const satisfies Record<DemoCharacterKey, number>;
 
 export type DemoActivityKind = "levelUp" | "observed" | "gearChange" | "growth";
@@ -150,6 +153,8 @@ const RACE_FACTION: Record<DemoRace, DemoFaction> = {
   undead: "horde",
   tauren: "horde",
   troll: "horde",
+  skyborneAlliance: "alliance",
+  skyborneHorde: "horde",
 };
 
 export function demoFaction(race: DemoRace): DemoFaction {

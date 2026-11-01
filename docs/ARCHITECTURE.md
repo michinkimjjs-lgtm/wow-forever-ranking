@@ -232,7 +232,7 @@ config/blizzard/
 **홈 기능 미리보기 (설정 미완료 영역의 홈):** 홈은 준비 중 안내를 그대로 보여 주고, 그 아래에 가상 데이터로 기능을 미리 보여 줍니다(`components/home/home-demo-preview.tsx`).
 
 - 가상 데이터는 정적 파일 `lib/demo/home-preview-fixture.ts`에만 있습니다. DB 저장, mock seed, 랭킹 엔진, 통계 계산, API 응답에 쓰지 않으며, 이 파일을 가져다 쓰는 코드는 화면 미리보기 컴포넌트(`components/home/`, `components/demo/`)뿐입니다.
-- 랭킹(레벨·장비·최고 아이템), 캐릭터(검색 결과·Armory), 길드(목록·상세), 통계 화면도 같은 조건에서 준비 중 안내 아래에 가상 데이터 미리보기를 보여 줍니다(`components/demo/*`). 순위·통계 수치는 fixture에 미리 정해 두었거나 fixture 안의 12명만 센 값이며, DB를 조회하지 않습니다(`tests/page-demo.test.tsx`).
+- 랭킹(레벨·장비·최고 아이템), 캐릭터(검색 결과·Armory), 길드(목록·상세), 통계 화면도 같은 조건에서 준비 중 안내 아래에 가상 데이터 미리보기를 보여 줍니다(`components/demo/*`). 순위·통계 수치는 fixture에 미리 정해 두었거나 fixture 안의 샘플 캐릭터(14명, 신규 종족 스카이본 포함)만 센 값이며, DB를 조회하지 않습니다(`tests/page-demo.test.tsx`).
 - 가상 캐릭터 이름은 실제 캐릭터 페이지(`/characters/{지역}/{게임 규칙}/{이름}`)가 아니라 상세 예시 화면 `/demo/characters/{이름}`으로만 연결합니다(`app/demo/characters/[name]/page.tsx`). 이 경로는 위 조건의 배포에서만 열리고(그 밖에는 404), `noindex`이며 `robots.txt`에서도 제외합니다. 착용 장비는 WoW: Forever에 있는 실제 아이템(`lib/demo/demo-items.ts`)과 그 게임 아이콘(로컬 파일, `docs/DEMO-ITEM-ICONS.md`)이며, 아이템에 마우스를 올리거나(PC) 누르거나(모바일) 키보드 초점을 주면 게임 툴팁 형식의 아이템 정보를 보여 줍니다(`components/demo/demo-item.tsx`, `item-tooltip-trigger.tsx`). 캐릭터의 평균·최고 아이템 레벨과 장비·최고 아이템 예시 순위는 이 장비에서 계산한 값입니다. 레벨 달성 기록은 예시 값입니다.
 - 가상 데이터가 있는 모든 영역에 "DEMO · 화면 예시용 가상 데이터입니다. 실제 게임 데이터와 랭킹이 아닙니다."를 표시합니다.
 - 가상 캐릭터는 실제 캐릭터·길드 페이지로 연결하지 않습니다. 확인되지 않은 지역·게임 규칙 값은 쓰지 않습니다.

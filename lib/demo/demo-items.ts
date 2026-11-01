@@ -133,4 +133,6 @@ export const DEMO_GEAR = {
   c10: { head: 9492, neck: 6695, shoulder: 6697, back: 6901, chest: 7728, wrist: 9448, hands: 9395, waist: 6392, legs: 7709, feet: 9454, finger1: 9461, mainHand: 7757, ranged: 7708 },
   c11: { shoulder: 6685, back: 6314, chest: 6682, hands: 9491, waist: 6392, legs: 6910, feet: 9454, finger1: 6321, mainHand: 6689, ranged: 9489 },
   c12: { back: 6314, chest: 3416, hands: 888, finger1: 6321, mainHand: 1292, offHand: 6320, ranged: 6315 },
+  c13: { head: 6688, neck: 6695, shoulder: 7727, back: 6901, chest: 9406, wrist: 6902, hands: 888, waist: 6911, legs: 6690, feet: 7754, finger1: 9447, finger2: 6321, mainHand: 9459, ranged: 9456 },
+  c14: { head: 7719, neck: 7731, shoulder: 7755, back: 9397, chest: 7759, wrist: 9409, hands: 9445, waist: 9405, legs: 9396, feet: 9510, finger1: 6693, finger2: 9461, mainHand: 7721, offHand: 6694 },
 } as const;

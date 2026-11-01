@@ -11,6 +11,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   DEMO_ARMORY_CHARACTER,
+  DEMO_RACES,
   DEMO_SEARCH_QUERY,
   DEMO_SLOTS,
   demoCharacterByName,
@@ -363,5 +364,35 @@ describe("아이템 툴팁", () => {
     expect(armory.match(/data-demo-item-tooltip-trigger="true"/g)).toHaveLength(equipped);
     expect(armory).toContain('type="button"');
     expect(armory).toContain('aria-label="');
+  });
+});
+
+describe("가상 캐릭터의 종족·직업 조합", () => {
+  // WOWF.IO 종족 페이지의 전체 종족·직업 조합표(2026-11-01 확인, 클래식부터 가능 + 포에버 신규 조합)
+  const ALLOWED: Record<string, string[]> = {
+    human: ["warrior", "paladin", "hunter", "rogue", "priest", "mage", "warlock"],
+    dwarf: ["warrior", "paladin", "hunter", "rogue", "priest", "shaman"],
+    nightElf: ["warrior", "hunter", "rogue", "priest", "druid"],
+    gnome: ["warrior", "rogue", "priest", "mage", "warlock"],
+    skyborneAlliance: ["warrior", "hunter", "rogue", "mage", "druid"],
+    orc: ["warrior", "hunter", "rogue", "shaman", "mage", "warlock"],
+    undead: ["warrior", "paladin", "rogue", "priest", "mage", "warlock"],
+    tauren: ["warrior", "hunter", "shaman", "druid"],
+    troll: ["warrior", "hunter", "rogue", "priest", "shaman", "mage", "warlock"],
+    skyborneHorde: ["warrior", "hunter", "rogue", "shaman", "druid"],
+  };
+
+  it("모든 가상 캐릭터는 WoW: Forever에서 고를 수 있는 종족·직업 조합이다", () => {
+    expect(Object.keys(ALLOWED).sort()).toEqual([...DEMO_RACES].sort());
+    for (const c of homeDemoFixture.characters) expect(ALLOWED[c.demoRace], c.name).toContain(c.demoClass);
+  });
+
+  it("신규 종족 스카이본은 진영별로 나뉘고 샘플 캐릭터가 있다", () => {
+    expect(demoFaction("skyborneAlliance")).toBe("alliance");
+    expect(demoFaction("skyborneHorde")).toBe("horde");
+    for (const race of ["skyborneAlliance", "skyborneHorde"] as const) {
+      expect(homeDemoFixture.characters.some((c) => c.demoRace === race)).toBe(true);
+      expect(ko.home.demo.races[race]).toContain("스카이본");
+    }
   });
 });
