@@ -76,7 +76,7 @@ describe("calculateEquippedItemLevel", () => {
     expect(r.expectedItemCount).toBe(17);
     expect(r.coverage).toBe(1);
     expect(r.status).toBe("OK");
-    expect(r).toMatchObject({ profileId: "forever-draft", profileVersion: 1, calculationVersion: 1 });
+    expect(r).toMatchObject({ profileId: "forever-draft", profileVersion: 2, calculationVersion: 1 });
   });
 
   it("빈 슬롯은 평균에 넣지 않고 coverage만 낮춘다", () => {
@@ -171,14 +171,26 @@ describe("calculateEquippedItemLevel", () => {
   });
 
   it("최소 coverage 미달이면 INSUFFICIENT_COVERAGE (평균은 계산하지만 랭킹에 쓰지 않음)", () => {
+    // forever-draft v2: 유효 아이템 10개 이상. 9개는 미달
     const r = calculateEquippedItemLevel(
-      fullGear(20, { skip: ["head", "neck", "shoulder", "back", "chest"] }),
+      fullGear(20, { skip: ["head", "neck", "shoulder", "back", "chest", "wrist", "hands", "waist"] }),
       foreverDraft,
     );
-    expect(r.coverage).toBe(0.706); // 12 / 17 < 0.75
+    expect(r.equippedItemCount).toBe(9);
     expect(r.meetsCoverage).toBe(false);
     expect(r.status).toBe("INSUFFICIENT_COVERAGE");
     expect(r.averageItemLevel).toBe(20);
+  });
+
+  it("forever-draft v2: 레벨업 중이라 칸이 많이 비어도 유효 아이템이 10개 이상이면 장비 랭킹 대상이다", () => {
+    // 장신구·목·어깨·손목·허리·발·원거리 7칸이 빈 캐릭터 (v1의 75% 기준이면 10/17 = 0.588로 빠졌다)
+    const r = calculateEquippedItemLevel(
+      fullGear(20, { skip: ["trinket_1", "trinket_2", "neck", "shoulder", "wrist", "waist", "feet"] }),
+      foreverDraft,
+    );
+    expect(r.equippedItemCount).toBe(10);
+    expect(r.coverage).toBe(0.588);
+    expect(r.status).toBe("OK");
   });
 
   it("최소 장착 개수 기준(minRankableSlotCount)도 적용한다", () => {
@@ -196,5 +208,25 @@ describe("calculateEquippedItemLevel", () => {
     expect(r.averageItemLevel).toBeNull();
     expect(r.highestItemLevel).toBeNull();
     expect(calculateEquippedItemLevel([], foreverDraft).status).toBe("NO_GEAR_DATA");
+  });
+});
+
+describe("forever-draft v2 초안 검토: WoW: Forever 실제 아이템 예시 장비 (docs/GEAR-PROFILE.md §6)", () => {
+  const SLOT: Record<string, string> = { finger1: "finger_1", finger2: "finger_2", trinket1: "trinket_1", trinket2: "trinket_2", mainHand: "main_hand", offHand: "off_hand" };
+
+  it("화면 미리보기의 평균 아이템 레벨과 같은 값이 나오고, 30레벨 이상 예시 캐릭터는 모두 장비 랭킹 대상이다", async () => {
+    const { DEMO_GEAR, demoItem } = await import("@/lib/demo/demo-items");
+    const { homeDemoFixture } = await import("@/lib/demo/home-preview-fixture");
+    for (const c of homeDemoFixture.characters) {
+      const gear = DEMO_GEAR[c.key as keyof typeof DEMO_GEAR] as Record<string, number>;
+      const items = Object.entries(gear).map(([slot, id]) => {
+        const item = demoItem(id as Parameters<typeof demoItem>[0]);
+        return { slotCode: SLOT[slot] ?? slot, itemLevel: item.itemLevel, itemSlotCode: item.slot === "양손" ? "two_hand" : null };
+      });
+      const r = calculateEquippedItemLevel(items, foreverDraft);
+      expect(r.averageItemLevel, c.name).toBe(c.averageItemLevel);
+      expect(r.highestItemLevel, c.name).toBe(c.highestItemLevel);
+      if (c.level >= 30) expect(r.status, c.name).toBe("OK");
+    }
   });
 });

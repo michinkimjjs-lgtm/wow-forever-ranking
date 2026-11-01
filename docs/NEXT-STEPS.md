@@ -7,7 +7,7 @@
 | 할 일 | 막힌 이유 / 필요한 것 | 관련 문서 |
 |---|---|---|
 | 게임 설정 확정: 지역(region)과 게임 규칙(ruleset) 실제 값 | 확인 전에는 실제 랭킹 계산·등록을 열지 않음. 정식 출시·베타 클라이언트에서 실제 값 확인 필요 | `docs/RULESETS.md`, `config/game-scopes.ts` |
-| 장비 기준(Gear Profile) 초안 | 포에버가 클래식 장비 칸(원거리 칸 포함)을 쓰는 것을 미리보기 작업에서 확인. 랭킹 대상 칸·양손 무기·빈 칸 처리를 `DRAFT`로 준비해 두고, 확인 후 `APPROVED` | `docs/GEAR-PROFILE.md` |
+| 장비 기준(Gear Profile) 초안 | **v2 초안 완료(2026-11-01)**: 최소 coverage를 "유효 아이템 10개 이상"으로 변경, 원거리 칸 포함 유지. 남은 일: 실제 export의 게임 표시 평균과 비교 후 `forever-v1`(APPROVED)로 승인 | `docs/GEAR-PROFILE.md` §6 |
 | Collector 애드온 실제 클라이언트 테스트 | 운영자가 게임에서 직접 실행해 확인 필요 | `docs/CONTRIBUTOR-GUIDE.md` |
 | 웹 직접 등록 열기 | 위 설정·지역·직업 매핑 확인 후 | `docs/DATA-COLLECTION-STRATEGY.md` §2.5 |
 
