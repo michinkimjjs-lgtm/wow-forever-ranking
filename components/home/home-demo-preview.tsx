@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
 import { DemoCharacterName, DemoSection, DistributionBars, SectionHeader } from "@/components/demo/demo-common";
 import { SetupPending } from "@/components/setup-pending";
+import { ItemName } from "@/components/game-labels";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -144,7 +145,7 @@ function RankingPreview() {
           keys={rankings.highestItem}
           score={(c) => ({ value: formatInteger(c.highestItemLevel), label: r.columns.score })}
           detail={(c) => (
-            <span className={c.highestItemQuality === "epic" ? "text-quality-epic" : "text-quality-rare"}>{c.highestItemName}</span>
+            <ItemName name={c.highestItemName} quality={c.highestItemQuality} />
           )}
         />
       </div>

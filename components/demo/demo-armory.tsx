@@ -1,5 +1,6 @@
 import { DemoFactionTag, demoFactionOf } from "@/components/demo/demo-common";
 import { DEMO_CLASS_STYLE, DemoPortrait } from "@/components/home/demo-portrait";
+import { ItemName } from "@/components/game-labels";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -149,11 +150,11 @@ function EquipmentCard({ characterKey }: { characterKey: DemoCharacterKey }) {
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="text-xs text-subtle">{e.slots[item.slot]}</span>
                 {item.name ? (
-                  <span className={cn("break-keep", item.quality === "epic" ? "text-quality-epic" : "text-quality-rare")}>{item.name}</span>
-                ) : (
-                  <span className="text-subtle">
-                    {e.empty} · {e.twoHandNote}
+                  <span className="break-keep" data-demo-item-id={item.itemId ?? undefined}>
+                    <ItemName name={item.name} quality={item.quality} />
                   </span>
+                ) : (
+                  <span className="text-subtle">{item.blockedByTwoHand ? `${e.empty} · ${e.twoHandNote}` : e.empty}</span>
                 )}
               </span>
               <span className="tabular shrink-0 text-sm font-semibold text-foreground">{item.itemLevel ?? "—"}</span>

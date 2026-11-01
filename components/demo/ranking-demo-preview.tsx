@@ -1,4 +1,5 @@
 import { DemoCharacterIdentity, DemoFactionTag, DemoPageBanner, DemoRankChip, DemoSection, demoFactionOf } from "@/components/demo/demo-common";
+import { ItemName } from "@/components/game-labels";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -106,7 +107,9 @@ function ScoreCells({ type, character: c }: { type: RankingType; character: Demo
       <TableCell className="text-right">
         <span className="flex flex-col items-end gap-0.5">
           <span className="tabular text-base font-semibold text-foreground">{formatInteger(c.highestItemLevel)}</span>
-          <span className={cn("text-xs", c.highestItemQuality === "epic" ? "text-quality-epic" : "text-quality-rare")}>{c.highestItemName}</span>
+          <span className="text-xs">
+            <ItemName name={c.highestItemName} quality={c.highestItemQuality} />
+          </span>
         </span>
       </TableCell>
     </>

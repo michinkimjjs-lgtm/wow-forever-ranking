@@ -68,7 +68,7 @@ export const demo = {
     },
     equipment: {
       title: "장착 장비",
-      subtitle: "평균 아이템 레벨은 장착한 칸만으로 계산합니다(양손 무기를 들면 보조 무기 칸은 비어 있음).",
+      subtitle: "WoW: Forever에 있는 실제 아이템으로 만든 착용 예시입니다. 평균 아이템 레벨은 장착한 칸만으로 계산합니다.",
       empty: "비어 있음",
       twoHandNote: "양손 무기 사용",
       averageLine: "장착 {count}칸 평균 {value}",
@@ -88,7 +88,8 @@ export const demo = {
         trinket1: "장신구 1",
         trinket2: "장신구 2",
         mainHand: "주 무기",
-        offHand: "보조 무기",
+        offHand: "보조 장비",
+        ranged: "원거리",
       },
     },
     milestones: {
