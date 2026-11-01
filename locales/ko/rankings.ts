@@ -37,6 +37,7 @@ export const rankings = {
   notices: {
     staleRule: "최근 {days}일 이내에 확인된 캐릭터만 표시됩니다.",
     gearRule: "장비 정보가 충분한 캐릭터만 표시됩니다. (랭킹 대상 슬롯의 {percent}% 이상)",
+    gearRuleCount: "장비 정보가 충분한 캐릭터만 표시됩니다. (아이템 레벨을 아는 장비 {count}개 이상)",
     provisionalProfile: "장비 계산 기준은 개발용 임시 기준입니다.",
     submittedOnly: "제출된 캐릭터를 기준으로 한 랭킹입니다.",
   },
@@ -82,6 +83,38 @@ export const rankings = {
     separateNote: "랭킹은 게임 규칙별로 따로 계산합니다. 규칙이 다른 캐릭터는 함께 순위를 매기지 않습니다.",
   },
   empty: "조건에 맞는 캐릭터가 없습니다.",
+  /** 장비 랭킹 계산 기준 안내 (components/ranking/gear-profile-panel.tsx, 값은 Gear Profile 설정에서 읽음) */
+  gearProfile: {
+    title: "장비 랭킹 계산 기준",
+    status: {
+      DRAFT: "초안",
+      APPROVED: "확정",
+    },
+    draftNote: "초안입니다. 실제 게임 데이터로 확인한 뒤 확정하며, 확정 전까지 실제 장비 랭킹 계산에는 쓰지 않습니다.",
+    approvedNote: "실제 게임 데이터로 확인해 확정한 기준입니다.",
+    version: "기준 버전 {version}",
+    counted: "평균에 넣는 장비 칸",
+    excluded: "평균에서 빼는 칸",
+    entry: "랭킹에 들어가는 조건",
+    entryCount: "아이템 레벨을 아는 장비 {count}개 이상",
+    entryRatio: "랭킹 대상 칸의 {percent}% 이상",
+    entryBoth: "{count}개 이상, 그리고 랭킹 대상 칸의 {percent}% 이상",
+    emptySlot: "비어 있는 칸",
+    emptyPolicy: {
+      EXCLUDE_FROM_DENOMINATOR: "평균에 넣지 않습니다. 착용한 장비만으로 평균을 냅니다.",
+      COUNT_AS_ZERO: "아이템 레벨 0으로 평균에 넣습니다.",
+    },
+    twoHand: "양손 무기",
+    twoHandPolicy: {
+      COUNT_ONCE: "한 번만 셉니다. 보조 무기 칸은 평균에 넣지 않습니다.",
+      COUNT_TWICE: "주 무기와 보조 무기 두 칸으로 셉니다.",
+      OFFHAND_AS_EMPTY: "보조 무기 칸을 빈 칸으로 봅니다.",
+    },
+    highestItem: "최고 아이템 랭킹",
+    highestItemWithCoverage: "장비 랭킹과 같은 조건을 채운 캐릭터만 들어갑니다.",
+    highestItemWithoutCoverage: "조건과 관계없이 착용한 아이템 중 가장 높은 아이템 레벨을 씁니다.",
+    rounding: "평균 아이템 레벨은 소수점 둘째 자리에서 반올림합니다.",
+  },
   unavailable: {
     title: "장비 랭킹 준비 중",
     body: "이 데이터 영역의 장비 계산 기준이 아직 확인되지 않았습니다.",

@@ -466,3 +466,48 @@ describe("최초 달성 기록 미리보기", () => {
     expect(out).toContain(ko.common.nav.firstRecords);
   });
 });
+
+describe("장비 랭킹 계산 기준 안내", () => {
+  async function rankingOut(type: "level" | "gear" | "highest-item", env: DataEnvironment = "live") {
+    serverState.appEnv = env;
+    const { RankingPageView } = await import("@/components/ranking/ranking-page");
+    return renderToStaticMarkup(await RankingPageView({ type, searchParams: {} }));
+  }
+
+  it("장비·최고 아이템 랭킹에는 설정의 초안 기준을 보여 주고, 레벨 랭킹에는 보여 주지 않는다", async () => {
+    const g = ko.rankings.gearProfile;
+    for (const type of ["gear", "highest-item"] as const) {
+      const out = await rankingOut(type);
+      expect(out).toContain('data-gear-profile-panel="DRAFT"');
+      expect(out).toContain(g.title);
+      expect(out).toContain(g.status.DRAFT);
+      expect(out).toContain(g.draftNote);
+      expect(out).toContain("아이템 레벨을 아는 장비 10개 이상");
+      expect(out).toContain("원거리");
+      expect(out).toContain("셔츠");
+    }
+    expect(await rankingOut("level")).not.toContain("data-gear-profile-panel");
+  });
+
+  it("안내 문구는 설정 값에서 만든다 (기준을 바꾸면 안내도 바뀐다)", async () => {
+    const { GearProfilePanel } = await import("@/components/ranking/gear-profile-panel");
+    const { resolveGearProfileForDisplay } = await import("@/lib/config");
+    const base = resolveGearProfileForDisplay("live")!;
+    expect(base.status).toBe("DRAFT");
+    const changed = {
+      ...base,
+      status: "APPROVED" as const,
+      version: 9,
+      minimumCoverage: { minRankableSlotRatio: 0.8 },
+      slots: base.slots.map((s) => (s.code === "ranged" ? { ...s, rankable: false } : s)),
+    };
+    const out = renderToStaticMarkup(GearProfilePanel({ profile: changed }));
+    expect(out).toContain(ko.rankings.gearProfile.status.APPROVED);
+    expect(out).toContain("기준 버전 9");
+    expect(out).toContain("랭킹 대상 칸의 80% 이상");
+    const counted = out.split('data-gear-profile-row="counted"')[1]!.split("</dd>")[0]!;
+    const excluded = out.split('data-gear-profile-row="excluded"')[1]!.split("</dd>")[0]!;
+    expect(counted).not.toContain("원거리");
+    expect(excluded).toContain("원거리");
+  });
+});

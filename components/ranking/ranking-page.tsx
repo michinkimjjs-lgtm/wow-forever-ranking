@@ -12,7 +12,9 @@ import { routes } from "@/lib/routes";
 import { getServerContext } from "@/lib/server/context";
 import { loadDataCoverage, loadGuildOptions, loadRanking } from "@/lib/server/services";
 import { classifyRankingStage, evaluateServerWideClaim } from "@/lib/ranking/community";
-import { GameScopeNotConfiguredError, resolveGearProfile, RulesetNotAvailableError } from "@/lib/config";
+import { GameScopeNotConfiguredError, resolveGearProfile, resolveGearProfileForDisplay, RulesetNotAvailableError } from "@/lib/config";
+import type { DataEnvironment } from "@/lib/domain/enums";
+import { GearProfilePanel } from "./gear-profile-panel";
 import { RulesetFilter } from "./ruleset-filter";
 import { SetupPending } from "@/components/setup-pending";
 import { RankingDemoPreview } from "@/components/demo/ranking-demo-preview";
@@ -47,6 +49,13 @@ function RankingTabs({ active }: { active: RankingType }) {
   );
 }
 
+/** 장비·최고 아이템 랭킹에서 장비 계산 기준을 안내한다 (레벨 랭킹에는 표시하지 않음) */
+function GearProfileForType({ type, env }: { type: RankingType; env: DataEnvironment }) {
+  if (type === "level") return null;
+  const profile = resolveGearProfileForDisplay(env);
+  return profile ? <GearProfilePanel profile={profile} /> : null;
+}
+
 export async function RankingPageView({ type, searchParams }: { type: RankingType; searchParams: SearchParamsInput }) {
   const m = getMessages();
   const path = routes.ranking(type);
@@ -57,6 +66,7 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
         <PageHeader title={m.rankings.stageTitles.COMMUNITY[type]} description={m.rankings.descriptions[type]} />
         <RankingTabs active={type} />
         <SetupPending dataEnvironment={null} />
+        <GearProfileForType type={type} env="live" />
         <RankingDemoPreview type={type} />
       </div>
     );
@@ -78,6 +88,7 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
           <RankingTabs active={type} />
           <RulesetFilter path={path} query={query} dataEnvironment={error.dataEnvironment} active={null} />
           <SetupPending dataEnvironment={error.dataEnvironment} />
+          <GearProfileForType type={type} env={error.dataEnvironment} />
           {/* 실제 영역(beta·live)만. mock 영역은 항상 게임 설정이 있으므로 여기 오지 않는다 */}
           {error.dataEnvironment === "mock" ? null : <RankingDemoPreview type={type} />}
         </div>
@@ -123,6 +134,9 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
   if (type !== "level" && profile?.minimumCoverage.minRankableSlotRatio !== undefined) {
     notices.push(t(m.rankings.notices.gearRule, { percent: formatPercent(profile.minimumCoverage.minRankableSlotRatio) }));
   }
+  if (type !== "level" && profile?.minimumCoverage.minRankableSlotCount !== undefined) {
+    notices.push(t(m.rankings.notices.gearRuleCount, { count: profile.minimumCoverage.minRankableSlotCount }));
+  }
   if (type !== "level" && profile?.status === "DRAFT") notices.push(m.rankings.notices.provisionalProfile);
   if (parsed.scope.dataEnvironment !== "mock") notices.push(m.rankings.notices.submittedOnly);
 
@@ -144,7 +158,10 @@ export async function RankingPageView({ type, searchParams }: { type: RankingTyp
       <DataScopePanel coverage={coverage} stage={stage} claim={claim} staleDays={staleDays} />
       <NoticeList items={notices} />
       {result.status === "unavailable" ? (
-        <EmptyState title={m.rankings.unavailable.title} body={m.rankings.unavailable.body} />
+        <>
+          <EmptyState title={m.rankings.unavailable.title} body={m.rankings.unavailable.body} />
+          <GearProfileForType type={type} env={parsed.scope.dataEnvironment} />
+        </>
       ) : result.rows.length === 0 ? (
         <EmptyState title={m.rankings.empty} />
       ) : (

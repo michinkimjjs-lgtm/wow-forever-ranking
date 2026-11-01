@@ -44,6 +44,12 @@
 - `itemLevelBounds.max < min`이면 거부합니다.
 - id@version이 중복되면 거부합니다.
 
+### 화면 안내 (`components/ranking/gear-profile-panel.tsx`)
+
+- 장비 랭킹·최고 아이템 랭킹 화면에 "장비 랭킹 계산 기준"을 표시합니다: 평균에 넣는 칸, 빼는 칸, 랭킹에 들어가는 조건, 빈 칸·양손 무기 처리, 최고 아이템 랭킹 조건.
+- 값은 모두 프로필 설정에서 읽습니다. 설정을 바꾸면 안내도 바뀝니다.
+- beta·live에서 APPROVED 프로필이 없으면 DRAFT 프로필을 "초안"으로 표시하고, 확정 전까지 실제 계산에 쓰지 않는다고 알립니다(`resolveGearProfileForDisplay`, 계산에는 쓰지 않음).
+
 ### 프로필 선택
 
 | 함수 | 용도 | DRAFT 포함 |

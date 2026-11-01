@@ -130,16 +130,24 @@ export function resolveSlotMappingProfile(
   return findGearProfile(env, gameMode, sourceBuild, { includeDraft: true });
 }
 
+/**
+ * 화면에 "장비 랭킹 계산 기준"을 안내할 때 쓰는 프로필. DRAFT도 포함하며 게임 규칙과 관계없이 고른다.
+ * 랭킹 계산에는 쓰지 않는다(계산은 resolveGearProfile).
+ */
+export function resolveGearProfileForDisplay(env: DataEnvironment): GearProfile | null {
+  return findGearProfile(env, null, undefined, { includeDraft: true, anyGameMode: true });
+}
+
 function findGearProfile(
   env: DataEnvironment,
-  gameMode: string,
+  gameMode: string | null,
   sourceBuild: string | null | undefined,
-  options: { includeDraft: boolean },
+  options: { includeDraft: boolean; anyGameMode?: boolean },
 ): GearProfile | null {
   const candidates = loadConfig()
     .gearProfiles.filter((p) => p.appliesTo.dataEnvironments.includes(env))
     .filter((p) => options.includeDraft || p.status === "APPROVED")
-    .filter((p) => matches(p.appliesTo.gameModes, gameMode))
+    .filter((p) => options.anyGameMode || matches(p.appliesTo.gameModes, gameMode))
     .filter((p) => sourceBuild === undefined || matches(p.appliesTo.sourceBuilds, sourceBuild))
     .sort(
       (a, b) =>
