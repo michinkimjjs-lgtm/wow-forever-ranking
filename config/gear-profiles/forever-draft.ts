@@ -9,17 +9,23 @@
  * - 슬롯 번호: 클라이언트가 실행 중에 C_PaperDollInfo.GetInventorySlotInfo(slotName)로 정한다.
  *   Runtime verification required — 이 파일에 넣지 않는다.
  *
- * 승인 전에 결정할 것 (Runtime verification required)
- * - 원거리(ranged) 슬롯을 모든 직업의 랭킹 대상으로 볼지
+ * 버전 2 (2026-11-01, 초안 검토): WoW: Forever 실제 아이템으로 만든 예시 장비 14명으로 계산해 본 결과를 반영했다(docs/GEAR-PROFILE.md §6).
+ * - 최소 커버리지를 "랭킹 대상 칸의 75%"에서 "유효 아이템 10개 이상"으로 바꿨다.
+ *   레벨업 중인 캐릭터는 장신구·목 등이 실제로 비어 있는 경우가 많아, 비율 기준은 정상 장비를 "정보 부족"으로 빼 버린다.
+ *   개수 기준은 무기 하나만 담긴 것 같은 일부만 기록된 제출을 막는 목적을 그대로 지킨다.
+ * - 원거리 칸은 랭킹 대상으로 유지한다(클래식 캐릭터 창의 장비 칸, 사냥꾼의 주 무기). 개수 기준이라 원거리 무기가 없는 직업도 불리하지 않다.
+ *
+ * 승인 전에 확인할 것 (Runtime verification required)
+ * - 실제 export의 clientAverageItemLevel.equipped(게임이 계산한 값)와 이 프로필의 계산 결과 비교 → 원거리·빈 칸·양손 무기 처리 확정
  * - 양손 무기를 들었을 때 보조 무기 슬롯이 비는지, 계산 방식(COUNT_ONCE 유지 여부)
- * - 양손 무기를 판별할 아이템 분류 값(Enum.InventoryType)
- * - 최소 커버리지 기준
+ * - 양손 무기를 판별할 아이템 분류 값(Enum.InventoryType) → config/export-mapping.ts
+ * - 최소 유효 아이템 개수(10)가 실제 제출 데이터에서 적절한지
  */
 import type { GearProfileInput } from "@/lib/config/schema";
 
 export const foreverDraftGearProfile: GearProfileInput = {
   id: "forever-draft",
-  version: 1,
+  version: 2,
   status: "DRAFT",
   appliesTo: { dataEnvironments: ["beta", "live"], gameModes: ["*"], sourceBuilds: ["*"] },
   slots: [
@@ -55,7 +61,8 @@ export const foreverDraftGearProfile: GearProfileInput = {
     twoHandItemSlotCodes: ["two_hand"],
   },
   emptySlotPolicy: "EXCLUDE_FROM_DENOMINATOR",
-  minimumCoverage: { minRankableSlotRatio: 0.75 },
+  // 유효 아이템 10개 이상 (v1: 랭킹 대상 칸의 75% 이상). 근거: docs/GEAR-PROFILE.md §6
+  minimumCoverage: { minRankableSlotCount: 10 },
   highestItemRequiresCoverage: true,
   itemLevelBounds: { min: 1 },
   calculation: { method: "MEAN_OF_RANKABLE_EQUIPPED", version: 1 },
