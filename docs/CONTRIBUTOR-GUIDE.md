@@ -249,3 +249,7 @@ ForeverRankCollector/
 | `/reload` / 로그아웃 때 SavedVariables 저장, 파일 위치와 이름 | 설치 9단계, 사용 방법 |
 | SavedVariables를 다시 읽지 않는 베타 문제 해결 여부 | 사용 방법 |
 | 클라이언트가 Lua 문자열(`latestExportJson`)을 저장하는 이스케이프 방식 | (서버 파서, `docs/CHARACTER-EXPORT-V1.md`) |
+
+## CurseForge 배포
+
+CurseForge 등록 절차와 붙여 넣을 영어 설명·로고: [`docs/curseforge/PUBLISHING.md`](./curseforge/PUBLISHING.md)
