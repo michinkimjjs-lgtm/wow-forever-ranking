@@ -32,6 +32,10 @@ export const seo = {
     title: "{name} - WoW 포에버 길드 | Forever Rank",
     description: "{name} 길드의 캐릭터 수, 최고 레벨, 최고 장비 레벨 정보입니다.",
   },
+  firstRecords: {
+    title: "WoW 포에버 최초 달성 기록 | Forever Rank",
+    description: "WoW 포에버에서 가장 먼저 레벨을 달성한 캐릭터를 서버·직업·진영·길드별로 기록합니다.",
+  },
   stats: {
     title: "WoW 포에버 통계 | Forever Rank",
     description: "WoW 포에버 캐릭터 통계 화면은 준비 중입니다.",
