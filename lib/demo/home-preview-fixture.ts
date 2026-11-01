@@ -209,6 +209,8 @@ export interface DemoEquippedItem {
   name: string | null;
   itemLevel: number | null;
   quality: DemoItemQuality | null;
+  /** 게임 아이콘 이름 (public/demo/items/{icon}.jpg). 빈 칸이면 null */
+  icon: string | null;
   /** 양손 무기를 들어 비어 있는 보조 장비 칸 */
   blockedByTwoHand: boolean;
 }
@@ -220,10 +222,16 @@ export function demoEquipment(key: DemoCharacterKey): DemoEquippedItem[] {
   const twoHand = mainHand?.slot === "양손";
   return DEMO_SLOTS.map((slot): DemoEquippedItem => {
     const id = gear[slot];
-    if (!id) return { slot, itemId: null, name: null, itemLevel: null, quality: null, blockedByTwoHand: slot === "offHand" && twoHand };
+    if (!id) return { slot, itemId: null, name: null, itemLevel: null, quality: null, icon: null, blockedByTwoHand: slot === "offHand" && twoHand };
     const item = demoItem(id);
-    return { slot, itemId: id, name: item.name, itemLevel: item.itemLevel, quality: item.quality, blockedByTwoHand: false };
+    return { slot, itemId: id, name: item.name, itemLevel: item.itemLevel, quality: item.quality, icon: item.icon, blockedByTwoHand: false };
   });
+}
+
+/** 캐릭터의 최고 아이템(랭킹 표시용) 아이콘 이름 */
+export function demoHighestItemIcon(key: DemoCharacterKey): string | null {
+  const c = demoCharacter(key);
+  return demoEquipment(key).find((i) => i.name === c.highestItemName && i.itemLevel === c.highestItemLevel)?.icon ?? null;
 }
 
 export interface DemoMilestone {
