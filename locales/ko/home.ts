@@ -88,6 +88,8 @@ export const home = {
       undead: "언데드",
       tauren: "타우렌",
       troll: "트롤",
+      skyborneAlliance: "하이 오더 스카이본",
+      skyborneHorde: "윈드셰이퍼 스카이본",
     },
     classRaceNote: "직업·종족·직업 색상은 화면 예시용 가상 데이터입니다. 실제 게임에서 제공하는 직업·종족 목록이 아닙니다.",
     portrait: {

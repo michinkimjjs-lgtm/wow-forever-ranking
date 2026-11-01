@@ -33,6 +33,14 @@ const confirmed = (key: DemoRace, file: string, iconId: string): ImageSource => 
   minSize: 56,
 });
 
+/** 스카이본(WoW: Forever 신규 종족) 아이콘: 묶음이 아닌 개별 파일. 2026-11-01 확인. 두 진영이 같은 파일을 쓴다. */
+const skyborne = (key: DemoRace): ImageSource => ({
+  ...confirmed(key, "skyborne.jpg", "raceicon_skyborne_female"),
+  pageUrl: "https://wowf.io/ko/races/skyborne-alliance",
+  imageUrl: "https://wowf-assets.t3.tigrisfiles.io/icons/races/raceicon_skyborne_female.jpg",
+  rights: { ...confirmed(key, "skyborne.jpg", "").rights, checkedAt: "2026-11-01" },
+});
+
 export const RACE_PORTRAIT_SOURCES: readonly ImageSource[] = [
   confirmed("human", "human.webp", "achievement_character_human_male"),
   confirmed("dwarf", "dwarf.webp", "achievement_character_dwarf_male"),
@@ -42,4 +50,6 @@ export const RACE_PORTRAIT_SOURCES: readonly ImageSource[] = [
   confirmed("undead", "undead.webp", "achievement_character_undead_male"),
   confirmed("tauren", "tauren.webp", "achievement_character_tauren_male"),
   confirmed("troll", "troll.webp", "achievement_character_troll_male"),
+  skyborne("skyborneAlliance"),
+  skyborne("skyborneHorde"),
 ];

@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 /**
  * 통계 화면 미리보기 (실제 데이터 설정이 확인되지 않은 배포에서만)
  *
- * - 모든 수치는 lib/demo/home-preview-fixture.ts의 샘플 캐릭터 12명만 센 값이다. 실제 통계 계산·DB를 쓰지 않는다.
+ * - 모든 수치는 lib/demo/home-preview-fixture.ts의 샘플 캐릭터(14명)만 센 값이다. 실제 통계 계산·DB를 쓰지 않는다.
  */
 export function StatsDemoPreview() {
   const s = getMessages().demo.stats;

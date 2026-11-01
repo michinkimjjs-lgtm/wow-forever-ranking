@@ -34,6 +34,17 @@ const blizzardIcon = (file: string, iconId: string): DemoRacePortrait => ({
   license: "Blizzard 법률 FAQ 팬사이트 이미지 사용 조건 (비상업·고지 유지·변경 금지·철회 가능)",
 });
 
+/**
+ * WoW: Forever 신규 종족 스카이본의 게임 아이콘(raceicon_skyborne_female, 128×128 JPEG). 권리자는 Blizzard Entertainment.
+ * WOWF.IO 에셋 서버의 개별 아이콘 파일을 변경 없이 저장했다. 하이 오더·윈드셰이퍼 두 진영이 같은 아이콘을 쓴다(WOWF.IO 종족 선택 화면과 같음).
+ */
+const skyborneIcon = (): DemoRacePortrait => ({
+  file: "skyborne.jpg",
+  source: "World of Warcraft 게임 아이콘 raceicon_skyborne_female (WOWF.IO 에셋 서버 경유: https://wowf-assets.t3.tigrisfiles.io/icons/races/raceicon_skyborne_female.jpg)",
+  author: "Blizzard Entertainment, Inc.",
+  license: "Blizzard 법률 FAQ 팬사이트 이미지 사용 조건 (비상업·고지 유지·변경 금지·철회 가능)",
+});
+
 export const DEMO_RACE_PORTRAITS: Record<DemoRace, DemoRacePortrait | null> = {
   human: blizzardIcon("human.webp", "achievement_character_human_male"),
   dwarf: blizzardIcon("dwarf.webp", "achievement_character_dwarf_male"),
@@ -43,6 +54,8 @@ export const DEMO_RACE_PORTRAITS: Record<DemoRace, DemoRacePortrait | null> = {
   undead: blizzardIcon("undead.webp", "achievement_character_undead_male"),
   tauren: blizzardIcon("tauren.webp", "achievement_character_tauren_male"),
   troll: blizzardIcon("troll.webp", "achievement_character_troll_male"),
+  skyborneAlliance: skyborneIcon(),
+  skyborneHorde: skyborneIcon(),
 };
 
 export function demoRacePortraitSrc(race: DemoRace, portraits = DEMO_RACE_PORTRAITS): string | null {
