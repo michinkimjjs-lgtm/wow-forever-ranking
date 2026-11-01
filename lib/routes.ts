@@ -15,6 +15,8 @@ export const routes = {
   guild: (g: { region: string; gameMode: string; slug: string }) =>
     `/guilds/${seg(g.region)}/${seg(g.gameMode)}/${seg(g.slug)}`,
   stats: () => "/stats",
+  /** 화면 미리보기용 가상 캐릭터의 상세 예시 (실제 캐릭터 페이지가 아님) */
+  demoCharacter: (name: string) => `/demo/characters/${seg(name.normalize("NFC"))}`,
   submit: () => "/submit",
   contribute: () => "/contribute",
   contributeDownload: () => "/contribute/download",
